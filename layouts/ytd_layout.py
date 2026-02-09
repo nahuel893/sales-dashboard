@@ -25,7 +25,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
     }
 
     kpi_value_style = {
-        'fontSize': '35px',
+        'fontSize': '53px',
         'fontWeight': 'bold',
         'color': '#1a1a2e',
         'margin': '0'
@@ -148,9 +148,9 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                     html.Div([
                         html.P(id='ytd-kpi-sales', children="0", style=kpi_value_style),
                         html.Div([
-                            html.Span("Interanual ", style={'fontSize': '14px', 'color': '#666'}),
+                            html.Span("Interanual ", style={'fontSize': '21px', 'color': '#666'}),
                             html.Span(id='ytd-kpi-yoy', children="0%", style={
-                                'fontSize': '14px',
+                                'fontSize': '21px',
                                 'fontWeight': 'bold'
                             })
                         ])
@@ -168,7 +168,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                 html.Div([
                     html.Div(id='ytd-kpi-achievement', children=[
                         html.Div("0%", style={
-                            'fontSize': '30px',
+                            'fontSize': '45px',
                             'fontWeight': 'bold',
                             'color': '#27ae60',
                             'textAlign': 'center'
@@ -230,7 +230,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                         html.Div("Ventas (Bultos) por Sucursal", style=chart_title_style),
                         dcc.Graph(id='ytd-chart-sucursal', config={'displayModeBar': False},
                                   style={'height': '275px'})
-                    ], style={**chart_card_style, 'flex': '1', 'marginRight': '6px'}),
+                    ], style={**chart_card_style, 'padding': '8px', 'paddingTop': '12px', 'flex': '1', 'marginRight': '6px'}),
 
                     # Ventas por Canal
                     html.Div([
@@ -266,7 +266,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                         html.Div("Días de Cuentas por Cobrar", style=chart_title_style),
                         html.Div([
                             html.Div("--", style={
-                                'fontSize': '45px',
+                                'fontSize': '68px',
                                 'fontWeight': 'bold',
                                 'color': '#999',
                                 'textAlign': 'center',

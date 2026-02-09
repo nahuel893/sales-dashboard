@@ -21,9 +21,9 @@ from config import METRICA_LABELS
 # =============================================================================
 
 @callback(
-    [Output('filtro-ruta', 'options'),
+    [Output('filtro-ruta', 'data'),
      Output('filtro-ruta', 'value'),
-     Output('filtro-preventista', 'options'),
+     Output('filtro-preventista', 'data'),
      Output('filtro-preventista', 'value')],
     [Input('filtro-fuerza-venta', 'value')]
 )
@@ -34,23 +34,23 @@ def actualizar_rutas_preventistas(fuerza_venta):
     rutas = obtener_rutas(fv)
     preventistas = obtener_preventistas(fv)
 
-    opciones_rutas = [{'label': str(r), 'value': r} for r in rutas]
+    opciones_rutas = [{'label': str(r), 'value': str(r)} for r in rutas]
     opciones_preventistas = [{'label': p, 'value': p} for p in preventistas]
 
     return opciones_rutas, [], opciones_preventistas, []
 
 
 @callback(
-    [Output('filtro-canal', 'options'),
-     Output('filtro-subcanal', 'options'),
-     Output('filtro-localidad', 'options'),
-     Output('filtro-lista-precio', 'options'),
-     Output('filtro-sucursal', 'options')],
-    [Input('filtro-fechas', 'start_date'),
-     Input('filtro-fechas', 'end_date')]
+    [Output('filtro-canal', 'data'),
+     Output('filtro-subcanal', 'data'),
+     Output('filtro-localidad', 'data'),
+     Output('filtro-lista-precio', 'data'),
+     Output('filtro-sucursal', 'data')],
+    [Input('filtro-fechas', 'value')]
 )
-def actualizar_filtros(start_date, end_date):
+def actualizar_filtros(fechas_value):
     """Actualiza opciones de filtros cuando cambian las fechas."""
+    start_date, end_date = (fechas_value or [None, None])[:2]
     df = cargar_ventas_por_cliente(start_date, end_date)
 
     canales = [{'label': c, 'value': c} for c in sorted(df['canal'].unique())]
@@ -63,7 +63,7 @@ def actualizar_filtros(start_date, end_date):
 
 
 @callback(
-    [Output('filtro-marca', 'options'),
+    [Output('filtro-marca', 'data'),
      Output('filtro-marca', 'value')],
     [Input('filtro-generico', 'value')],
     prevent_initial_call=True
@@ -79,7 +79,7 @@ def actualizar_marcas_por_generico(genericos_seleccionados):
 @callback(
     Output('filtro-sucursal', 'value'),
     [Input('filtro-tipo-sucursal', 'value'),
-     Input('filtro-sucursal', 'options')],
+     Input('filtro-sucursal', 'data')],
     prevent_initial_call=True
 )
 def actualizar_sucursal_por_tipo(tipo_sucursal, opciones_sucursales):
@@ -87,8 +87,11 @@ def actualizar_sucursal_por_tipo(tipo_sucursal, opciones_sucursales):
     if not opciones_sucursales:
         return []
 
-    # Extraer valores de las opciones
-    todas_sucursales = [opt['value'] for opt in opciones_sucursales]
+    # Extraer valores de las opciones (data puede ser lista de strings o dicts)
+    todas_sucursales = [
+        opt['value'] if isinstance(opt, dict) else opt
+        for opt in opciones_sucursales
+    ]
 
     if tipo_sucursal == 'TODAS':
         # No filtrar, mostrar todas (valor vacío = sin filtro)
@@ -110,8 +113,7 @@ def actualizar_sucursal_por_tipo(tipo_sucursal, opciones_sucursales):
 @callback(
     [Output('mapa-ventas', 'figure'),
      Output('kpis-container', 'children')],
-    [Input('filtro-fechas', 'start_date'),
-     Input('filtro-fechas', 'end_date'),
+    [Input('filtro-fechas', 'value'),
      Input('filtro-canal', 'value'),
      Input('filtro-subcanal', 'value'),
      Input('filtro-localidad', 'value'),
@@ -124,16 +126,17 @@ def actualizar_sucursal_por_tipo(tipo_sucursal, opciones_sucursales):
      Input('filtro-preventista', 'value'),
      Input('filtro-fuerza-venta', 'value'),
      Input('opciones-zonas', 'value'),
-     Input('opcion-animacion', 'value'),
+     Input('opcion-animacion', 'checked'),
      Input('granularidad-animacion', 'value')]
 )
-def actualizar_mapa(start_date, end_date, canales, subcanales, localidades, listas_precio,
+def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_precio,
                     sucursales, metrica, genericos, marcas, rutas, preventistas,
                     fuerza_venta, opciones_zonas, opcion_animacion, granularidad):
     """Actualiza el mapa y KPIs segun los filtros."""
 
+    start_date, end_date = (fechas_value or [None, None])[:2]
     fv = fuerza_venta if fuerza_venta != 'TODOS' else None
-    usar_animacion = 'animar' in (opcion_animacion or [])
+    usar_animacion = opcion_animacion or False
     granularidad = granularidad or 'semana'
 
     # Cargar datos
@@ -322,8 +325,7 @@ def actualizar_mapa(start_date, end_date, canales, subcanales, localidades, list
 
 @callback(
     Output('mapa-calor', 'figure'),
-    [Input('filtro-fechas', 'start_date'),
-     Input('filtro-fechas', 'end_date'),
+    [Input('filtro-fechas', 'value'),
      Input('filtro-canal', 'value'),
      Input('filtro-subcanal', 'value'),
      Input('filtro-localidad', 'value'),
@@ -336,22 +338,23 @@ def actualizar_mapa(start_date, end_date, canales, subcanales, localidades, list
      Input('filtro-preventista', 'value'),
      Input('filtro-fuerza-venta', 'value'),
      Input('opciones-zonas', 'value'),
-     Input('opcion-escala-log', 'value'),
+     Input('opcion-escala-log', 'checked'),
      Input('slider-precision', 'value'),
      Input('tipo-mapa-calor', 'value'),
      Input('slider-radio-difuso', 'value'),
      Input('tipo-normalizacion', 'value'),
-     Input('opcion-animacion', 'value'),
+     Input('opcion-animacion', 'checked'),
      Input('granularidad-animacion', 'value')]
 )
-def actualizar_mapa_calor(start_date, end_date, canales, subcanales, localidades, listas_precio,
+def actualizar_mapa_calor(fechas_value, canales, subcanales, localidades, listas_precio,
                           sucursales, metrica, genericos, marcas, rutas, preventistas, fuerza_venta,
                           opciones_zonas, opcion_escala, precision, tipo_mapa, radio_difuso,
                           tipo_normalizacion, opcion_animacion, granularidad):
     """Actualiza el mapa de calor (difuso o grilla)."""
 
+    start_date, end_date = (fechas_value or [None, None])[:2]
     fv = fuerza_venta if fuerza_venta != 'TODOS' else None
-    usar_animacion = 'animar' in (opcion_animacion or [])
+    usar_animacion = opcion_animacion or False
     granularidad = granularidad or 'semana'
 
     if usar_animacion:
@@ -382,7 +385,7 @@ def actualizar_mapa_calor(start_date, end_date, canales, subcanales, localidades
     df_con_ventas = df_mapa[df_mapa['cantidad_total'] > 0].copy()
 
     metrica_labels = METRICA_LABELS
-    usar_log = opcion_escala and 'log' in opcion_escala
+    usar_log = opcion_escala or False
     escala_texto = " (log)" if usar_log else ""
 
     precision = precision or 2
@@ -586,7 +589,7 @@ MESES_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct'
 
 
 @callback(
-    Output('selector-anios', 'options'),
+    Output('selector-anios', 'data'),
     [Input('tabs-principales', 'value')]
 )
 def actualizar_opciones_anios(tab_activa):
@@ -850,8 +853,7 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
 
 @callback(
     Output('mapa-compro', 'figure'),
-    [Input('filtro-fechas', 'start_date'),
-     Input('filtro-fechas', 'end_date'),
+    [Input('filtro-fechas', 'value'),
      Input('filtro-canal', 'value'),
      Input('filtro-subcanal', 'value'),
      Input('filtro-localidad', 'value'),
@@ -864,12 +866,13 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
      Input('filtro-fuerza-venta', 'value'),
      Input('opciones-zonas', 'value')]
 )
-def actualizar_mapa_compro(start_date, end_date, canales, subcanales, localidades, listas_precio,
+def actualizar_mapa_compro(fechas_value, canales, subcanales, localidades, listas_precio,
                             sucursales, genericos, marcas, rutas, preventistas, fuerza_venta,
                             opciones_zonas):
     """
     Mapa que muestra clientes que compraron (verde) vs no compraron (rojo) en el periodo.
     """
+    start_date, end_date = (fechas_value or [None, None])[:2]
     fv = fuerza_venta if fuerza_venta != 'TODOS' else None
 
     # Cargar datos

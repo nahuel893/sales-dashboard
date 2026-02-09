@@ -2,10 +2,14 @@
 Layout principal del dashboard de ventas.
 """
 from dash import html, dcc
+import dash_mantine_components as dmc
 
 
 def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_genericos, lista_marcas, lista_rutas, lista_preventistas):
     """Crea y retorna el layout del dashboard de ventas."""
+
+    # Estilo común para labels de sección
+    label_style = {'fontWeight': 'bold', 'fontSize': '14px', 'color': '#333'}
 
     return html.Div([
         # Header con navegación
@@ -50,181 +54,176 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
         # Filtro de fechas
         html.Div([
             html.Div([
-                html.Label("Rango de Fechas:", style={'fontWeight': 'bold', 'marginRight': '15px'}),
-                dcc.DatePickerRange(
+                dmc.DatePickerInput(
                     id='filtro-fechas',
-                    min_date_allowed=fecha_min,
-                    max_date_allowed=fecha_max,
-                    start_date=fecha_desde_default,
-                    end_date=fecha_max,
-                    display_format='DD/MM/YYYY'
+                    label="Rango de Fechas",
+                    type="range",
+                    value=[str(fecha_desde_default), str(fecha_max)],
+                    valueFormat="DD/MM/YYYY",
+                    w=320,
                 ),
-            ], style={'display': 'flex', 'alignItems': 'center'}),
+            ], style={'display': 'flex', 'alignItems': 'flex-end'}),
         ], style={'padding': '15px 20px', 'backgroundColor': '#e8f4f8', 'borderBottom': '2px solid #1a1a2e'}),
 
         # Fila 1: Filtros de cliente (Canal, Subcanal, Localidad)
         html.Div([
             html.Div([
-                html.Label("Canal:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-canal',
-                    options=[],
+                    label="Canal",
+                    data=[],
                     value=[],
-                    multi=True,
                     placeholder="Todos los canales",
-                    style={'fontSize': '14px'}
-                )
+                    searchable=True,
+                    clearable=True,
+                ),
             ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
 
             html.Div([
-                html.Label("Subcanal:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-subcanal',
-                    options=[],
+                    label="Subcanal",
+                    data=[],
                     value=[],
-                    multi=True,
                     placeholder="Todos los subcanales",
-                    style={'fontSize': '14px'}
-                )
+                    searchable=True,
+                    clearable=True,
+                ),
             ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
 
             html.Div([
-                html.Label("Localidad:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-localidad',
-                    options=[],
+                    label="Localidad",
+                    data=[],
                     value=[],
-                    multi=True,
                     placeholder="Todas las localidades",
-                    style={'fontSize': '14px'}
-                )
+                    searchable=True,
+                    clearable=True,
+                ),
             ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
         ], style={'padding': '15px 20px 8px 20px', 'backgroundColor': '#f5f5f5'}),
 
-        # Fila 2: Filtros de cliente (Lista Precio, Sucursal, Metrica)
+        # Fila 2: Filtros de cliente (Lista Precio, Tipo Sucursal, Sucursal, Metrica)
         html.Div([
             html.Div([
-                html.Label("Lista Precio:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-lista-precio',
-                    options=[],
+                    label="Lista Precio",
+                    data=[],
                     value=[],
-                    multi=True,
                     placeholder="Todas las listas",
-                    style={'fontSize': '14px'}
-                )
-            ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
+                    searchable=True,
+                    clearable=True,
+                ),
+            ], style={'width': '24%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
 
             html.Div([
-                html.Label("Tipo Sucursal:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                html.Label("Tipo Sucursal", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                dmc.SegmentedControl(
                     id='filtro-tipo-sucursal',
-                    options=[
-                        {'label': 'Todas', 'value': 'TODAS'},
-                        {'label': 'Solo Sucursales', 'value': 'SUCURSALES'},
-                        {'label': 'Solo Casa Central', 'value': 'CASA_CENTRAL'}
+                    data=[
+                        {"label": "Todas", "value": "TODAS"},
+                        {"label": "Sucursales", "value": "SUCURSALES"},
+                        {"label": "Casa Central", "value": "CASA_CENTRAL"},
                     ],
-                    value='TODAS',
-                    clearable=False,
-                    style={'fontSize': '14px'}
-                )
-            ], style={'width': '15%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
+                    value="TODAS",
+                    size="sm",
+                ),
+            ], style={'width': '24%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
 
             html.Div([
-                html.Label("Sucursal:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-sucursal',
-                    options=[],
+                    label="Sucursal",
+                    data=[],
                     value=[],
-                    multi=True,
                     placeholder="Todas las sucursales",
-                    style={'fontSize': '14px'}
-                )
-            ], style={'width': '17%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
+                    searchable=True,
+                    clearable=True,
+                ),
+            ], style={'width': '24%', 'display': 'inline-block', 'marginRight': '1%', 'verticalAlign': 'top'}),
 
             html.Div([
-                html.Label("Metrica:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                html.Label("Metrica", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                dmc.SegmentedControl(
                     id='filtro-metrica',
-                    options=[
-                        {'label': 'Cantidad (bultos)', 'value': 'cantidad_total'},
-                        {'label': 'Facturacion ($)', 'value': 'facturacion'},
-                        {'label': 'Documentos', 'value': 'cantidad_documentos'}
+                    data=[
+                        {"label": "Bultos", "value": "cantidad_total"},
+                        {"label": "Facturación", "value": "facturacion"},
+                        {"label": "Documentos", "value": "cantidad_documentos"},
                     ],
-                    value='cantidad_total',
-                    clearable=False,
-                    style={'fontSize': '14px'}
-                )
-            ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                    value="cantidad_total",
+                    size="sm",
+                ),
+            ], style={'width': '24%', 'display': 'inline-block', 'verticalAlign': 'top'}),
         ], style={'padding': '8px 20px 15px 20px', 'backgroundColor': '#f5f5f5'}),
 
         # Fila 3: Filtros de producto (Generico, Marca)
         html.Div([
             html.Div([
-                html.Label("Generico:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-generico',
-                    options=[{'label': g, 'value': g} for g in lista_genericos],
+                    label="Generico",
+                    data=[g for g in lista_genericos],
                     value=[],
-                    multi=True,
                     placeholder="Todos los genericos",
-                    style={'fontSize': '14px'}
-                )
+                    searchable=True,
+                    clearable=True,
+                ),
             ], style={'width': '49%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
 
             html.Div([
-                html.Label("Marca:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-marca',
-                    options=[{'label': m, 'value': m} for m in lista_marcas],
+                    label="Marca",
+                    data=[m for m in lista_marcas],
                     value=[],
-                    multi=True,
                     placeholder="Todas las marcas",
-                    style={'fontSize': '14px'}
-                )
+                    searchable=True,
+                    clearable=True,
+                ),
             ], style={'width': '49%', 'display': 'inline-block', 'verticalAlign': 'top'}),
         ], style={'padding': '15px 20px', 'backgroundColor': '#fff3cd', 'borderBottom': '1px solid #ffc107'}),
 
         # Fila 4: Filtros de fuerza de ventas, ruta y preventista
         html.Div([
             html.Div([
-                html.Label("Fuerza de Ventas:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.RadioItems(
+                html.Label("Fuerza de Ventas", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                dmc.SegmentedControl(
                     id='filtro-fuerza-venta',
-                    options=[
-                        {'label': ' Todos', 'value': 'TODOS'},
-                        {'label': ' FV1', 'value': 'FV1'},
-                        {'label': ' FV4', 'value': 'FV4'}
+                    data=[
+                        {"label": "Todos", "value": "TODOS"},
+                        {"label": "FV1", "value": "FV1"},
+                        {"label": "FV4", "value": "FV4"},
                     ],
-                    value='TODOS',
-                    inline=True,
-                    inputStyle={'marginRight': '8px'},
-                    labelStyle={'marginRight': '20px', 'fontSize': '14px'}
-                )
+                    value="TODOS",
+                    size="sm",
+                ),
             ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
 
             html.Div([
-                html.Label("Ruta:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-ruta',
-                    options=[{'label': str(r), 'value': r} for r in lista_rutas],
+                    label="Ruta",
+                    data=[{"label": str(r), "value": str(r)} for r in lista_rutas],
                     value=[],
-                    multi=True,
                     placeholder="Todas las rutas",
-                    style={'fontSize': '14px'}
-                )
+                    searchable=True,
+                    clearable=True,
+                ),
             ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
 
             html.Div([
-                html.Label("Preventista:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                dcc.Dropdown(
+                dmc.MultiSelect(
                     id='filtro-preventista',
-                    options=[{'label': p, 'value': p} for p in lista_preventistas],
+                    label="Preventista",
+                    data=[p for p in lista_preventistas],
                     value=[],
-                    multi=True,
                     placeholder="Todos los preventistas",
-                    style={'fontSize': '14px'}
-                )
+                    searchable=True,
+                    clearable=True,
+                ),
             ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
         ], style={'padding': '15px 20px', 'backgroundColor': '#d4edda', 'borderBottom': '1px solid #28a745'}),
 
@@ -245,132 +244,114 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
             # Opciones de visualizacion - Fila 1 (Zonas, Escala, Tipo mapa)
             html.Div([
                 html.Div([
-                    html.Label("Mostrar zonas:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.Checklist(
+                    html.Label("Mostrar zonas", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                    dmc.ChipGroup(
                         id='opciones-zonas',
-                        options=[
-                            {'label': ' Zonas por Ruta', 'value': 'ruta'},
-                            {'label': ' Zonas por Preventista', 'value': 'preventista'}
+                        children=[
+                            dmc.Chip("Zonas por Ruta", value="ruta"),
+                            dmc.Chip("Zonas por Preventista", value="preventista"),
                         ],
                         value=[],
-                        inline=True,
-                        inputStyle={'marginRight': '8px'},
-                        labelStyle={'marginRight': '20px', 'fontSize': '14px'}
-                    )
+                        multiple=True,
+                    ),
                 ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
 
                 html.Div([
-                    html.Label("Escala:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.Checklist(
+                    dmc.Switch(
                         id='opcion-escala-log',
-                        options=[
-                            {'label': ' Logaritmica', 'value': 'log'}
-                        ],
-                        value=['log'],
-                        inline=True,
-                        inputStyle={'marginRight': '8px'},
-                        labelStyle={'fontSize': '14px'}
-                    )
-                ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
+                        label="Escala Logaritmica",
+                        checked=True,
+                        size="sm",
+                    ),
+                ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top', 'paddingTop': '8px'}),
 
                 html.Div([
-                    html.Label("Tipo mapa calor:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.RadioItems(
+                    html.Label("Tipo mapa calor", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                    dmc.SegmentedControl(
                         id='tipo-mapa-calor',
-                        options=[
-                            {'label': ' Difuso', 'value': 'density'},
-                            {'label': ' Grilla', 'value': 'grilla'}
+                        data=[
+                            {"label": "Difuso", "value": "density"},
+                            {"label": "Grilla", "value": "grilla"},
                         ],
-                        value='density',
-                        inline=True,
-                        inputStyle={'marginRight': '8px'},
-                        labelStyle={'marginRight': '20px', 'fontSize': '14px'}
-                    )
+                        value="density",
+                        size="sm",
+                    ),
                 ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
             ], style={'padding': '15px 20px 8px 20px', 'backgroundColor': '#e7f3ff'}),
 
             # Opciones de visualizacion - Fila 2 (Tamano celda, Radio difuso, Normalizacion)
             html.Div([
                 html.Div([
-                    html.Label("Tamano celda:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.Slider(
+                    html.Label("Tamano celda", style={**label_style, 'display': 'block', 'marginBottom': '8px'}),
+                    dmc.Slider(
                         id='slider-precision',
                         min=1,
                         max=3,
                         step=0.25,
                         value=2,
-                        marks={
-                            1: {'label': '10km', 'style': {'fontSize': '12px'}},
-                            2: {'label': '1km', 'style': {'fontSize': '12px'}},
-                            3: {'label': '100m', 'style': {'fontSize': '12px'}}
-                        },
-                        tooltip={'placement': 'bottom', 'always_visible': True}
-                    )
+                        marks=[
+                            {"value": 1, "label": "10km"},
+                            {"value": 2, "label": "1km"},
+                            {"value": 3, "label": "100m"},
+                        ],
+                        mb="lg",
+                    ),
                 ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
 
                 html.Div([
-                    html.Label("Radio difuso:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.Slider(
+                    html.Label("Radio difuso", style={**label_style, 'display': 'block', 'marginBottom': '8px'}),
+                    dmc.Slider(
                         id='slider-radio-difuso',
                         min=10,
                         max=100,
                         step=10,
                         value=50,
-                        marks={
-                            10: {'label': '10', 'style': {'fontSize': '12px'}},
-                            50: {'label': '50', 'style': {'fontSize': '12px'}},
-                            100: {'label': '100', 'style': {'fontSize': '12px'}}
-                        },
-                        tooltip={'placement': 'bottom', 'always_visible': True}
-                    )
+                        marks=[
+                            {"value": 10, "label": "10"},
+                            {"value": 50, "label": "50"},
+                            {"value": 100, "label": "100"},
+                        ],
+                        mb="lg",
+                    ),
                 ], style={'width': '32%', 'display': 'inline-block', 'marginRight': '2%', 'verticalAlign': 'top'}),
 
                 html.Div([
-                    html.Label("Normalizacion:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.RadioItems(
+                    html.Label("Normalizacion", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                    dmc.SegmentedControl(
                         id='tipo-normalizacion',
-                        options=[
-                            {'label': ' Normal', 'value': 'normal'},
-                            {'label': ' Percentil', 'value': 'percentil'},
-                            {'label': ' Limitado', 'value': 'limitado'}
+                        data=[
+                            {"label": "Normal", "value": "normal"},
+                            {"label": "Percentil", "value": "percentil"},
+                            {"label": "Limitado", "value": "limitado"},
                         ],
-                        value='normal',
-                        inline=True,
-                        inputStyle={'marginRight': '8px'},
-                        labelStyle={'marginRight': '15px', 'fontSize': '14px'}
-                    )
+                        value="normal",
+                        size="sm",
+                    ),
                 ], style={'width': '32%', 'display': 'inline-block', 'verticalAlign': 'top'}),
             ], style={'padding': '8px 20px 15px 20px', 'backgroundColor': '#e7f3ff'}),
 
             # Opciones de animacion
             html.Div([
                 html.Div([
-                    html.Label("Animacion temporal:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.Checklist(
+                    dmc.Switch(
                         id='opcion-animacion',
-                        options=[
-                            {'label': ' Activar animacion', 'value': 'animar'}
-                        ],
-                        value=[],
-                        inline=True,
-                        inputStyle={'marginRight': '8px'},
-                        labelStyle={'fontSize': '14px'}
-                    )
-                ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                        label="Activar animacion temporal",
+                        checked=False,
+                        size="sm",
+                    ),
+                ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top', 'paddingTop': '5px'}),
                 html.Div([
-                    html.Label("Granularidad:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.RadioItems(
+                    html.Label("Granularidad", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                    dmc.SegmentedControl(
                         id='granularidad-animacion',
-                        options=[
-                            {'label': ' Dia', 'value': 'dia'},
-                            {'label': ' Semana', 'value': 'semana'},
-                            {'label': ' Mes', 'value': 'mes'}
+                        data=[
+                            {"label": "Dia", "value": "dia"},
+                            {"label": "Semana", "value": "semana"},
+                            {"label": "Mes", "value": "mes"},
                         ],
-                        value='semana',
-                        inline=True,
-                        inputStyle={'marginRight': '5px'},
-                        labelStyle={'fontSize': '14px', 'marginRight': '15px'}
-                    )
+                        value="semana",
+                        size="sm",
+                    ),
                 ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top'}),
             ], style={'padding': '10px 20px', 'backgroundColor': '#fff3e0', 'borderBottom': '1px solid #007bff'}),
 
@@ -413,15 +394,15 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
             # Selector de años para comparar
             html.Div([
                 html.Div([
-                    html.Label("Seleccionar años a comparar:", style={'fontWeight': 'bold', 'marginBottom': '8px', 'fontSize': '14px'}),
-                    dcc.Dropdown(
+                    dmc.MultiSelect(
                         id='selector-anios',
-                        options=[],  # Se llena dinamicamente
+                        label="Seleccionar años a comparar",
+                        data=[],
                         value=[],
-                        multi=True,
                         placeholder="Seleccione uno o más años",
-                        style={'fontSize': '14px', 'width': '400px'}
-                    )
+                        searchable=True,
+                        w=400,
+                    ),
                 ], style={'display': 'inline-block', 'marginRight': '30px'}),
             ], style={'padding': '15px 20px', 'backgroundColor': '#e8f4f8', 'borderBottom': '2px solid #1a1a2e'}),
 

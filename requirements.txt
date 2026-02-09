@@ -4,6 +4,7 @@
 # Web Framework
 dash>=2.14.0
 plotly>=5.18.0
+dash-mantine-components>=2.5.0
 
 # Data Processing
 pandas>=2.0.0

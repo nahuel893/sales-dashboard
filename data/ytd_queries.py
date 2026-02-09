@@ -33,8 +33,7 @@ def obtener_ventas_ytd(anio, mes_hasta, tipo_sucursal='TODAS'):
             COUNT(DISTINCT f.id_cliente) as clientes
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
-        WHERE f.anulado = FALSE
-          AND EXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
+        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
           AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
           {filtro_sucursal}
     """
@@ -62,8 +61,7 @@ def obtener_ventas_por_mes(anio, mes_hasta, tipo_sucursal='TODAS'):
             SUM(f.subtotal_final) as facturacion
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
-        WHERE f.anulado = FALSE
-          AND EXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
+        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
           AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
           {filtro_sucursal}
         GROUP BY EXTRACT(MONTH FROM f.fecha_comprobante)
@@ -94,8 +92,7 @@ def obtener_ventas_por_generico(anio, mes_hasta, top_n=5, tipo_sucursal='TODAS')
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
         LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo
-        WHERE f.anulado = FALSE
-          AND EXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
+        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
           AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
           {filtro_sucursal}
         GROUP BY a.generico
@@ -126,8 +123,7 @@ def obtener_ventas_por_sucursal(anio, mes_hasta, tipo_sucursal='TODAS'):
             SUM(f.subtotal_final) as facturacion
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
-        WHERE f.anulado = FALSE
-          AND EXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
+        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
           AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
           {filtro_sucursal}
         GROUP BY c.des_sucursal
@@ -157,8 +153,7 @@ def obtener_ventas_por_canal(anio, mes_hasta, tipo_sucursal='TODAS'):
             SUM(f.subtotal_final) as facturacion
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
-        WHERE f.anulado = FALSE
-          AND EXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
+        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
           AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
           {filtro_sucursal}
         GROUP BY c.des_canal_mkt
@@ -294,8 +289,7 @@ def obtener_dias_inventario(tipo_sucursal='TODAS'):
             COUNT(DISTINCT f.fecha_comprobante) as dias_con_ventas
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
-        WHERE f.anulado = FALSE
-          AND f.fecha_comprobante >= CURRENT_DATE - INTERVAL '30 days'
+        WHEREf.fecha_comprobante >= CURRENT_DATE - INTERVAL '30 days'
           {filtro_sucursal}
     """
 
@@ -336,7 +330,6 @@ def obtener_anios_disponibles_ytd():
     query = """
         SELECT DISTINCT EXTRACT(YEAR FROM fecha_comprobante)::int as anio
         FROM gold.fact_ventas
-        WHERE anulado = FALSE
         ORDER BY anio DESC
     """
 

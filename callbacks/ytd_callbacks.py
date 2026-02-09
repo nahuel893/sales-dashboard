@@ -65,7 +65,7 @@ def actualizar_kpis(anio, mes, tipo_sucursal):
             ach_color = '#27ae60' if achievement >= 100 else '#f39c12' if achievement >= 90 else '#e74c3c'
             achievement_content = html.Div([
                 html.Div(f"{achievement:.0f}%", style={
-                    'fontSize': '30px',
+                    'fontSize': '45px',
                     'fontWeight': 'bold',
                     'color': ach_color,
                     'textAlign': 'center'
@@ -77,7 +77,7 @@ def actualizar_kpis(anio, mes, tipo_sucursal):
         return (
             f"{ventas_actual:,.0f}",
             yoy_text,
-            {'fontSize': '14px', 'fontWeight': 'bold', 'color': yoy_color},
+            {'fontSize': '21px', 'fontWeight': 'bold', 'color': yoy_color},
             f"{target:,.0f}",
             achievement_content,
             f"{ventas_anterior:,.0f}"
@@ -223,7 +223,7 @@ def actualizar_grafico_mensual(anio, mes, tipo_sucursal):
             marker_color=colores,
             text=[f'{v:,.0f}' for v in valores],
             textposition='outside',
-            textfont=dict(size=10),
+            textfont=dict(size=15),
             name='Real'
         ))
 
@@ -301,7 +301,7 @@ def actualizar_grafico_sucursal(anio, mes, tipo_sucursal):
             marker_color='#1a5276',
             text=[f'{v:,.0f}' for v in valores],
             textposition='outside',
-            textfont=dict(size=11)
+            textfont=dict(size=17)
         ))
 
         # Barras target (más claras)
@@ -313,16 +313,16 @@ def actualizar_grafico_sucursal(anio, mes, tipo_sucursal):
             marker_color='#aed6f1',
             text=[f'{t:,.0f}' for t in targets_list],
             textposition='outside',
-            textfont=dict(size=11)
+            textfont=dict(size=17)
         ))
 
         fig.update_layout(
             barmode='group',
-            margin=dict(l=10, r=50, t=10, b=30),
+            margin=dict(l=0, r=40, t=0, b=0),
             showlegend=True,
             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(size=11)),
             xaxis=dict(tickfont=dict(size=11)),
-            yaxis=dict(tickfont=dict(size=11), autorange='reversed')
+            yaxis=dict(tickfont=dict(size=11), autorange='reversed', automargin=True)
         )
 
         return fig
@@ -359,7 +359,7 @@ def actualizar_grafico_canal(anio, mes, tipo_sucursal):
             hole=0.5,
             marker_colors=colores[:len(df)],
             textinfo='label+percent',
-            textfont=dict(size=11),
+            textfont=dict(size=17),
             insidetextorientation='horizontal'
         )])
 
@@ -408,7 +408,7 @@ def actualizar_grafico_crecimiento(anio, mes, tipo_sucursal):
             marker_color=colores,
             text=[f'{v:+.0f}%' for v in valores],
             textposition='outside',
-            textfont=dict(size=11)
+            textfont=dict(size=17)
         ))
 
         # Línea en 0
@@ -452,8 +452,8 @@ def actualizar_gauge_inventario(tipo_sucursal):
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
             value=dias,
-            title={'text': "Días", 'font': {'size': 15}},
-            number={'font': {'size': 45}},
+            title={'text': "Días", 'font': {'size': 23}},
+            number={'font': {'size': 68}},
             gauge={
                 'axis': {'range': [0, 180], 'tickwidth': 1, 'tickfont': {'size': 11}},
                 'bar': {'color': color},

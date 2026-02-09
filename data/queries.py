@@ -100,7 +100,6 @@ def obtener_anios_disponibles():
     query = """
         SELECT DISTINCT EXTRACT(YEAR FROM fecha_comprobante)::INTEGER as anio
         FROM gold.fact_ventas
-        WHERE anulado = FALSE
         ORDER BY anio
     """
     with engine.connect() as conn:
@@ -113,7 +112,6 @@ def obtener_rango_fechas():
     query = """
         SELECT MIN(fecha_comprobante) as min_fecha, MAX(fecha_comprobante) as max_fecha
         FROM gold.fact_ventas
-        WHERE anulado = FALSE
     """
     with engine.connect() as conn:
         result = pd.read_sql(query, conn)
@@ -197,7 +195,7 @@ def _process_ventas_df(df):
 def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None):
     """Carga ventas agregadas por cliente partiendo de fact_ventas para incluir TODAS las ventas."""
 
-    where_clauses = ["f.anulado = FALSE"]
+    where_clauses = []
 
     if fecha_desde and fecha_hasta:
         where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
@@ -210,7 +208,7 @@ def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None
     if where_cliente:
         where_clauses.extend(where_cliente)
 
-    where_sql = " AND ".join(where_clauses)
+    where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
 
     query = f"""
         SELECT
@@ -260,7 +258,7 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
     }
     trunc_sql, date_format = trunc_map.get(granularidad, ('week', '%Y-%m-%d'))
 
-    where_clauses = ["f.anulado = FALSE"]
+    where_clauses = []
 
     if fecha_desde and fecha_hasta:
         where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
@@ -273,7 +271,7 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
     if where_cliente:
         where_clauses.extend(where_cliente)
 
-    where_sql = " AND ".join(where_clauses)
+    where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
 
     query = f"""
         SELECT
@@ -325,7 +323,7 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
 def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, subcanales=None, localidades=None, listas_precio=None, sucursales=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None):
     """Carga ventas agregadas por fecha para el gráfico de evolución."""
 
-    where_clauses = ["f.anulado = FALSE"]
+    where_clauses = []
 
     if fecha_desde and fecha_hasta:
         where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
@@ -385,7 +383,7 @@ def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, su
         marcas_escaped = [m.replace("'", "''") for m in marcas]
         where_clauses.append(f"a.marca IN ('" + "','".join(marcas_escaped) + "')")
 
-    where_sql = " AND ".join(where_clauses)
+    where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
 
     query = f"""
         SELECT

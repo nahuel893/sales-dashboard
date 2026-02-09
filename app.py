@@ -10,6 +10,7 @@ Acceder en: http://localhost:8050
 """
 from datetime import timedelta
 from dash import Dash, html, dcc, callback, Output, Input
+import dash_mantine_components as dmc
 
 # Imports locales
 from config import SERVER_CONFIG
@@ -47,7 +48,7 @@ clientes_sin_ventas = len(df_ventas[df_ventas['cantidad_total'] == 0])
 print(f"Cargados {len(df_ventas):,} clientes ({clientes_con_ventas:,} con ventas, {clientes_sin_ventas:,} sin ventas)")
 
 # Crear app
-app = Dash(__name__, suppress_callback_exceptions=True)
+app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=dmc.styles.ALL)
 app.title = "Medallion ETL - Dashboard"
 
 # Datos para YTD Dashboard
@@ -81,10 +82,12 @@ ytd_layout = create_ytd_layout(
 )
 
 # Layout principal con routing
-app.layout = html.Div([
-    dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content')
-])
+app.layout = dmc.MantineProvider(
+    html.Div([
+        dcc.Location(id='url', refresh=False),
+        html.Div(id='page-content')
+    ])
+)
 
 
 # Callback de routing
