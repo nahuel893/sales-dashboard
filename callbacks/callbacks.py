@@ -596,7 +596,7 @@ def actualizar_opciones_anios(tab_activa):
     """Genera las opciones de años disponibles desde la base de datos."""
     try:
         anios = obtener_anios_disponibles()
-        opciones = [{'label': str(anio), 'value': anio} for anio in anios]
+        opciones = [{'label': str(anio), 'value': str(anio)} for anio in anios]
         return opciones
     except Exception:
         return []
