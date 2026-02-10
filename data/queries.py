@@ -490,40 +490,33 @@ def cargar_info_cliente(id_cliente):
 
 
 def cargar_ventas_cliente_detalle(id_cliente):
-    """Obtiene ventas históricas de un cliente desglosadas por genérico/marca/artículo y mes."""
-    query = f"""
-        SELECT
-            COALESCE(a.generico, 'Sin categoria') as generico,
-            COALESCE(a.marca, 'Sin marca') as marca,
-            COALESCE(a.des_articulo, 'Articulo ' || f.id_articulo::text) as articulo,
-            EXTRACT(YEAR FROM f.fecha_comprobante)::int as anio,
-            EXTRACT(MONTH FROM f.fecha_comprobante)::int as mes,
-            SUM(f.cantidades_total) as bultos
-        FROM gold.fact_ventas f
-        LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo
-        WHERE f.id_cliente = {int(id_cliente)}
-        GROUP BY a.generico, a.marca, a.des_articulo, f.id_articulo, anio, mes
-        ORDER BY a.generico, a.marca, a.des_articulo, anio, mes
     """
-    with engine.connect() as conn:
-        df = pd.read_sql(query, conn)
-    return df
-
-
-def cargar_articulos_sin_venta_cliente(id_cliente):
-    """Obtiene articulos de dim_articulo que el cliente nunca compro."""
+    Obtiene todos los articulos con ventas desglosadas por mes,
+    mas los articulos sin venta (bultos=NULL, anio=NULL, mes=NULL).
+    Una sola query reemplaza las 2 anteriores.
+    """
     query = f"""
-        SELECT
-            COALESCE(a.generico, 'Sin categoria') as generico,
-            COALESCE(a.marca, 'Sin marca') as marca,
-            COALESCE(a.des_articulo, 'Articulo ' || a.id_articulo::text) as articulo
-        FROM gold.dim_articulo a
-        WHERE a.id_articulo NOT IN (
-            SELECT DISTINCT f.id_articulo
+        WITH ventas AS (
+            SELECT
+                f.id_articulo,
+                EXTRACT(YEAR FROM f.fecha_comprobante)::int as anio,
+                EXTRACT(MONTH FROM f.fecha_comprobante)::int as mes,
+                SUM(f.cantidades_total) as bultos
             FROM gold.fact_ventas f
             WHERE f.id_cliente = {int(id_cliente)}
+            GROUP BY f.id_articulo, anio, mes
         )
-        ORDER BY a.generico, a.marca, a.des_articulo
+        SELECT
+            a.id_articulo,
+            COALESCE(a.generico, 'Sin categoria') as generico,
+            COALESCE(a.marca, 'Sin marca') as marca,
+            COALESCE(a.des_articulo, 'Articulo ' || a.id_articulo::text) as articulo,
+            v.anio,
+            v.mes,
+            v.bultos
+        FROM gold.dim_articulo a
+        LEFT JOIN ventas v ON a.id_articulo = v.id_articulo
+        ORDER BY a.generico, a.marca, a.des_articulo, v.anio, v.mes
     """
     with engine.connect() as conn:
         df = pd.read_sql(query, conn)
