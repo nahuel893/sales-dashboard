@@ -289,7 +289,7 @@ def obtener_dias_inventario(tipo_sucursal='TODAS'):
             COUNT(DISTINCT f.fecha_comprobante) as dias_con_ventas
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal
-        WHEREf.fecha_comprobante >= CURRENT_DATE - INTERVAL '30 days'
+        WHERE f.fecha_comprobante >= CURRENT_DATE - INTERVAL '30 days'
           {filtro_sucursal}
     """
 
