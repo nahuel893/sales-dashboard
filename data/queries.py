@@ -508,3 +508,23 @@ def cargar_ventas_cliente_detalle(id_cliente):
     with engine.connect() as conn:
         df = pd.read_sql(query, conn)
     return df
+
+
+def cargar_articulos_sin_venta_cliente(id_cliente):
+    """Obtiene articulos de dim_articulo que el cliente nunca compro."""
+    query = f"""
+        SELECT
+            COALESCE(a.generico, 'Sin categoria') as generico,
+            COALESCE(a.marca, 'Sin marca') as marca,
+            COALESCE(a.des_articulo, 'Articulo ' || a.id_articulo::text) as articulo
+        FROM gold.dim_articulo a
+        WHERE a.id_articulo NOT IN (
+            SELECT DISTINCT f.id_articulo
+            FROM gold.fact_ventas f
+            WHERE f.id_cliente = {int(id_cliente)}
+        )
+        ORDER BY a.generico, a.marca, a.des_articulo
+    """
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
+    return df

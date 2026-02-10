@@ -1,13 +1,13 @@
 """
 Callbacks del detalle de cliente.
 Carga informacion del cliente y construye arbol de ventas: generico -> marca -> articulo.
-Muestra bultos por mes en columnas.
+Muestra bultos por mes en columnas. Articulos sin venta aparecen con 0.
 """
 from dash import callback, Output, Input, html
 import dash_mantine_components as dmc
 import pandas as pd
 
-from data.queries import cargar_info_cliente, cargar_ventas_cliente_detalle
+from data.queries import cargar_info_cliente, cargar_ventas_cliente_detalle, cargar_articulos_sin_venta_cliente
 
 MESES_CORTOS = {
     1: 'Ene', 2: 'Feb', 3: 'Mar', 4: 'Abr', 5: 'May', 6: 'Jun',
@@ -30,6 +30,7 @@ def cargar_detalle_cliente(store_data):
     # Cargar datos
     df_info = cargar_info_cliente(id_cliente)
     df_ventas = cargar_ventas_cliente_detalle(id_cliente)
+    df_sin_venta = cargar_articulos_sin_venta_cliente(id_cliente)
 
     # === HEADER ===
     if len(df_info) > 0:
@@ -64,35 +65,57 @@ def cargar_detalle_cliente(store_data):
         header = html.H1(f"Cliente {id_cliente}", style={'color': 'white', 'margin': '0'})
 
     # === CONTENIDO ===
-    if len(df_ventas) == 0:
+    # Periodos solo de articulos con venta
+    periodos = sorted(
+        df_ventas.dropna(subset=['anio', 'mes'])[['anio', 'mes']].drop_duplicates().values.tolist()
+    ) if len(df_ventas) > 0 else []
+
+    # Mergear articulos sin venta al mismo dataframe
+    if len(df_sin_venta) > 0:
+        df_sin_venta = df_sin_venta.copy()
+        df_sin_venta['anio'] = pd.NA
+        df_sin_venta['mes'] = pd.NA
+        df_sin_venta['bultos'] = 0
+        df_all = pd.concat([df_ventas, df_sin_venta], ignore_index=True)
+    else:
+        df_all = df_ventas
+
+    if len(df_all) == 0:
         content = html.Div(
             "Este cliente no tiene ventas registradas.",
             style={'textAlign': 'center', 'color': '#666', 'padding': '60px', 'fontSize': '18px'}
         )
         return header, content
 
-    # Obtener periodos ordenados cronologicamente
-    periodos = sorted(df_ventas[['anio', 'mes']].drop_duplicates().values.tolist())
-
     # KPIs del mes corriente (ultimo periodo disponible)
-    ultimo_anio, ultimo_mes = periodos[-1]
-    df_mes = df_ventas[(df_ventas['anio'] == ultimo_anio) & (df_ventas['mes'] == ultimo_mes)]
-    mes_bultos = df_mes['bultos'].sum()
-    mes_genericos = df_mes['generico'].nunique()
-    mes_articulos = df_mes['articulo'].nunique()
-    mes_label = _periodo_label(ultimo_anio, ultimo_mes)
+    if len(periodos) > 0:
+        ultimo_anio, ultimo_mes = periodos[-1]
+        df_mes = df_ventas[(df_ventas['anio'] == ultimo_anio) & (df_ventas['mes'] == ultimo_mes)]
+        mes_bultos = df_mes['bultos'].sum()
+        mes_genericos = df_mes['generico'].nunique()
+        mes_articulos = df_mes['articulo'].nunique()
+        mes_label = _periodo_label(ultimo_anio, ultimo_mes)
+    else:
+        mes_bultos = 0
+        mes_genericos = 0
+        mes_articulos = 0
+        mes_label = "—"
+
+    n_con_venta = df_ventas['articulo'].nunique() if len(df_ventas) > 0 else 0
+    n_sin_venta = len(df_sin_venta) if len(df_sin_venta) > 0 else 0
 
     resumen = html.Div([
         _resumen_card(f"Bultos {mes_label}", f"{mes_bultos:,.0f}"),
         _resumen_card(f"Categorias {mes_label}", f"{mes_genericos}"),
         _resumen_card(f"Articulos {mes_label}", f"{mes_articulos}"),
-        _resumen_card("Meses con Ventas", f"{len(periodos)}"),
+        _resumen_card("Con Venta", f"{n_con_venta}"),
+        _resumen_card("Sin Venta", f"{n_sin_venta}"),
     ], style={
         'display': 'flex', 'gap': '20px', 'marginBottom': '25px', 'flexWrap': 'wrap'
     })
 
-    # Arbol accordion
-    tree = _build_generico_accordion(df_ventas, periodos)
+    # Arbol accordion con todos los articulos
+    tree = _build_generico_accordion(df_all, periodos)
 
     content = html.Div([resumen, tree])
     return header, content
@@ -120,15 +143,15 @@ def _periodo_label(anio, mes):
     return f"{MESES_CORTOS[mes]} {str(anio)[2:]}"
 
 
-def _build_generico_accordion(df_ventas, periodos):
+def _build_generico_accordion(df_all, periodos):
     """Construye el accordion anidado: generico -> marca -> tabla articulos con meses."""
     generico_items = []
 
     # Agrupar por generico y ordenar por total de bultos desc
-    gen_totals = df_ventas.groupby('generico')['bultos'].sum().sort_values(ascending=False)
+    gen_totals = df_all.groupby('generico')['bultos'].sum().sort_values(ascending=False)
 
     for generico in gen_totals.index:
-        df_gen = df_ventas[df_ventas['generico'] == generico]
+        df_gen = df_all[df_all['generico'] == generico]
         gen_bultos = gen_totals[generico]
 
         # Accordion interno por marca
@@ -191,6 +214,8 @@ def _build_articulo_table(df_marca, periodos):
         'textAlign': 'left', 'position': 'sticky', 'left': '0', 'backgroundColor': 'white', 'zIndex': '1'
     }
     td_total = {**td_style, 'fontWeight': 'bold', 'backgroundColor': '#f5f8fc'}
+    td_zero = {**td_style, 'color': '#ccc'}
+    td_total_zero = {**td_total, 'color': '#ccc'}
 
     # Header: Articulo | Ene 25 | Feb 25 | ... | Total
     header_cells = [html.Th("Articulo", style=th_left)]
@@ -199,36 +224,42 @@ def _build_articulo_table(df_marca, periodos):
     header_cells.append(html.Th("Total", style=th_total))
     header = html.Tr(header_cells)
 
-    # Pivotar datos: articulo -> {(anio, mes): bultos}
-    pivot = df_marca.groupby(['articulo', 'anio', 'mes'])['bultos'].sum()
+    # Filtrar solo filas con anio/mes valido para pivot
+    df_con_periodos = df_marca.dropna(subset=['anio', 'mes'])
+    if len(df_con_periodos) > 0:
+        pivot = df_con_periodos.groupby(['articulo', 'anio', 'mes'])['bultos'].sum()
+    else:
+        pivot = pd.Series(dtype=float)
 
-    # Ordenar articulos por total desc
+    # Totales por articulo (incluye sin venta con 0)
     art_totals = df_marca.groupby('articulo')['bultos'].sum().sort_values(ascending=False)
 
     rows = []
     for articulo in art_totals.index:
         total = art_totals[articulo]
-        cells = [html.Td(articulo, style=td_left)]
+        is_zero = total == 0
+        cells = [html.Td(articulo, style={**td_left, 'color': '#bbb'} if is_zero else td_left)]
         for anio, mes in periodos:
             try:
                 val = pivot.loc[(articulo, anio, mes)]
-                cells.append(html.Td(f"{val:,.0f}", style=td_style))
+                cells.append(html.Td(f"{val:,.0f}", style=td_zero if val == 0 else td_style))
             except KeyError:
                 cells.append(html.Td("", style=td_style))
-        cells.append(html.Td(f"{total:,.0f}", style=td_total))
+        cells.append(html.Td(f"{total:,.0f}", style=td_total_zero if is_zero else td_total))
         rows.append(html.Tr(cells))
 
     # Fila de totales por mes
-    total_cells = [html.Td("Total", style={**td_left, 'fontWeight': 'bold'})]
-    mes_totals = df_marca.groupby(['anio', 'mes'])['bultos'].sum()
-    for anio, mes in periodos:
-        try:
-            val = mes_totals.loc[(anio, mes)]
-            total_cells.append(html.Td(f"{val:,.0f}", style={**td_style, 'fontWeight': 'bold'}))
-        except KeyError:
-            total_cells.append(html.Td("", style=td_style))
-    total_cells.append(html.Td(f"{df_marca['bultos'].sum():,.0f}", style={**td_total, 'borderTop': '2px solid #999'}))
-    rows.append(html.Tr(total_cells, style={'backgroundColor': '#f9f9f9'}))
+    if len(df_con_periodos) > 0:
+        total_cells = [html.Td("Total", style={**td_left, 'fontWeight': 'bold'})]
+        mes_totals = df_con_periodos.groupby(['anio', 'mes'])['bultos'].sum()
+        for anio, mes in periodos:
+            try:
+                val = mes_totals.loc[(anio, mes)]
+                total_cells.append(html.Td(f"{val:,.0f}", style={**td_style, 'fontWeight': 'bold'}))
+            except KeyError:
+                total_cells.append(html.Td("", style=td_style))
+        total_cells.append(html.Td(f"{df_marca['bultos'].sum():,.0f}", style={**td_total, 'borderTop': '2px solid #999'}))
+        rows.append(html.Tr(total_cells, style={'backgroundColor': '#f9f9f9'}))
 
     return html.Div(
         html.Table(
