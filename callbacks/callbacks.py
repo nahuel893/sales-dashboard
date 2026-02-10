@@ -289,7 +289,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     name='Con ventas',
                     text=df_con_ventas['razon_social'],
                     hovertemplate=(
-                        '<b>%{text}</b><br>'
+                        '<b>%{text}</b> [%{customdata[6]}]<br>'
                         'Localidad: %{customdata[0]}<br>'
                         'Bultos: %{customdata[2]:,.0f} | Fact: $%{customdata[3]:,.2f}<br>'
                         '─────────────<br>'
