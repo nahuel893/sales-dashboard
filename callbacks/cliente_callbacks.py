@@ -7,7 +7,7 @@ from dash import callback, Output, Input, html
 import dash_mantine_components as dmc
 import pandas as pd
 
-from data.queries import cargar_info_cliente, cargar_ventas_cliente_detalle, cargar_articulos_sin_venta_cliente
+from data.queries import cargar_info_cliente, cargar_ventas_cliente_detalle
 
 MESES_CORTOS = {
     1: 'Ene', 2: 'Feb', 3: 'Mar', 4: 'Abr', 5: 'May', 6: 'Jun',
@@ -27,16 +27,18 @@ def cargar_detalle_cliente(store_data):
 
     id_cliente = store_data['id_cliente']
 
-    # Cargar datos
+    # Cargar datos (2 queries: info cliente + todos los articulos con/sin venta)
     df_info = cargar_info_cliente(id_cliente)
-    df_ventas = cargar_ventas_cliente_detalle(id_cliente)
-    df_sin_venta = cargar_articulos_sin_venta_cliente(id_cliente)
+    df_all = cargar_ventas_cliente_detalle(id_cliente)
 
     # === HEADER ===
     if len(df_info) > 0:
         info = df_info.iloc[0]
         header_children = [
-            html.H1(info['razon_social'], style={
+            html.H1([
+                info['razon_social'],
+                html.Span(f"  [{id_cliente}]", style={'fontSize': '16px', 'color': '#999', 'fontWeight': 'normal'}),
+            ], style={
                 'color': 'white', 'margin': '0', 'fontSize': '28px'
             }),
         ]
@@ -65,44 +67,53 @@ def cargar_detalle_cliente(store_data):
         header = html.H1(f"Cliente {id_cliente}", style={'color': 'white', 'margin': '0'})
 
     # === CONTENIDO ===
-    # Periodos solo de articulos con venta
-    periodos = sorted(
-        df_ventas.dropna(subset=['anio', 'mes'])[['anio', 'mes']].drop_duplicates().values.tolist()
-    ) if len(df_ventas) > 0 else []
-
-    # Mergear articulos sin venta al mismo dataframe
-    if len(df_sin_venta) > 0:
-        df_sin_venta = df_sin_venta.copy()
-        df_sin_venta['anio'] = pd.NA
-        df_sin_venta['mes'] = pd.NA
-        df_sin_venta['bultos'] = 0
-        df_all = pd.concat([df_ventas, df_sin_venta], ignore_index=True)
-    else:
-        df_all = df_ventas
-
     if len(df_all) == 0:
         content = html.Div(
-            "Este cliente no tiene ventas registradas.",
+            "No hay articulos disponibles.",
             style={'textAlign': 'center', 'color': '#666', 'padding': '60px', 'fontSize': '18px'}
         )
         return header, content
 
+    # Separar articulos con y sin venta (bultos NULL = sin venta)
+    df_con_venta = df_all.dropna(subset=['bultos'])
+    df_con_venta = df_con_venta.copy()
+    df_con_venta['bultos'] = df_con_venta['bultos'].astype(float)
+
+    # Articulos sin venta: filas con bultos NULL (sin ningun periodo)
+    arts_con_venta = set(df_con_venta['id_articulo'].unique())
+    df_sin_venta_arts = df_all[~df_all['id_articulo'].isin(arts_con_venta)].drop_duplicates(subset=['id_articulo'])
+
+    # Periodos solo de articulos con venta
+    periodos = sorted(
+        df_con_venta[['anio', 'mes']].drop_duplicates().values.tolist()
+    ) if len(df_con_venta) > 0 else []
+
+    # Rearmar df_all: con_venta + sin_venta con bultos=0
+    if len(df_sin_venta_arts) > 0:
+        df_sv = df_sin_venta_arts[['id_articulo', 'generico', 'marca', 'articulo']].copy()
+        df_sv['anio'] = pd.NA
+        df_sv['mes'] = pd.NA
+        df_sv['bultos'] = 0.0
+        df_all = pd.concat([df_con_venta, df_sv], ignore_index=True)
+    else:
+        df_all = df_con_venta
+
     # KPIs del mes corriente (ultimo periodo disponible)
     if len(periodos) > 0:
         ultimo_anio, ultimo_mes = periodos[-1]
-        df_mes = df_ventas[(df_ventas['anio'] == ultimo_anio) & (df_ventas['mes'] == ultimo_mes)]
+        df_mes = df_con_venta[(df_con_venta['anio'] == ultimo_anio) & (df_con_venta['mes'] == ultimo_mes)]
         mes_bultos = df_mes['bultos'].sum()
         mes_genericos = df_mes['generico'].nunique()
         mes_articulos = df_mes['articulo'].nunique()
-        mes_label = _periodo_label(ultimo_anio, ultimo_mes)
+        mes_label = _periodo_label(int(ultimo_anio), int(ultimo_mes))
     else:
         mes_bultos = 0
         mes_genericos = 0
         mes_articulos = 0
         mes_label = "—"
 
-    n_con_venta = df_ventas['articulo'].nunique() if len(df_ventas) > 0 else 0
-    n_sin_venta = len(df_sin_venta) if len(df_sin_venta) > 0 else 0
+    n_con_venta = df_con_venta['id_articulo'].nunique() if len(df_con_venta) > 0 else 0
+    n_sin_venta = len(df_sin_venta_arts)
 
     resumen = html.Div([
         _resumen_card(f"Bultos {mes_label}", f"{mes_bultos:,.0f}"),
@@ -217,8 +228,12 @@ def _build_articulo_table(df_marca, periodos):
     td_zero = {**td_style, 'color': '#ccc'}
     td_total_zero = {**td_total, 'color': '#ccc'}
 
-    # Header: Articulo | Ene 25 | Feb 25 | ... | Total
-    header_cells = [html.Th("Articulo", style=th_left)]
+    # Mapa de id_articulo por nombre
+    art_ids = df_marca.groupby('articulo')['id_articulo'].first().to_dict()
+
+    # Header: Cod | Articulo | Ene 25 | Feb 25 | ... | Total
+    th_cod = {**th_style, 'textAlign': 'center', 'minWidth': '60px'}
+    header_cells = [html.Th("Cod", style=th_cod), html.Th("Articulo", style=th_left)]
     for anio, mes in periodos:
         header_cells.append(html.Th(_periodo_label(anio, mes), style=th_style))
     header_cells.append(html.Th("Total", style=th_total))
@@ -227,9 +242,9 @@ def _build_articulo_table(df_marca, periodos):
     # Filtrar solo filas con anio/mes valido para pivot
     df_con_periodos = df_marca.dropna(subset=['anio', 'mes'])
     if len(df_con_periodos) > 0:
-        pivot = df_con_periodos.groupby(['articulo', 'anio', 'mes'])['bultos'].sum()
+        pivot = df_con_periodos.groupby(['articulo', 'anio', 'mes'])['bultos'].sum().to_dict()
     else:
-        pivot = pd.Series(dtype=float)
+        pivot = {}
 
     # Totales por articulo (incluye sin venta con 0)
     art_totals = df_marca.groupby('articulo')['bultos'].sum().sort_values(ascending=False)
@@ -238,25 +253,32 @@ def _build_articulo_table(df_marca, periodos):
     for articulo in art_totals.index:
         total = art_totals[articulo]
         is_zero = total == 0
-        cells = [html.Td(articulo, style={**td_left, 'color': '#bbb'} if is_zero else td_left)]
+        cod = art_ids.get(articulo, '')
+        td_cod = {'padding': '6px 10px', 'borderBottom': '1px solid #eee', 'fontSize': '11px',
+                  'textAlign': 'center', 'color': '#999'}
+        cells = [
+            html.Td(str(cod), style={**td_cod, 'color': '#ccc'} if is_zero else td_cod),
+            html.Td(articulo, style={**td_left, 'color': '#bbb'} if is_zero else td_left),
+        ]
         for anio, mes in periodos:
-            try:
-                val = pivot.loc[(articulo, anio, mes)]
+            val = pivot.get((articulo, anio, mes))
+            if val is not None:
                 cells.append(html.Td(f"{val:,.0f}", style=td_zero if val == 0 else td_style))
-            except KeyError:
+            else:
                 cells.append(html.Td("", style=td_style))
         cells.append(html.Td(f"{total:,.0f}", style=td_total_zero if is_zero else td_total))
         rows.append(html.Tr(cells))
 
     # Fila de totales por mes
     if len(df_con_periodos) > 0:
-        total_cells = [html.Td("Total", style={**td_left, 'fontWeight': 'bold'})]
-        mes_totals = df_con_periodos.groupby(['anio', 'mes'])['bultos'].sum()
+        total_cells = [html.Td("", style={'padding': '6px 10px', 'borderBottom': '1px solid #eee'}),
+                       html.Td("Total", style={**td_left, 'fontWeight': 'bold'})]
+        mes_totals = df_con_periodos.groupby(['anio', 'mes'])['bultos'].sum().to_dict()
         for anio, mes in periodos:
-            try:
-                val = mes_totals.loc[(anio, mes)]
+            val = mes_totals.get((anio, mes))
+            if val is not None:
                 total_cells.append(html.Td(f"{val:,.0f}", style={**td_style, 'fontWeight': 'bold'}))
-            except KeyError:
+            else:
                 total_cells.append(html.Td("", style=td_style))
         total_cells.append(html.Td(f"{df_marca['bultos'].sum():,.0f}", style={**td_total, 'borderTop': '2px solid #999'}))
         rows.append(html.Tr(total_cells, style={'backgroundColor': '#f9f9f9'}))
