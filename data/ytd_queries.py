@@ -33,8 +33,8 @@ def obtener_ventas_ytd(anio, mes_hasta, tipo_sucursal='TODAS'):
             COUNT(DISTINCT f.id_cliente) as clientes
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal
-        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
-          AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
+        WHERE f.fecha_comprobante >= make_date({anio}, 1, 1)
+          AND f.fecha_comprobante < (make_date({anio}, {mes_hasta}, 1) + INTERVAL '1 month')
           {filtro_sucursal}
     """
 
@@ -61,8 +61,8 @@ def obtener_ventas_por_mes(anio, mes_hasta, tipo_sucursal='TODAS'):
             SUM(f.subtotal_final) as facturacion
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal
-        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
-          AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
+        WHERE f.fecha_comprobante >= make_date({anio}, 1, 1)
+          AND f.fecha_comprobante < (make_date({anio}, {mes_hasta}, 1) + INTERVAL '1 month')
           {filtro_sucursal}
         GROUP BY EXTRACT(MONTH FROM f.fecha_comprobante)
         ORDER BY mes
@@ -92,8 +92,8 @@ def obtener_ventas_por_generico(anio, mes_hasta, top_n=5, tipo_sucursal='TODAS')
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal
         LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo
-        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
-          AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
+        WHERE f.fecha_comprobante >= make_date({anio}, 1, 1)
+          AND f.fecha_comprobante < (make_date({anio}, {mes_hasta}, 1) + INTERVAL '1 month')
           {filtro_sucursal}
         GROUP BY a.generico
         ORDER BY bultos DESC
@@ -123,8 +123,8 @@ def obtener_ventas_por_sucursal(anio, mes_hasta, tipo_sucursal='TODAS'):
             SUM(f.subtotal_final) as facturacion
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal
-        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
-          AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
+        WHERE f.fecha_comprobante >= make_date({anio}, 1, 1)
+          AND f.fecha_comprobante < (make_date({anio}, {mes_hasta}, 1) + INTERVAL '1 month')
           {filtro_sucursal}
         GROUP BY c.des_sucursal
         ORDER BY bultos DESC
@@ -153,8 +153,8 @@ def obtener_ventas_por_canal(anio, mes_hasta, tipo_sucursal='TODAS'):
             SUM(f.subtotal_final) as facturacion
         FROM gold.fact_ventas f
         LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal
-        WHEREEXTRACT(YEAR FROM f.fecha_comprobante) = {anio}
-          AND EXTRACT(MONTH FROM f.fecha_comprobante) <= {mes_hasta}
+        WHERE f.fecha_comprobante >= make_date({anio}, 1, 1)
+          AND f.fecha_comprobante < (make_date({anio}, {mes_hasta}, 1) + INTERVAL '1 month')
           {filtro_sucursal}
         GROUP BY c.des_canal_mkt
         ORDER BY bultos DESC

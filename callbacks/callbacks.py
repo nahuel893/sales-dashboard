@@ -6,11 +6,12 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import callback, Output, Input, html
+from dash import callback, clientside_callback, Output, Input, html
 
 from data.queries import (
     obtener_rutas, obtener_preventistas, obtener_marcas, obtener_anios_disponibles,
-    cargar_ventas_por_cliente, cargar_ventas_animacion, cargar_ventas_por_fecha
+    cargar_ventas_por_cliente, cargar_ventas_animacion, cargar_ventas_por_fecha,
+    cargar_ventas_por_cliente_generico
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
 from config import METRICA_LABELS
@@ -214,6 +215,26 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             df_con_ventas = df_mapa[df_mapa['cantidad_total'] > 0].copy()
             df_sin_ventas = df_mapa[df_mapa['cantidad_total'] == 0].copy()
 
+            # Cargar desglose por genérico para hover
+            df_generico = cargar_ventas_por_cliente_generico(
+                start_date, end_date, genericos, marcas, rutas, preventistas, fv
+            )
+            # Formatear desglose como string por cliente
+            if len(df_generico) > 0:
+                def _fmt_generico(grupo):
+                    lines = []
+                    for _, row in grupo.iterrows():
+                        val = row[metrica] if metrica in grupo.columns else row['cantidad_total']
+                        if metrica == 'facturacion':
+                            lines.append(f"{row['generico']}: ${val:,.0f}")
+                        else:
+                            lines.append(f"{row['generico']}: {val:,.0f}")
+                    return '<br>'.join(lines)
+                desglose_map = df_generico.groupby('id_cliente').apply(_fmt_generico).to_dict()
+            else:
+                desglose_map = {}
+            df_con_ventas['desglose_generico'] = df_con_ventas['id_cliente'].map(desglose_map).fillna('')
+
             fig = go.Figure()
 
             # Zonas (usar df_mapa con coordenadas válidas)
@@ -267,8 +288,15 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     ),
                     name='Con ventas',
                     text=df_con_ventas['razon_social'],
-                    hovertemplate='<b>%{text}</b><br>Localidad: %{customdata[0]}<br>Bultos: %{customdata[2]:,.0f}<br>Facturacion: $%{customdata[3]:,.2f}<extra></extra>',
-                    customdata=df_con_ventas[['localidad', 'subcanal', 'cantidad_total', 'facturacion', 'cantidad_documentos']].values
+                    hovertemplate=(
+                        '<b>%{text}</b><br>'
+                        'Localidad: %{customdata[0]}<br>'
+                        'Bultos: %{customdata[2]:,.0f} | Fact: $%{customdata[3]:,.2f}<br>'
+                        '─────────────<br>'
+                        '%{customdata[5]}'
+                        '<extra></extra>'
+                    ),
+                    customdata=df_con_ventas[['localidad', 'subcanal', 'cantidad_total', 'facturacion', 'cantidad_documentos', 'desglose_generico', 'id_cliente']].values
                 ))
 
             fig.update_layout(
@@ -955,3 +983,28 @@ def actualizar_mapa_compro(fechas_value, canales, subcanales, localidades, lista
         )
 
     return fig
+
+
+# =============================================================================
+# CLIENTSIDE CALLBACK - CLICK EN MAPA ABRE DETALLE DE CLIENTE
+# =============================================================================
+
+clientside_callback(
+    """
+    function(clickData) {
+        if (clickData && clickData.points && clickData.points.length > 0) {
+            var point = clickData.points[0];
+            if (point.customdata && point.customdata.length > 6) {
+                var id_cliente = point.customdata[6];
+                if (id_cliente) {
+                    window.open('/cliente/' + id_cliente, '_blank');
+                }
+            }
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('click-output-dummy', 'children'),
+    Input('mapa-ventas', 'clickData'),
+    prevent_initial_call=True
+)

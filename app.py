@@ -21,6 +21,7 @@ from data.queries import (
 from layouts.home_layout import create_home_layout
 from layouts.main_layout import create_ventas_layout
 from layouts.ytd_layout import create_ytd_layout
+from layouts.cliente_layout import create_cliente_layout
 from data.ytd_queries import obtener_anios_disponibles_ytd, obtener_mes_actual, obtener_anio_actual
 
 # Obtener rango de fechas
@@ -101,6 +102,17 @@ def display_page(pathname):
         return ventas_layout
     elif pathname == '/ytd':
         return ytd_layout
+    elif pathname and pathname.startswith('/cliente/'):
+        parts = pathname.strip('/').split('/')
+        if len(parts) == 2:
+            try:
+                id_cliente = int(parts[1])
+                return create_cliente_layout(id_cliente)
+            except (ValueError, IndexError):
+                pass
+        return html.Div([
+            html.H2("Cliente no encontrado", style={'textAlign': 'center', 'padding': '60px', 'color': '#666'})
+        ])
     elif pathname == '/nuevo':
         # Placeholder para nuevo tablero
         return html.Div([
@@ -162,6 +174,7 @@ def display_page(pathname):
 # Esto debe estar DESPUES de crear app y layout
 import callbacks.callbacks  # noqa: E402, F401
 import callbacks.ytd_callbacks  # noqa: E402, F401
+import callbacks.cliente_callbacks  # noqa: E402, F401
 
 
 if __name__ == '__main__':

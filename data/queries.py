@@ -407,3 +407,104 @@ def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, su
     df['facturacion'] = df['facturacion'].astype(float)
 
     return df
+
+
+def cargar_ventas_por_cliente_generico(fecha_desde=None, fecha_hasta=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, top_n=5):
+    """Obtiene top N genéricos por cliente para el hover del mapa."""
+
+    where_clauses = []
+
+    if fecha_desde and fecha_hasta:
+        where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
+
+    join_articulo, where_articulo = _build_articulo_filters(genericos, marcas)
+    where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta)
+
+    if where_articulo:
+        where_clauses.extend(where_articulo)
+    if where_cliente:
+        where_clauses.extend(where_cliente)
+
+    # Siempre necesitamos dim_articulo para el genérico
+    join_articulo = join_articulo or "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
+
+    # JOIN con dim_cliente solo si hay filtros de cliente
+    join_cliente = ""
+    if where_cliente:
+        join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal"
+
+    where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
+
+    query = f"""
+        WITH ventas_generico AS (
+            SELECT
+                f.id_cliente,
+                COALESCE(a.generico, 'Sin categoria') as generico,
+                SUM(f.cantidades_total) as cantidad_total,
+                SUM(f.subtotal_final) as facturacion,
+                COUNT(DISTINCT f.nro_doc) as cantidad_documentos,
+                ROW_NUMBER() OVER (PARTITION BY f.id_cliente ORDER BY SUM(f.cantidades_total) DESC) as rn
+            FROM gold.fact_ventas f
+            {join_cliente}
+            {join_articulo}
+            WHERE {where_sql}
+            GROUP BY f.id_cliente, a.generico
+        )
+        SELECT id_cliente, generico, cantidad_total, facturacion, cantidad_documentos
+        FROM ventas_generico
+        WHERE rn <= {top_n}
+        ORDER BY id_cliente, cantidad_total DESC
+    """
+
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
+
+    return df
+
+
+def cargar_info_cliente(id_cliente):
+    """Obtiene datos maestros de un cliente desde dim_cliente."""
+    query = f"""
+        SELECT
+            c.id_cliente,
+            c.razon_social,
+            COALESCE(c.fantasia, '') as fantasia,
+            COALESCE(c.des_localidad, 'Sin localidad') as localidad,
+            COALESCE(c.des_provincia, 'Sin provincia') as provincia,
+            COALESCE(c.des_canal_mkt, 'Sin canal') as canal,
+            COALESCE(c.des_segmento_mkt, 'Sin segmento') as segmento,
+            COALESCE(c.des_subcanal_mkt, 'Sin subcanal') as subcanal,
+            COALESCE(c.des_lista_precio, 'Sin lista') as lista_precio,
+            COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal,
+            COALESCE(c.des_ramo, 'Sin ramo') as ramo,
+            c.id_ruta_fv1,
+            c.id_ruta_fv4,
+            c.des_personal_fv1 as preventista_fv1,
+            c.des_personal_fv4 as preventista_fv4
+        FROM gold.dim_cliente c
+        WHERE c.id_cliente = {int(id_cliente)}
+    """
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
+    return df
+
+
+def cargar_ventas_cliente_detalle(id_cliente):
+    """Obtiene ventas históricas de un cliente desglosadas por genérico/marca/artículo y mes."""
+    query = f"""
+        SELECT
+            COALESCE(a.generico, 'Sin categoria') as generico,
+            COALESCE(a.marca, 'Sin marca') as marca,
+            COALESCE(a.des_articulo, 'Articulo ' || f.id_articulo::text) as articulo,
+            EXTRACT(YEAR FROM f.fecha_comprobante)::int as anio,
+            EXTRACT(MONTH FROM f.fecha_comprobante)::int as mes,
+            SUM(f.cantidades_total) as bultos
+        FROM gold.fact_ventas f
+        LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo
+        WHERE f.id_cliente = {int(id_cliente)}
+        GROUP BY a.generico, a.marca, a.des_articulo, f.id_articulo, anio, mes
+        ORDER BY a.generico, a.marca, a.des_articulo, anio, mes
+    """
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
+    return df

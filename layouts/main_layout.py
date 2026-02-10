@@ -12,6 +12,9 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
     label_style = {'fontWeight': 'bold', 'fontSize': '14px', 'color': '#333'}
 
     return html.Div([
+        # Div oculto para clientside callback de click en mapa
+        html.Div(id='click-output-dummy', style={'display': 'none'}),
+
         # Header con navegación
         html.Div([
             html.Div([
