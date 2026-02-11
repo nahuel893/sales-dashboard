@@ -8,7 +8,7 @@ Uso:
 
 Acceder en: http://localhost:8050
 """
-from datetime import timedelta
+from datetime import date, timedelta
 from dash import Dash, html, dcc, callback, Output, Input
 import dash_mantine_components as dmc
 
@@ -41,10 +41,12 @@ lista_rutas = obtener_rutas()
 lista_preventistas = obtener_preventistas()
 print(f"  - {len(lista_rutas)} rutas, {len(lista_preventistas)} preventistas")
 
-# Cargar datos iniciales (ultimo mes)
-fecha_desde_default = fecha_max - timedelta(days=30)
-print(f"Cargando datos iniciales ({fecha_desde_default} a {fecha_max})...")
-df_ventas = cargar_ventas_por_cliente(fecha_desde_default, fecha_max)
+# Rango default: mes corriente (1ro del mes actual hasta hoy)
+hoy = date.today()
+fecha_desde_default = hoy.replace(day=1)
+fecha_hasta_default = hoy
+print(f"Cargando datos iniciales ({fecha_desde_default} a {fecha_hasta_default})...")
+df_ventas = cargar_ventas_por_cliente(fecha_desde_default, fecha_hasta_default)
 clientes_con_ventas = len(df_ventas[df_ventas['cantidad_total'] > 0])
 clientes_sin_ventas = len(df_ventas[df_ventas['cantidad_total'] == 0])
 print(f"Cargados {len(df_ventas):,} clientes ({clientes_con_ventas:,} con ventas, {clientes_sin_ventas:,} sin ventas)")
@@ -74,6 +76,7 @@ ventas_layout = create_ventas_layout(
     fecha_min=fecha_min,
     fecha_max=fecha_max,
     fecha_desde_default=fecha_desde_default,
+    fecha_hasta_default=fecha_hasta_default,
     lista_genericos=lista_genericos,
     lista_marcas=lista_marcas,
     lista_rutas=lista_rutas,
