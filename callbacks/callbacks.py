@@ -15,7 +15,7 @@ from data.queries import (
     cargar_ventas_por_generico_top, cargar_ventas_por_marca_top
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
-from config import METRICA_LABELS
+from config import METRICA_LABELS, DARK
 
 
 # =============================================================================
@@ -185,17 +185,18 @@ def actualizar_resumen_ventas(fechas_value, canales, subcanales, localidades, li
             hoverinfo='skip'
         ))
 
-    evolucion_xaxis = dict(tickformat=tick_format) if tick_format else {}
+    evolucion_xaxis = dict(tickformat=tick_format, color=DARK['text_secondary']) if tick_format else {'color': DARK['text_secondary']}
     fig_evolucion.update_layout(
-        title=dict(text=f'Evolución de {metrica_label}', font=dict(size=14)),
+        title=dict(text=f'Evolución de {metrica_label}', font=dict(size=14, color=DARK['text'])),
         margin=dict(t=35, b=30, l=50, r=10),
         xaxis=evolucion_xaxis,
-        yaxis=dict(tickformat=',.0f'),
+        yaxis=dict(tickformat=',.0f', color=DARK['text_secondary']),
         showlegend=False,
-        plot_bgcolor='white',
+        plot_bgcolor=DARK['plot_bg'],
+        paper_bgcolor=DARK['paper_bg'],
     )
     fig_evolucion.update_xaxes(showgrid=False)
-    fig_evolucion.update_yaxes(showgrid=True, gridcolor='#eee')
+    fig_evolucion.update_yaxes(showgrid=True, gridcolor=DARK['grid'])
 
     # --- Gráfico top 10 genéricos ---
     df_gen = cargar_ventas_por_generico_top(
@@ -214,13 +215,15 @@ def actualizar_resumen_ventas(fechas_value, canales, subcanales, localidades, li
         ))
 
     fig_genericos.update_layout(
-        title=dict(text=f'Top 10 Genéricos - {metrica_label}', font=dict(size=14)),
+        title=dict(text=f'Top 10 Genéricos - {metrica_label}', font=dict(size=14, color=DARK['text'])),
         margin=dict(t=35, b=20, l=120, r=10),
-        xaxis=dict(tickformat=',.0f'),
+        xaxis=dict(tickformat=',.0f', color=DARK['text_secondary']),
+        yaxis=dict(color=DARK['text_secondary']),
         showlegend=False,
-        plot_bgcolor='white',
+        plot_bgcolor=DARK['plot_bg'],
+        paper_bgcolor=DARK['paper_bg'],
     )
-    fig_genericos.update_xaxes(showgrid=True, gridcolor='#eee')
+    fig_genericos.update_xaxes(showgrid=True, gridcolor=DARK['grid'])
     fig_genericos.update_yaxes(showgrid=False)
 
     # --- Gráfico top 10 marcas ---
@@ -240,13 +243,15 @@ def actualizar_resumen_ventas(fechas_value, canales, subcanales, localidades, li
         ))
 
     fig_marcas.update_layout(
-        title=dict(text=f'Top 10 Marcas - {metrica_label}', font=dict(size=14)),
+        title=dict(text=f'Top 10 Marcas - {metrica_label}', font=dict(size=14, color=DARK['text'])),
         margin=dict(t=35, b=20, l=120, r=10),
-        xaxis=dict(tickformat=',.0f'),
+        xaxis=dict(tickformat=',.0f', color=DARK['text_secondary']),
+        yaxis=dict(color=DARK['text_secondary']),
         showlegend=False,
-        plot_bgcolor='white',
+        plot_bgcolor=DARK['plot_bg'],
+        paper_bgcolor=DARK['paper_bg'],
     )
-    fig_marcas.update_xaxes(showgrid=True, gridcolor='#eee')
+    fig_marcas.update_xaxes(showgrid=True, gridcolor=DARK['grid'])
     fig_marcas.update_yaxes(showgrid=False)
 
     return fig_evolucion, fig_genericos, fig_marcas
@@ -396,15 +401,16 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                             hoverinfo='name', showlegend=True
                         ))
 
-            # Clientes sin ventas
+            # Clientes sin ventas (marcados con X)
             if len(df_sin_ventas) > 0:
                 fig.add_trace(go.Scattermap(
                     lat=df_sin_ventas['latitud'], lon=df_sin_ventas['longitud'],
-                    mode='markers',
-                    marker=dict(size=8, color='#aaaaaa', opacity=0.6),
+                    mode='text',
+                    text=['✕'] * len(df_sin_ventas),
+                    textfont=dict(size=10, color='#aaaaaa'),
                     name='Sin ventas',
-                    text=df_sin_ventas['razon_social'],
-                    hovertemplate='<b>%{text}</b><br>Localidad: %{customdata[0]}<br><b>Sin ventas</b><extra></extra>',
+                    hovertext=df_sin_ventas['razon_social'],
+                    hovertemplate='<b>%{hovertext}</b><br>Localidad: %{customdata[0]}<br><b>Sin ventas</b><extra></extra>',
                     customdata=df_sin_ventas[['localidad', 'subcanal']].values
                 ))
 
@@ -462,29 +468,29 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
         html.Div([
             html.Span("", style={'fontSize': '36px'}),
             html.Div([
-                html.Div(f"{len(df):,}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': '#1a1a2e'}),
+                html.Div(f"{len(df):,}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': DARK['text']}),
                 html.Div([
-                    html.Span("Clientes ", style={'fontSize': '16px', 'color': '#666'}),
-                    html.Span(f"({n_con_ventas:,} activos)", style={'fontSize': '14px', 'color': '#27ae60'})
+                    html.Span("Clientes ", style={'fontSize': '16px', 'color': DARK['text_secondary']}),
+                    html.Span(f"({n_con_ventas:,} activos)", style={'fontSize': '14px', 'color': DARK['accent_green']})
                 ])
             ])
         ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
         html.Div([
             html.Div([
-                html.Div(f"{df['cantidad_total'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': '#e74c3c'}),
-                html.Div("Bultos vendidos", style={'fontSize': '16px', 'color': '#666'})
+                html.Div(f"{df['cantidad_total'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': DARK['accent_red']}),
+                html.Div("Bultos vendidos", style={'fontSize': '16px', 'color': DARK['text_secondary']})
             ])
         ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
         html.Div([
             html.Div([
-                html.Div(f"${df['facturacion'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': '#27ae60'}),
-                html.Div("Facturacion", style={'fontSize': '16px', 'color': '#666'})
+                html.Div(f"${df['facturacion'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': DARK['accent_green']}),
+                html.Div("Facturacion", style={'fontSize': '16px', 'color': DARK['text_secondary']})
             ])
         ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
         html.Div([
             html.Div([
-                html.Div(f"{df['cantidad_documentos'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': '#3498db'}),
-                html.Div("Documentos", style={'fontSize': '16px', 'color': '#666'})
+                html.Div(f"{df['cantidad_documentos'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': DARK['accent_blue']}),
+                html.Div("Documentos", style={'fontSize': '16px', 'color': DARK['text_secondary']})
             ])
         ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
     ]
@@ -804,12 +810,14 @@ def actualizar_grafico_comparacion_anual(anios_seleccionados, canales, subcanale
             text="Seleccione uno o más años para comparar",
             xref="paper", yref="paper",
             x=0.5, y=0.5, showarrow=False,
-            font=dict(size=16, color='gray')
+            font=dict(size=16, color=DARK['text_muted'])
         )
         fig.update_layout(
             margin=dict(t=30, b=50, l=60, r=30),
             xaxis=dict(visible=False),
-            yaxis=dict(visible=False)
+            yaxis=dict(visible=False),
+            plot_bgcolor=DARK['plot_bg'],
+            paper_bgcolor=DARK['paper_bg'],
         )
         return fig
 
@@ -861,9 +869,10 @@ def actualizar_grafico_comparacion_anual(anios_seleccionados, canales, subcanale
             tickmode='array',
             tickvals=list(range(1, 13)),
             ticktext=MESES_ES,
-            title='Mes'
+            title='Mes',
+            color=DARK['text_secondary']
         ),
-        yaxis=dict(title=metrica_labels.get(metrica, metrica)),
+        yaxis=dict(title=metrica_labels.get(metrica, metrica), color=DARK['text_secondary']),
         hovermode='x unified',
         legend=dict(
             orientation='h',
@@ -871,10 +880,12 @@ def actualizar_grafico_comparacion_anual(anios_seleccionados, canales, subcanale
             y=1.02,
             xanchor='center',
             x=0.5,
-            font=dict(size=14)
-        )
+            font=dict(size=14, color=DARK['text'])
+        ),
+        plot_bgcolor=DARK['plot_bg'],
+        paper_bgcolor=DARK['paper_bg'],
     )
-    fig.update_yaxes(tickformat=',.0f')
+    fig.update_yaxes(tickformat=',.0f', gridcolor=DARK['grid'])
 
     return fig
 
@@ -902,7 +913,7 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
     metrica_labels = {'cantidad_total': 'Cantidad (bultos)', 'facturacion': 'Facturacion ($)', 'cantidad_documentos': 'Documentos'}
 
     if not anios_seleccionados or len(anios_seleccionados) == 0:
-        return html.P("Seleccione años para ver la comparación", style={'textAlign': 'center', 'color': 'gray'})
+        return html.P("Seleccione años para ver la comparación", style={'textAlign': 'center', 'color': DARK['text_muted']})
 
     # Ordenar años
     anios_seleccionados = sorted(anios_seleccionados)
@@ -935,7 +946,7 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
 
     for mes_num in range(1, 13):
         mes_nombre = MESES_ES[mes_num - 1]
-        fila_celdas = [html.Td(mes_nombre, style={'fontWeight': 'bold', 'padding': '12px 15px', 'borderBottom': '1px solid #ddd'})]
+        fila_celdas = [html.Td(mes_nombre, style={'fontWeight': 'bold', 'padding': '12px 15px', 'borderBottom': f'1px solid {DARK["border"]}', 'color': DARK['text']})]
 
         valor_anterior = None
         for i, anio in enumerate(anios_seleccionados):
@@ -945,7 +956,7 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
             # Calcular porcentaje de crecimiento vs año anterior
             if i == 0 or valor_anterior is None or valor_anterior == 0:
                 texto = f"{valor:,.0f}"
-                color = '#333'
+                color = DARK['text']
             else:
                 pct = ((valor - valor_anterior) / valor_anterior) * 100
                 signo = '+' if pct >= 0 else ''
@@ -957,8 +968,8 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
                 style={
                     'padding': '12px 15px',
                     'textAlign': 'right',
-                    'borderBottom': '1px solid #ddd',
-                    'color': color if i > 0 else '#333'
+                    'borderBottom': f'1px solid {DARK["border"]}',
+                    'color': color if i > 0 else DARK['text']
                 }
             ))
             valor_anterior = valor
@@ -966,14 +977,14 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
         filas.append(html.Tr(fila_celdas))
 
     # Fila de totales
-    fila_totales = [html.Td("TOTAL", style={'fontWeight': 'bold', 'padding': '12px 15px', 'backgroundColor': '#f5f5f5', 'borderTop': '2px solid #333'})]
+    fila_totales = [html.Td("TOTAL", style={'fontWeight': 'bold', 'padding': '12px 15px', 'backgroundColor': DARK['surface'], 'borderTop': f'2px solid {DARK["text_secondary"]}', 'color': DARK['text']})]
     total_anterior = None
     for i, anio in enumerate(anios_seleccionados):
         total = totales_por_anio[anio]
 
         if i == 0 or total_anterior is None or total_anterior == 0:
             texto = f"{total:,.0f}"
-            color = '#333'
+            color = DARK['text']
         else:
             pct = ((total - total_anterior) / total_anterior) * 100
             signo = '+' if pct >= 0 else ''
@@ -986,9 +997,9 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
                 'padding': '12px 15px',
                 'textAlign': 'right',
                 'fontWeight': 'bold',
-                'backgroundColor': '#f5f5f5',
-                'borderTop': '2px solid #333',
-                'color': color if i > 0 else '#333'
+                'backgroundColor': DARK['surface'],
+                'borderTop': f'2px solid {DARK["text_secondary"]}',
+                'color': color if i > 0 else DARK['text']
             }
         ))
         total_anterior = total
@@ -996,11 +1007,11 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
     filas.append(html.Tr(fila_totales))
 
     # Encabezado
-    encabezado = [html.Th("Mes", style={'padding': '14px 15px', 'backgroundColor': '#1a1a2e', 'color': 'white', 'textAlign': 'left', 'fontSize': '17px'})]
+    encabezado = [html.Th("Mes", style={'padding': '14px 15px', 'backgroundColor': DARK['surface'], 'color': DARK['text'], 'textAlign': 'left', 'fontSize': '17px'})]
     for anio in anios_seleccionados:
         encabezado.append(html.Th(
             str(anio),
-            style={'padding': '14px 15px', 'backgroundColor': '#1a1a2e', 'color': 'white', 'textAlign': 'right', 'minWidth': '160px', 'fontSize': '17px'}
+            style={'padding': '14px 15px', 'backgroundColor': DARK['surface'], 'color': DARK['text'], 'textAlign': 'right', 'minWidth': '160px', 'fontSize': '17px'}
         ))
 
     tabla = html.Table([
@@ -1015,7 +1026,7 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
     # Retornar tabla con subtítulo de métrica
     return html.Div([
         html.P(f"Métrica: {metrica_labels.get(metrica, metrica)}",
-               style={'textAlign': 'center', 'color': '#666', 'marginBottom': '10px', 'fontSize': '14px'}),
+               style={'textAlign': 'center', 'color': DARK['text_secondary'], 'marginBottom': '10px', 'fontSize': '14px'}),
         tabla
     ])
 
@@ -1087,16 +1098,17 @@ def actualizar_mapa_compro(fechas_value, canales, subcanales, localidades, lista
                         hoverinfo='name', showlegend=True
                     ))
 
-        # Clientes que NO compraron (ROJO)
+        # Clientes que NO compraron (ROJO X)
         if len(df_no_compro) > 0:
             fig.add_trace(go.Scattermap(
                 lat=df_no_compro['latitud'],
                 lon=df_no_compro['longitud'],
-                mode='markers',
-                marker=dict(size=10, color='#e74c3c', opacity=0.7),
+                mode='text',
+                text=['✕'] * len(df_no_compro),
+                textfont=dict(size=12, color='#e74c3c'),
                 name=f'No compro ({len(df_no_compro):,})',
-                text=df_no_compro['razon_social'],
-                hovertemplate='<b>%{text}</b><br>Localidad: %{customdata[0]}<br>Canal: %{customdata[1]}<br><b style="color:red">NO COMPRO</b><extra></extra>',
+                hovertext=df_no_compro['razon_social'],
+                hovertemplate='<b>%{hovertext}</b><br>Localidad: %{customdata[0]}<br>Canal: %{customdata[1]}<br><b style="color:red">NO COMPRO</b><extra></extra>',
                 customdata=df_no_compro[['localidad', 'canal']].values
             ))
 
