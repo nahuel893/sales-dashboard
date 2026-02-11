@@ -40,23 +40,29 @@ def create_clientes_layout():
         html.Div([
             html.Div([
                 dmc.TextInput(
-                    id='clientes-busqueda',
+                    id='clientes-busqueda-input',
                     placeholder='Escribi el nombre o codigo del cliente...',
                     size='lg',
                     style={'width': '100%'},
                 ),
+                # Store para debounce (el clientside_callback lo actualiza con delay)
+                dcc.Store(id='clientes-busqueda-debounced', data=''),
             ], style={
                 'maxWidth': '600px',
                 'margin': '0 auto',
                 'padding': '30px 20px 20px 20px',
             }),
 
-            # Resultados
-            html.Div(id='clientes-resultados', style={
-                'maxWidth': '900px',
-                'margin': '0 auto',
-                'padding': '0 20px 30px 20px',
-            }),
+            # Resultados con loading indicator
+            dcc.Loading(
+                type='circle',
+                color='#2980b9',
+                children=html.Div(id='clientes-resultados', style={
+                    'maxWidth': '900px',
+                    'margin': '0 auto',
+                    'padding': '0 20px 30px 20px',
+                }),
+            ),
         ], style={
             'backgroundColor': '#f5f7fa',
             'minHeight': 'calc(100vh - 130px)',

@@ -2,14 +2,34 @@
 Callbacks de la pagina de busqueda de clientes.
 Busca clientes en dim_cliente y muestra resultados con links al detalle.
 """
-from dash import callback, Output, Input, html, dcc, no_update
+from dash import callback, Output, Input, html, dcc, no_update, clientside_callback
 
 from data.queries import buscar_clientes
 
 
+# Debounce client-side: espera 350ms despues de la ultima tecla antes de disparar la busqueda
+clientside_callback(
+    """
+    function(value) {
+        if (window._searchDebounceTimer) {
+            clearTimeout(window._searchDebounceTimer);
+        }
+        return new Promise(function(resolve) {
+            window._searchDebounceTimer = setTimeout(function() {
+                resolve(value || '');
+            }, 350);
+        });
+    }
+    """,
+    Output('clientes-busqueda-debounced', 'data'),
+    Input('clientes-busqueda-input', 'value'),
+    prevent_initial_call=True
+)
+
+
 @callback(
     Output('clientes-resultados', 'children'),
-    Input('clientes-busqueda', 'value'),
+    Input('clientes-busqueda-debounced', 'data'),
     prevent_initial_call=True
 )
 def buscar_y_mostrar_clientes(texto):
@@ -23,8 +43,9 @@ def buscar_y_mostrar_clientes(texto):
     df = buscar_clientes(texto)
 
     if len(df) == 0:
+        display_text = texto.strip()[:100]
         return html.Div(
-            f"No se encontraron clientes para \"{texto}\".",
+            f'No se encontraron clientes para "{display_text}".',
             style={'textAlign': 'center', 'color': '#999', 'padding': '40px', 'fontSize': '15px'}
         )
 
@@ -49,22 +70,22 @@ def buscar_y_mostrar_clientes(texto):
     ])
 
     rows = []
-    for _, row in df.iterrows():
+    for row in df.itertuples(index=False):
         rows.append(html.Tr([
-            html.Td(str(row['id_cliente']), style={**td_style, 'textAlign': 'center', 'color': '#999'}),
+            html.Td(str(row.id_cliente), style={**td_style, 'textAlign': 'center', 'color': '#999'}),
             html.Td(
                 dcc.Link(
-                    row['razon_social'],
-                    href=f"/cliente/{row['id_cliente']}",
+                    row.razon_social,
+                    href=f"/cliente/{row.id_cliente}",
                     target='_blank',
                     style={'color': '#2980b9', 'textDecoration': 'none', 'fontWeight': 'bold'}
                 ),
                 style=td_style
             ),
-            html.Td(row['fantasia'] or '', style={**td_style, 'color': '#666'}),
-            html.Td(row['localidad'], style=td_style),
-            html.Td(row['canal'], style=td_style),
-            html.Td(row['sucursal'], style=td_style),
+            html.Td(row.fantasia or '', style={**td_style, 'color': '#666'}),
+            html.Td(row.localidad, style=td_style),
+            html.Td(row.canal, style=td_style),
+            html.Td(row.sucursal, style=td_style),
         ], style={'cursor': 'pointer', 'transition': 'background 0.15s'},
            className='fila-cliente'))
 

@@ -198,9 +198,6 @@ def _build_generico_accordion(df_all, periodos):
                 html.Button("Imprimir", className='btn-imprimir-marca',
                             **{'data-generico': generico, 'data-marca': marca},
                             style=btn_style),
-                html.Button("Descargar PNG", className='btn-descargar-marca',
-                            **{'data-generico': generico, 'data-marca': marca},
-                            style=btn_style),
                 html.Button("Excel", id={'type': 'btn-excel-marca', 'index': f'{generico}||{marca}'},
                             style={**btn_style, 'color': '#217346'}),
             ], style={'marginBottom': '8px', 'display': 'flex', 'gap': '8px'})
