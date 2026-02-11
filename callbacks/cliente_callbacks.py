@@ -4,11 +4,35 @@ Carga informacion del cliente y construye arbol de ventas: generico -> marca -> 
 Muestra bultos por mes en columnas. Articulos sin venta aparecen con 0.
 """
 import io
-from dash import callback, Output, Input, State, html, dcc, ctx, ALL, no_update
+from dash import callback, Output, Input, State, html, dcc, no_update, clientside_callback
 import dash_mantine_components as dmc
 import pandas as pd
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+# openpyxl se importa lazy (solo al exportar Excel) para no ralentizar el startup
+_openpyxl_styles = None
+
+
+def _get_excel_styles():
+    """Importa openpyxl y crea estilos la primera vez que se necesitan."""
+    global _openpyxl_styles
+    if _openpyxl_styles is None:
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        _openpyxl_styles = {
+            'FONT_BOLD': Font(bold=True),
+            'FONT_HEADER': Font(bold=True, size=11),
+            'FONT_GENERICO': Font(bold=True, size=12),
+            'FONT_MARCA': Font(bold=True, size=11, color='333333'),
+            'FONT_TOTAL': Font(bold=True, size=11),
+            'FONT_CLIENTE': Font(bold=True, size=14),
+            'FILL_HEADER': PatternFill('solid', fgColor='E0E0E0'),
+            'FILL_GENERICO': PatternFill('solid', fgColor='D6E4F0'),
+            'FILL_MARCA': PatternFill('solid', fgColor='F0F0F0'),
+            'FILL_SUBTOTAL': PatternFill('solid', fgColor='F5F8FC'),
+            'FILL_TOTAL': PatternFill('solid', fgColor='D6E4F0'),
+            'ALIGN_RIGHT': Alignment(horizontal='right'),
+            'ALIGN_CENTER': Alignment(horizontal='center'),
+        }
+    return _openpyxl_styles
 
 from data.queries import cargar_info_cliente, cargar_ventas_cliente_detalle
 
@@ -198,7 +222,8 @@ def _build_generico_accordion(df_all, periodos):
                 html.Button("Imprimir", className='btn-imprimir-marca',
                             **{'data-generico': generico, 'data-marca': marca},
                             style=btn_style),
-                html.Button("Excel", id={'type': 'btn-excel-marca', 'index': f'{generico}||{marca}'},
+                html.Button("Excel", className='btn-excel-marca',
+                            **{'data-generico': generico, 'data-marca': marca},
                             style={**btn_style, 'color': '#217346'}),
             ], style={'marginBottom': '8px', 'display': 'flex', 'gap': '8px'})
 
@@ -325,19 +350,6 @@ def _build_articulo_table(df_marca, periodos):
 # HELPERS EXCEL
 # =============================================================================
 
-# Estilos reutilizables para openpyxl
-_FONT_BOLD = Font(bold=True)
-_FONT_HEADER = Font(bold=True, size=11)
-_FONT_GENERICO = Font(bold=True, size=12)
-_FONT_MARCA = Font(bold=True, size=11, color='333333')
-_FILL_HEADER = PatternFill('solid', fgColor='E0E0E0')
-_FILL_GENERICO = PatternFill('solid', fgColor='D6E4F0')
-_FILL_MARCA = PatternFill('solid', fgColor='F0F0F0')
-_FILL_SUBTOTAL = PatternFill('solid', fgColor='F5F8FC')
-_FILL_TOTAL = PatternFill('solid', fgColor='D6E4F0')
-_BORDER_THIN = Border(bottom=Side(style='thin', color='CCCCCC'))
-_ALIGN_RIGHT = Alignment(horizontal='right')
-_ALIGN_CENTER = Alignment(horizontal='center')
 
 
 def _preparar_datos_excel(id_cliente):
@@ -370,6 +382,9 @@ def _preparar_datos_excel(id_cliente):
 
 def _escribir_tabla_marca(ws, row, df_marca, periodos, escribir_header=True):
     """Escribe una tabla de artículos por marca en la hoja. Retorna la fila siguiente."""
+    from openpyxl.styles import Alignment
+    s = _get_excel_styles()
+
     df_con_periodos = df_marca.dropna(subset=['anio', 'mes'])
     pivot = df_con_periodos.groupby(['articulo', 'anio', 'mes'])['bultos'].sum().to_dict() if len(df_con_periodos) > 0 else {}
     art_totals = df_marca.groupby('articulo')['bultos'].sum().sort_values(ascending=False)
@@ -381,40 +396,40 @@ def _escribir_tabla_marca(ws, row, df_marca, periodos, escribir_header=True):
     if escribir_header:
         for c, h in enumerate(headers, 1):
             cell = ws.cell(row=row, column=c, value=h)
-            cell.font = _FONT_HEADER
-            cell.fill = _FILL_HEADER
-            cell.alignment = _ALIGN_CENTER if c != 2 else Alignment()
+            cell.font = s['FONT_HEADER']
+            cell.fill = s['FILL_HEADER']
+            cell.alignment = s['ALIGN_CENTER'] if c != 2 else Alignment()
         row += 1
 
     for articulo in art_totals.index:
         total = art_totals[articulo]
         cod = art_ids.get(articulo, '')
-        ws.cell(row=row, column=1, value=cod).alignment = _ALIGN_CENTER
+        ws.cell(row=row, column=1, value=cod).alignment = s['ALIGN_CENTER']
         ws.cell(row=row, column=2, value=articulo)
         for ci, (anio, mes) in enumerate(periodos):
             val = pivot.get((articulo, anio, mes))
             cell = ws.cell(row=row, column=3 + ci, value=val if val else None)
-            cell.alignment = _ALIGN_RIGHT
+            cell.alignment = s['ALIGN_RIGHT']
             cell.number_format = '#,##0'
         cell_total = ws.cell(row=row, column=3 + len(periodos), value=total)
-        cell_total.font = _FONT_BOLD
-        cell_total.alignment = _ALIGN_RIGHT
+        cell_total.font = s['FONT_BOLD']
+        cell_total.alignment = s['ALIGN_RIGHT']
         cell_total.number_format = '#,##0'
         row += 1
 
     # Fila subtotal
-    ws.cell(row=row, column=2, value='Total').font = _FONT_BOLD
+    ws.cell(row=row, column=2, value='Total').font = s['FONT_BOLD']
     mes_totals = df_con_periodos.groupby(['anio', 'mes'])['bultos'].sum().to_dict() if len(df_con_periodos) > 0 else {}
     for ci, (anio, mes) in enumerate(periodos):
         val = mes_totals.get((anio, mes))
         cell = ws.cell(row=row, column=3 + ci, value=val if val else None)
-        cell.font = _FONT_BOLD
-        cell.alignment = _ALIGN_RIGHT
+        cell.font = s['FONT_BOLD']
+        cell.alignment = s['ALIGN_RIGHT']
         cell.number_format = '#,##0'
-        cell.fill = _FILL_SUBTOTAL
+        cell.fill = s['FILL_SUBTOTAL']
     cell_gt = ws.cell(row=row, column=3 + len(periodos), value=df_marca['bultos'].sum())
-    cell_gt.font = _FONT_BOLD
-    cell_gt.alignment = _ALIGN_RIGHT
+    cell_gt.font = s['FONT_BOLD']
+    cell_gt.alignment = s['ALIGN_RIGHT']
     cell_gt.number_format = '#,##0'
     cell_gt.fill = _FILL_SUBTOTAL
     row += 1
@@ -424,6 +439,9 @@ def _escribir_tabla_marca(ws, row, df_marca, periodos, escribir_header=True):
 
 def _generar_excel_marca(id_cliente, generico, marca):
     """Genera Excel para una marca específica."""
+    from openpyxl import Workbook
+    s = _get_excel_styles()
+
     df_all, periodos = _preparar_datos_excel(id_cliente)
     if len(df_all) == 0:
         return None
@@ -434,14 +452,12 @@ def _generar_excel_marca(id_cliente, generico, marca):
 
     wb = Workbook()
     ws = wb.active
-    ws.title = marca[:31]  # max 31 chars
+    ws.title = marca[:31]
 
-    # Título
-    ws.cell(row=1, column=1, value=f'{generico} — {marca}').font = _FONT_GENERICO
+    ws.cell(row=1, column=1, value=f'{generico} — {marca}').font = s['FONT_GENERICO']
     row = 3
     row = _escribir_tabla_marca(ws, row, df_marca, periodos)
 
-    # Ajustar anchos
     ws.column_dimensions['A'].width = 8
     ws.column_dimensions['B'].width = 35
     n_cols = 3 + len(periodos)
@@ -456,6 +472,9 @@ def _generar_excel_marca(id_cliente, generico, marca):
 
 def _generar_excel_completo(id_cliente):
     """Genera Excel con todo el árbol genérico→marca→artículo con subtotales."""
+    from openpyxl import Workbook
+    s = _get_excel_styles()
+
     df_info = cargar_info_cliente(id_cliente)
     df_all, periodos = _preparar_datos_excel(id_cliente)
     if len(df_all) == 0:
@@ -467,23 +486,19 @@ def _generar_excel_completo(id_cliente):
     ws = wb.active
     ws.title = 'Detalle'
 
-    # Título del cliente
-    ws.cell(row=1, column=1, value=f'{cliente_nombre} [{id_cliente}]').font = Font(bold=True, size=14)
+    ws.cell(row=1, column=1, value=f'{cliente_nombre} [{id_cliente}]').font = s['FONT_CLIENTE']
     row = 3
 
-    col_meses = [_periodo_label(int(a), int(m)) for a, m in periodos]
     n_cols = 3 + len(periodos)
-
     gen_totals = df_all.groupby('generico')['bultos'].sum().sort_values(ascending=False)
 
     for generico in gen_totals.index:
         df_gen = df_all[df_all['generico'] == generico]
 
-        # Fila genérico
         cell_gen = ws.cell(row=row, column=1, value=f'{generico}')
-        cell_gen.font = _FONT_GENERICO
+        cell_gen.font = s['FONT_GENERICO']
         for c in range(1, n_cols + 1):
-            ws.cell(row=row, column=c).fill = _FILL_GENERICO
+            ws.cell(row=row, column=c).fill = s['FILL_GENERICO']
         row += 1
 
         marca_totals = df_gen.groupby('marca')['bultos'].sum().sort_values(ascending=False)
@@ -493,42 +508,37 @@ def _generar_excel_completo(id_cliente):
         for marca in marca_totals.index:
             df_marca = df_gen[df_gen['marca'] == marca]
 
-            # Fila marca
             cell_m = ws.cell(row=row, column=1, value=f'  {marca}')
-            cell_m.font = _FONT_MARCA
+            cell_m.font = s['FONT_MARCA']
             for c in range(1, n_cols + 1):
-                ws.cell(row=row, column=c).fill = _FILL_MARCA
+                ws.cell(row=row, column=c).fill = s['FILL_MARCA']
             row += 1
 
-            # Tabla de artículos
             row = _escribir_tabla_marca(ws, row, df_marca, periodos)
 
-            # Acumular totales del genérico
             df_con_p = df_marca.dropna(subset=['anio', 'mes'])
             if len(df_con_p) > 0:
                 for (a, m), val in df_con_p.groupby(['anio', 'mes'])['bultos'].sum().items():
                     gen_mes_totals[(a, m)] = gen_mes_totals.get((a, m), 0) + val
             gen_gran_total += df_marca['bultos'].sum()
 
-            row += 1  # Espacio entre marcas
+            row += 1
 
-        # Fila total genérico
-        ws.cell(row=row, column=1, value=f'TOTAL {generico}').font = Font(bold=True, size=11)
+        ws.cell(row=row, column=1, value=f'TOTAL {generico}').font = s['FONT_TOTAL']
         for ci, (anio, mes) in enumerate(periodos):
             val = gen_mes_totals.get((anio, mes), 0)
             cell = ws.cell(row=row, column=3 + ci, value=val if val else None)
-            cell.font = _FONT_BOLD
-            cell.alignment = _ALIGN_RIGHT
+            cell.font = s['FONT_BOLD']
+            cell.alignment = s['ALIGN_RIGHT']
             cell.number_format = '#,##0'
-            cell.fill = _FILL_TOTAL
+            cell.fill = s['FILL_TOTAL']
         cell_gt = ws.cell(row=row, column=n_cols, value=gen_gran_total)
-        cell_gt.font = _FONT_BOLD
-        cell_gt.alignment = _ALIGN_RIGHT
+        cell_gt.font = s['FONT_BOLD']
+        cell_gt.alignment = s['ALIGN_RIGHT']
         cell_gt.number_format = '#,##0'
-        cell_gt.fill = _FILL_TOTAL
-        row += 2  # Espacio entre genéricos
+        cell_gt.fill = s['FILL_TOTAL']
+        row += 2
 
-    # Ajustar anchos
     ws.column_dimensions['A'].width = 10
     ws.column_dimensions['B'].width = 35
     for c in range(3, n_cols + 1):
@@ -544,26 +554,79 @@ def _generar_excel_completo(id_cliente):
 # CALLBACKS EXCEL
 # =============================================================================
 
+# Setup event delegation para botones de Imprimir y Excel por marca.
+# Se ejecuta una vez al cargar la pagina de detalle de cliente.
+# Usa dash_clientside.set_props para escribir al Store sin pattern-matching.
+clientside_callback(
+    """
+    function(storeData) {
+        if (window._clienteClickSetup) return dash_clientside.no_update;
+        window._clienteClickSetup = true;
+
+        document.addEventListener('click', function(e) {
+            var excelBtn = e.target.closest('.btn-excel-marca');
+            if (excelBtn) {
+                var gen = excelBtn.getAttribute('data-generico');
+                var marca = excelBtn.getAttribute('data-marca');
+                dash_clientside.set_props('excel-marca-trigger', {
+                    data: gen + '||' + marca + '||' + Date.now()
+                });
+                return;
+            }
+
+            var printBtn = e.target.closest('.btn-imprimir-marca');
+            if (printBtn) {
+                var generico = printBtn.getAttribute('data-generico') || '';
+                var marca2 = printBtn.getAttribute('data-marca') || '';
+                var panel = printBtn.closest('.mantine-Accordion-panel');
+                if (!panel) return;
+                var contenido = panel.querySelector('.tabla-marca-content');
+                if (!contenido) return;
+                var headerEl = document.querySelector('#cliente-header-content h1');
+                var cliente = headerEl ? headerEl.textContent.trim() : '';
+                var titulo = generico + ' — ' + marca2;
+                var w = window.open('', '_blank', 'width=900,height=600');
+                w.document.write(
+                    '<html><head><title>' + titulo + '</title>' +
+                    '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0}' +
+                    'h2{margin:0 0 4px;font-size:18px}h3{margin:0 0 12px;color:#666;font-size:14px;font-weight:normal}' +
+                    'table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;border:1px solid #ccc;font-size:11px}' +
+                    'th{background:#f0f0f0;font-weight:bold}</style></head><body>'
+                );
+                w.document.write('<h2>' + titulo + '</h2>');
+                if (cliente) w.document.write('<h3>' + cliente + '</h3>');
+                w.document.write(contenido.innerHTML);
+                w.document.write('</body></html>');
+                w.document.close();
+                w.focus();
+                w.print();
+            }
+        });
+        return dash_clientside.no_update;
+    }
+    """,
+    Output('excel-marca-trigger', 'data'),
+    Input('cliente-id-store', 'data'),
+    prevent_initial_call=False
+)
+
+
 @callback(
     Output('download-excel-marca', 'data'),
-    Input({'type': 'btn-excel-marca', 'index': ALL}, 'n_clicks'),
+    Input('excel-marca-trigger', 'data'),
     State('cliente-id-store', 'data'),
     prevent_initial_call=True
 )
-def exportar_marca_excel(n_clicks_list, store_data):
+def exportar_marca_excel(trigger_value, store_data):
     """Exporta a Excel la tabla de una marca específica."""
-    if not any(n_clicks_list) or not store_data:
+    if not trigger_value or '||' not in str(trigger_value) or not store_data:
         return no_update
 
-    triggered = ctx.triggered_id
-    if not triggered or 'index' not in triggered:
+    parts = str(trigger_value).split('||')
+    if len(parts) < 2:
         return no_update
 
-    parts = triggered['index'].split('||')
-    if len(parts) != 2:
-        return no_update
-
-    generico, marca = parts
+    generico, marca = parts[0], parts[1]
     id_cliente = store_data['id_cliente']
 
     excel_bytes = _generar_excel_marca(id_cliente, generico, marca)
