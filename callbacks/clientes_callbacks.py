@@ -2,34 +2,14 @@
 Callbacks de la pagina de busqueda de clientes.
 Busca clientes en dim_cliente y muestra resultados con links al detalle.
 """
-from dash import callback, Output, Input, html, dcc, no_update, clientside_callback
+from dash import callback, Output, Input, html, dcc, no_update
 
 from data.queries import buscar_clientes
 
 
-# Debounce client-side: espera 350ms despues de la ultima tecla antes de disparar la busqueda
-clientside_callback(
-    """
-    function(value) {
-        if (window._searchDebounceTimer) {
-            clearTimeout(window._searchDebounceTimer);
-        }
-        return new Promise(function(resolve) {
-            window._searchDebounceTimer = setTimeout(function() {
-                resolve(value || '');
-            }, 350);
-        });
-    }
-    """,
-    Output('clientes-busqueda-debounced', 'data'),
-    Input('clientes-busqueda-input', 'value'),
-    prevent_initial_call=True
-)
-
-
 @callback(
     Output('clientes-resultados', 'children'),
-    Input('clientes-busqueda-debounced', 'data'),
+    Input('clientes-busqueda', 'value'),
     prevent_initial_call=True
 )
 def buscar_y_mostrar_clientes(texto):

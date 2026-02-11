@@ -3,7 +3,6 @@ Layout de busqueda de clientes.
 Permite buscar clientes por razon social, fantasia o ID y navegar a su detalle.
 """
 from dash import html, dcc
-import dash_mantine_components as dmc
 
 
 def create_clientes_layout():
@@ -29,7 +28,7 @@ def create_clientes_layout():
             html.H1("Buscar Clientes", style={
                 'margin': '0', 'color': 'white', 'fontSize': '28px'
             }),
-            html.P("Busca por razon social, nombre de fantasia o codigo de cliente",
+            html.P("Busca por razon social, nombre de fantasia o codigo de cliente. Presiona Enter para buscar.",
                    style={'margin': '5px 0 0 0', 'color': '#ccc', 'fontSize': '14px'}),
         ], style={
             'backgroundColor': '#1a1a2e',
@@ -39,30 +38,29 @@ def create_clientes_layout():
         # Buscador
         html.Div([
             html.Div([
-                dmc.TextInput(
-                    id='clientes-busqueda-input',
-                    placeholder='Escribi el nombre o codigo del cliente...',
-                    size='lg',
-                    style={'width': '100%'},
+                dcc.Input(
+                    id='clientes-busqueda',
+                    placeholder='Escribi el nombre o codigo del cliente y presiona Enter...',
+                    type='text',
+                    debounce=True,
+                    style={
+                        'width': '100%', 'padding': '12px 16px', 'fontSize': '16px',
+                        'border': '1px solid #ced4da', 'borderRadius': '8px',
+                        'outline': 'none',
+                    },
                 ),
-                # Store para debounce (el clientside_callback lo actualiza con delay)
-                dcc.Store(id='clientes-busqueda-debounced', data=''),
             ], style={
                 'maxWidth': '600px',
                 'margin': '0 auto',
                 'padding': '30px 20px 20px 20px',
             }),
 
-            # Resultados con loading indicator
-            dcc.Loading(
-                type='circle',
-                color='#2980b9',
-                children=html.Div(id='clientes-resultados', style={
-                    'maxWidth': '900px',
-                    'margin': '0 auto',
-                    'padding': '0 20px 30px 20px',
-                }),
-            ),
+            # Resultados
+            html.Div(id='clientes-resultados', style={
+                'maxWidth': '900px',
+                'margin': '0 auto',
+                'padding': '0 20px 30px 20px',
+            }),
         ], style={
             'backgroundColor': '#f5f7fa',
             'minHeight': 'calc(100vh - 130px)',
