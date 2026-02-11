@@ -176,6 +176,19 @@ def _build_generico_accordion(df_all, periodos):
             # Tabla de articulos con meses en columnas
             table = _build_articulo_table(df_marca, periodos)
 
+            btn_style = {
+                'padding': '4px 12px', 'fontSize': '12px', 'cursor': 'pointer',
+                'border': '1px solid #ccc', 'borderRadius': '4px', 'backgroundColor': '#fff',
+            }
+            botones = html.Div([
+                html.Button("Imprimir", className='btn-imprimir-marca',
+                            **{'data-generico': generico, 'data-marca': marca},
+                            style=btn_style),
+                html.Button("Descargar PNG", className='btn-descargar-marca',
+                            **{'data-generico': generico, 'data-marca': marca},
+                            style=btn_style),
+            ], style={'marginBottom': '8px', 'display': 'flex', 'gap': '8px'})
+
             marca_items.append(
                 dmc.AccordionItem([
                     dmc.AccordionControl(
@@ -185,7 +198,10 @@ def _build_generico_accordion(df_all, periodos):
                                       style={'color': '#666', 'marginLeft': '10px'}),
                         ]),
                     ),
-                    dmc.AccordionPanel(table),
+                    dmc.AccordionPanel(html.Div([
+                        botones,
+                        html.Div(table, className='tabla-marca-content'),
+                    ])),
                 ], value=f"{generico}-{marca}")
             )
 

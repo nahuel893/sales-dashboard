@@ -49,7 +49,9 @@ clientes_sin_ventas = len(df_ventas[df_ventas['cantidad_total'] == 0])
 print(f"Cargados {len(df_ventas):,} clientes ({clientes_con_ventas:,} con ventas, {clientes_sin_ventas:,} sin ventas)")
 
 # Crear app
-app = Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=dmc.styles.ALL)
+app = Dash(__name__, suppress_callback_exceptions=True,
+           external_stylesheets=dmc.styles.ALL,
+           external_scripts=['https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'])
 app.title = "Medallion ETL - Dashboard"
 
 # Datos para YTD Dashboard
