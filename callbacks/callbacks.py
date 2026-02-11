@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import callback, clientside_callback, Output, Input, html
+from dash import callback, clientside_callback, Output, Input, State, html
 
 from data.queries import (
     obtener_rutas, obtener_preventistas, obtener_marcas, obtener_anios_disponibles,
@@ -15,6 +15,20 @@ from data.queries import (
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
 from config import METRICA_LABELS
+
+
+# =============================================================================
+# CALLBACK DRAWER DE FILTROS
+# =============================================================================
+
+@callback(
+    Output('drawer-filtros', 'opened'),
+    Input('btn-toggle-filtros', 'n_clicks'),
+    State('drawer-filtros', 'opened'),
+    prevent_initial_call=True
+)
+def toggle_drawer(n_clicks, opened):
+    return not opened
 
 
 # =============================================================================
