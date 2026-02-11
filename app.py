@@ -22,6 +22,7 @@ from layouts.home_layout import create_home_layout
 from layouts.main_layout import create_ventas_layout
 from layouts.ytd_layout import create_ytd_layout
 from layouts.cliente_layout import create_cliente_layout
+from layouts.clientes_layout import create_clientes_layout
 from data.ytd_queries import obtener_anios_disponibles_ytd, obtener_mes_actual, obtener_anio_actual
 
 # Obtener rango de fechas
@@ -104,6 +105,8 @@ def display_page(pathname):
         return ventas_layout
     elif pathname == '/ytd':
         return ytd_layout
+    elif pathname == '/clientes':
+        return create_clientes_layout()
     elif pathname and pathname.startswith('/cliente/'):
         parts = pathname.strip('/').split('/')
         if len(parts) == 2:
@@ -177,6 +180,7 @@ def display_page(pathname):
 import callbacks.callbacks  # noqa: E402, F401
 import callbacks.ytd_callbacks  # noqa: E402, F401
 import callbacks.cliente_callbacks  # noqa: E402, F401
+import callbacks.clientes_callbacks  # noqa: E402, F401
 
 
 if __name__ == '__main__':

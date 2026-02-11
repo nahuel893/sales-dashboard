@@ -61,6 +61,14 @@ def create_home_layout():
             'href': '/ytd'
         },
         {
+            'id': 'clientes',
+            'icon': '🔍',
+            'title': 'Buscar Clientes',
+            'description': 'Busca clientes por nombre, fantasia o codigo. Accede al detalle con su historial de ventas.',
+            'color': '#27ae60',
+            'href': '/clientes'
+        },
+        {
             'id': 'nuevo',
             'icon': '🚧',
             'title': 'Nuevo Tablero',

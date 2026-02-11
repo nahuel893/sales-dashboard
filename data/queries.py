@@ -462,6 +462,41 @@ def cargar_ventas_por_cliente_generico(fecha_desde=None, fecha_hasta=None, gener
     return df
 
 
+def buscar_clientes(texto_busqueda, limite=50):
+    """Busca clientes por razon social, fantasia o ID."""
+    texto = texto_busqueda.strip().replace("'", "''")
+
+    # Si es numérico, buscar también por ID
+    try:
+        id_num = int(texto)
+        filtro_id = f"OR c.id_cliente = {id_num}"
+    except ValueError:
+        filtro_id = ""
+
+    query = f"""
+        SELECT DISTINCT
+            c.id_cliente,
+            c.razon_social,
+            COALESCE(c.fantasia, '') as fantasia,
+            COALESCE(c.des_localidad, 'Sin localidad') as localidad,
+            COALESCE(c.des_provincia, 'Sin provincia') as provincia,
+            COALESCE(c.des_canal_mkt, 'Sin canal') as canal,
+            COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal,
+            COALESCE(c.des_ramo, 'Sin ramo') as ramo
+        FROM gold.dim_cliente c
+        WHERE (
+            c.razon_social ILIKE '%%{texto}%%'
+            OR c.fantasia ILIKE '%%{texto}%%'
+            {filtro_id}
+        )
+        ORDER BY c.razon_social
+        LIMIT {int(limite)}
+    """
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
+    return df
+
+
 def cargar_info_cliente(id_cliente):
     """Obtiene datos maestros de un cliente desde dim_cliente."""
     query = f"""
