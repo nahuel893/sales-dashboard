@@ -3,9 +3,12 @@ Callbacks del detalle de cliente.
 Carga informacion del cliente y construye arbol de ventas: generico -> marca -> articulo.
 Muestra bultos por mes en columnas. Articulos sin venta aparecen con 0.
 """
-from dash import callback, Output, Input, html
+import io
+from dash import callback, Output, Input, State, html, dcc, ctx, ALL, no_update
 import dash_mantine_components as dmc
 import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 from data.queries import cargar_info_cliente, cargar_ventas_cliente_detalle
 
@@ -128,7 +131,18 @@ def cargar_detalle_cliente(store_data):
     # Arbol accordion con todos los articulos
     tree = _build_generico_accordion(df_all, periodos)
 
-    content = html.Div([resumen, tree])
+    btn_excel_completo = html.Button(
+        "Exportar Todo a Excel",
+        id='btn-excel-completo',
+        style={
+            'padding': '8px 20px', 'fontSize': '14px', 'cursor': 'pointer',
+            'border': '1px solid #217346', 'borderRadius': '6px',
+            'backgroundColor': '#fff', 'color': '#217346', 'fontWeight': 'bold',
+            'marginBottom': '15px',
+        }
+    )
+
+    content = html.Div([resumen, btn_excel_completo, tree])
     return header, content
 
 
@@ -187,6 +201,8 @@ def _build_generico_accordion(df_all, periodos):
                 html.Button("Descargar PNG", className='btn-descargar-marca',
                             **{'data-generico': generico, 'data-marca': marca},
                             style=btn_style),
+                html.Button("Excel", id={'type': 'btn-excel-marca', 'index': f'{generico}||{marca}'},
+                            style={**btn_style, 'color': '#217346'}),
             ], style={'marginBottom': '8px', 'display': 'flex', 'gap': '8px'})
 
             marca_items.append(
@@ -306,3 +322,277 @@ def _build_articulo_table(df_marca, periodos):
         ),
         style={'overflowX': 'auto', 'maxWidth': '100%'}
     )
+
+
+# =============================================================================
+# HELPERS EXCEL
+# =============================================================================
+
+# Estilos reutilizables para openpyxl
+_FONT_BOLD = Font(bold=True)
+_FONT_HEADER = Font(bold=True, size=11)
+_FONT_GENERICO = Font(bold=True, size=12)
+_FONT_MARCA = Font(bold=True, size=11, color='333333')
+_FILL_HEADER = PatternFill('solid', fgColor='E0E0E0')
+_FILL_GENERICO = PatternFill('solid', fgColor='D6E4F0')
+_FILL_MARCA = PatternFill('solid', fgColor='F0F0F0')
+_FILL_SUBTOTAL = PatternFill('solid', fgColor='F5F8FC')
+_FILL_TOTAL = PatternFill('solid', fgColor='D6E4F0')
+_BORDER_THIN = Border(bottom=Side(style='thin', color='CCCCCC'))
+_ALIGN_RIGHT = Alignment(horizontal='right')
+_ALIGN_CENTER = Alignment(horizontal='center')
+
+
+def _preparar_datos_excel(id_cliente):
+    """Carga y prepara datos del cliente para exportar a Excel."""
+    df_all = cargar_ventas_cliente_detalle(id_cliente)
+    if len(df_all) == 0:
+        return df_all, []
+
+    df_con_venta = df_all.dropna(subset=['bultos']).copy()
+    df_con_venta['bultos'] = df_con_venta['bultos'].astype(float)
+
+    arts_con_venta = set(df_con_venta['id_articulo'].unique())
+    df_sin_venta_arts = df_all[~df_all['id_articulo'].isin(arts_con_venta)].drop_duplicates(subset=['id_articulo'])
+
+    periodos = sorted(
+        df_con_venta[['anio', 'mes']].drop_duplicates().values.tolist()
+    ) if len(df_con_venta) > 0 else []
+
+    if len(df_sin_venta_arts) > 0:
+        df_sv = df_sin_venta_arts[['id_articulo', 'generico', 'marca', 'articulo']].copy()
+        df_sv['anio'] = pd.NA
+        df_sv['mes'] = pd.NA
+        df_sv['bultos'] = 0.0
+        df_all = pd.concat([df_con_venta, df_sv], ignore_index=True)
+    else:
+        df_all = df_con_venta
+
+    return df_all, periodos
+
+
+def _escribir_tabla_marca(ws, row, df_marca, periodos, escribir_header=True):
+    """Escribe una tabla de artículos por marca en la hoja. Retorna la fila siguiente."""
+    df_con_periodos = df_marca.dropna(subset=['anio', 'mes'])
+    pivot = df_con_periodos.groupby(['articulo', 'anio', 'mes'])['bultos'].sum().to_dict() if len(df_con_periodos) > 0 else {}
+    art_totals = df_marca.groupby('articulo')['bultos'].sum().sort_values(ascending=False)
+    art_ids = df_marca.groupby('articulo')['id_articulo'].first().to_dict()
+
+    col_meses = [_periodo_label(int(a), int(m)) for a, m in periodos]
+    headers = ['Cod', 'Articulo'] + col_meses + ['Total']
+
+    if escribir_header:
+        for c, h in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=c, value=h)
+            cell.font = _FONT_HEADER
+            cell.fill = _FILL_HEADER
+            cell.alignment = _ALIGN_CENTER if c != 2 else Alignment()
+        row += 1
+
+    for articulo in art_totals.index:
+        total = art_totals[articulo]
+        cod = art_ids.get(articulo, '')
+        ws.cell(row=row, column=1, value=cod).alignment = _ALIGN_CENTER
+        ws.cell(row=row, column=2, value=articulo)
+        for ci, (anio, mes) in enumerate(periodos):
+            val = pivot.get((articulo, anio, mes))
+            cell = ws.cell(row=row, column=3 + ci, value=val if val else None)
+            cell.alignment = _ALIGN_RIGHT
+            cell.number_format = '#,##0'
+        cell_total = ws.cell(row=row, column=3 + len(periodos), value=total)
+        cell_total.font = _FONT_BOLD
+        cell_total.alignment = _ALIGN_RIGHT
+        cell_total.number_format = '#,##0'
+        row += 1
+
+    # Fila subtotal
+    ws.cell(row=row, column=2, value='Total').font = _FONT_BOLD
+    mes_totals = df_con_periodos.groupby(['anio', 'mes'])['bultos'].sum().to_dict() if len(df_con_periodos) > 0 else {}
+    for ci, (anio, mes) in enumerate(periodos):
+        val = mes_totals.get((anio, mes))
+        cell = ws.cell(row=row, column=3 + ci, value=val if val else None)
+        cell.font = _FONT_BOLD
+        cell.alignment = _ALIGN_RIGHT
+        cell.number_format = '#,##0'
+        cell.fill = _FILL_SUBTOTAL
+    cell_gt = ws.cell(row=row, column=3 + len(periodos), value=df_marca['bultos'].sum())
+    cell_gt.font = _FONT_BOLD
+    cell_gt.alignment = _ALIGN_RIGHT
+    cell_gt.number_format = '#,##0'
+    cell_gt.fill = _FILL_SUBTOTAL
+    row += 1
+
+    return row
+
+
+def _generar_excel_marca(id_cliente, generico, marca):
+    """Genera Excel para una marca específica."""
+    df_all, periodos = _preparar_datos_excel(id_cliente)
+    if len(df_all) == 0:
+        return None
+
+    df_marca = df_all[(df_all['generico'] == generico) & (df_all['marca'] == marca)]
+    if len(df_marca) == 0:
+        return None
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = marca[:31]  # max 31 chars
+
+    # Título
+    ws.cell(row=1, column=1, value=f'{generico} — {marca}').font = _FONT_GENERICO
+    row = 3
+    row = _escribir_tabla_marca(ws, row, df_marca, periodos)
+
+    # Ajustar anchos
+    ws.column_dimensions['A'].width = 8
+    ws.column_dimensions['B'].width = 35
+    n_cols = 3 + len(periodos)
+    for c in range(3, n_cols + 1):
+        ws.column_dimensions[ws.cell(row=1, column=c).column_letter].width = 12
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+def _generar_excel_completo(id_cliente):
+    """Genera Excel con todo el árbol genérico→marca→artículo con subtotales."""
+    df_info = cargar_info_cliente(id_cliente)
+    df_all, periodos = _preparar_datos_excel(id_cliente)
+    if len(df_all) == 0:
+        return None
+
+    cliente_nombre = df_info.iloc[0]['razon_social'] if len(df_info) > 0 else f'Cliente {id_cliente}'
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Detalle'
+
+    # Título del cliente
+    ws.cell(row=1, column=1, value=f'{cliente_nombre} [{id_cliente}]').font = Font(bold=True, size=14)
+    row = 3
+
+    col_meses = [_periodo_label(int(a), int(m)) for a, m in periodos]
+    n_cols = 3 + len(periodos)
+
+    gen_totals = df_all.groupby('generico')['bultos'].sum().sort_values(ascending=False)
+
+    for generico in gen_totals.index:
+        df_gen = df_all[df_all['generico'] == generico]
+
+        # Fila genérico
+        cell_gen = ws.cell(row=row, column=1, value=f'{generico}')
+        cell_gen.font = _FONT_GENERICO
+        for c in range(1, n_cols + 1):
+            ws.cell(row=row, column=c).fill = _FILL_GENERICO
+        row += 1
+
+        marca_totals = df_gen.groupby('marca')['bultos'].sum().sort_values(ascending=False)
+        gen_mes_totals = {(a, m): 0 for a, m in periodos}
+        gen_gran_total = 0
+
+        for marca in marca_totals.index:
+            df_marca = df_gen[df_gen['marca'] == marca]
+
+            # Fila marca
+            cell_m = ws.cell(row=row, column=1, value=f'  {marca}')
+            cell_m.font = _FONT_MARCA
+            for c in range(1, n_cols + 1):
+                ws.cell(row=row, column=c).fill = _FILL_MARCA
+            row += 1
+
+            # Tabla de artículos
+            row = _escribir_tabla_marca(ws, row, df_marca, periodos)
+
+            # Acumular totales del genérico
+            df_con_p = df_marca.dropna(subset=['anio', 'mes'])
+            if len(df_con_p) > 0:
+                for (a, m), val in df_con_p.groupby(['anio', 'mes'])['bultos'].sum().items():
+                    gen_mes_totals[(a, m)] = gen_mes_totals.get((a, m), 0) + val
+            gen_gran_total += df_marca['bultos'].sum()
+
+            row += 1  # Espacio entre marcas
+
+        # Fila total genérico
+        ws.cell(row=row, column=1, value=f'TOTAL {generico}').font = Font(bold=True, size=11)
+        for ci, (anio, mes) in enumerate(periodos):
+            val = gen_mes_totals.get((anio, mes), 0)
+            cell = ws.cell(row=row, column=3 + ci, value=val if val else None)
+            cell.font = _FONT_BOLD
+            cell.alignment = _ALIGN_RIGHT
+            cell.number_format = '#,##0'
+            cell.fill = _FILL_TOTAL
+        cell_gt = ws.cell(row=row, column=n_cols, value=gen_gran_total)
+        cell_gt.font = _FONT_BOLD
+        cell_gt.alignment = _ALIGN_RIGHT
+        cell_gt.number_format = '#,##0'
+        cell_gt.fill = _FILL_TOTAL
+        row += 2  # Espacio entre genéricos
+
+    # Ajustar anchos
+    ws.column_dimensions['A'].width = 10
+    ws.column_dimensions['B'].width = 35
+    for c in range(3, n_cols + 1):
+        ws.column_dimensions[ws.cell(row=1, column=c).column_letter].width = 12
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+# =============================================================================
+# CALLBACKS EXCEL
+# =============================================================================
+
+@callback(
+    Output('download-excel-marca', 'data'),
+    Input({'type': 'btn-excel-marca', 'index': ALL}, 'n_clicks'),
+    State('cliente-id-store', 'data'),
+    prevent_initial_call=True
+)
+def exportar_marca_excel(n_clicks_list, store_data):
+    """Exporta a Excel la tabla de una marca específica."""
+    if not any(n_clicks_list) or not store_data:
+        return no_update
+
+    triggered = ctx.triggered_id
+    if not triggered or 'index' not in triggered:
+        return no_update
+
+    parts = triggered['index'].split('||')
+    if len(parts) != 2:
+        return no_update
+
+    generico, marca = parts
+    id_cliente = store_data['id_cliente']
+
+    excel_bytes = _generar_excel_marca(id_cliente, generico, marca)
+    if excel_bytes is None:
+        return no_update
+
+    filename = f"{generico}_{marca}.xlsx".replace(' ', '_')
+    return dcc.send_bytes(excel_bytes, filename)
+
+
+@callback(
+    Output('download-excel-completo', 'data'),
+    Input('btn-excel-completo', 'n_clicks'),
+    State('cliente-id-store', 'data'),
+    prevent_initial_call=True
+)
+def exportar_completo_excel(n_clicks, store_data):
+    """Exporta a Excel todo el árbol genérico→marca→artículo con subtotales."""
+    if not n_clicks or not store_data:
+        return no_update
+
+    id_cliente = store_data['id_cliente']
+
+    excel_bytes = _generar_excel_completo(id_cliente)
+    if excel_bytes is None:
+        return no_update
+
+    filename = f"cliente_{id_cliente}_completo.xlsx"
+    return dcc.send_bytes(excel_bytes, filename)

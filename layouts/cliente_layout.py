@@ -9,6 +9,8 @@ def create_cliente_layout(id_cliente):
     """Crea el layout del detalle de cliente con store para el ID."""
     return html.Div([
         dcc.Store(id='cliente-id-store', data={'id_cliente': id_cliente}),
+        dcc.Download(id='download-excel-marca'),
+        dcc.Download(id='download-excel-completo'),
 
         # Header
         html.Div([
