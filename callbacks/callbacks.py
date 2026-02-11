@@ -411,10 +411,10 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 fig.add_trace(go.Scattermap(
                     lat=df_sin_ventas['latitud'], lon=df_sin_ventas['longitud'],
                     mode='markers',
-                    marker=dict(size=7, color='#aaaaaa', symbol='cross'),
+                    marker=dict(size=7, color='#ff0000', symbol='cross'),
                     name='Sin ventas',
                     text=df_sin_ventas['razon_social'],
-                    hovertemplate='<b>%{text}</b><br>Localidad: %{customdata[0]}<br><b>Sin ventas</b><extra></extra>',
+                    hovertemplate='<b>[%{customdata[6]}] %{text}</b><br>Localidad: %{customdata[0]}<br><b>Sin ventas</b><extra></extra>',
                     customdata=df_sin_ventas[['localidad', 'subcanal', '_pad1', '_pad2', '_pad3', '_pad4', 'id_cliente']].values
                 ))
 
@@ -1108,11 +1108,11 @@ def actualizar_mapa_compro(fechas_value, canales, subcanales, localidades, lista
                 lat=df_no_compro['latitud'],
                 lon=df_no_compro['longitud'],
                 mode='markers',
-                marker=dict(size=8, color='#e74c3c', symbol='cross'),
+                marker=dict(size=8, color='#ff0000', symbol='cross'),
                 name=f'No compro ({len(df_no_compro):,})',
                 text=df_no_compro['razon_social'],
-                hovertemplate='<b>%{text}</b><br>Localidad: %{customdata[0]}<br>Canal: %{customdata[1]}<br><b style="color:red">NO COMPRO</b><extra></extra>',
-                customdata=df_no_compro[['localidad', 'canal']].values
+                hovertemplate='<b>[%{customdata[2]}] %{text}</b><br>Localidad: %{customdata[0]}<br>Canal: %{customdata[1]}<br><b style="color:red">NO COMPRO</b><extra></extra>',
+                customdata=df_no_compro[['localidad', 'canal', 'id_cliente']].values
             ))
 
         # Clientes que SI compraron (VERDE)
