@@ -12,10 +12,6 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
     # Estilo común para labels de sección
     label_style = {'fontWeight': 'bold', 'fontSize': '14px', 'color': DARK['text_secondary']}
 
-    # Helper: stack vertical de filtros con separación
-    def filtro_stack(children):
-        return dmc.Stack(children, gap="sm")
-
     return html.Div([
         # Div oculto para clientside callback de click en mapa
         html.Div(id='click-output-dummy', style={'display': 'none'}),
@@ -40,319 +36,262 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                 dmc.ScrollArea(
                     h="calc(100vh - 80px)",
                     children=[
-                        dmc.Accordion(
-                            multiple=True,
-                            value=["fechas", "cliente", "producto", "metrica", "fuerza-ventas", "opciones-mapa"],
-                            styles={
-                                "control": {"backgroundColor": DARK['surface'], "color": DARK['text']},
-                                "panel": {"backgroundColor": DARK['card']},
-                                "item": {"borderColor": DARK['border']},
-                            },
-                            children=[
-                                # --- Fechas ---
-                                dmc.AccordionItem(
-                                    value="fechas",
-                                    children=[
-                                        dmc.AccordionControl("Fechas"),
-                                        dmc.AccordionPanel(
-                                            dmc.DatePickerInput(
-                                                id='filtro-fechas',
-                                                label="Rango de Fechas",
-                                                type="range",
-                                                value=[str(fecha_desde_default), str(fecha_hasta_default)],
-                                                valueFormat="DD/MM/YYYY",
-                                                w="100%",
-                                                popoverProps={"zIndex": 1100},
-                                            ),
-                                        ),
-                                    ],
-                                ),
+                        dmc.Stack(gap="md", children=[
+                            # --- Fechas ---
+                            dmc.Text("Fechas", fw=600, size="sm", c=DARK['text']),
+                            dmc.DatePickerInput(
+                                id='filtro-fechas',
+                                label="Rango de Fechas",
+                                type="range",
+                                value=[str(fecha_desde_default), str(fecha_hasta_default)],
+                                valueFormat="DD/MM/YYYY",
+                                w="100%",
+                                popoverProps={"zIndex": 1100},
+                            ),
+                            dmc.Divider(color=DARK['border']),
 
-                                # --- Cliente ---
-                                dmc.AccordionItem(
-                                    value="cliente",
-                                    children=[
-                                        dmc.AccordionControl("Cliente"),
-                                        dmc.AccordionPanel(
-                                            filtro_stack([
-                                                dmc.MultiSelect(
-                                                    id='filtro-canal',
-                                                    label="Canal",
-                                                    data=[],
-                                                    value=[],
-                                                    placeholder="Todos los canales",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                                dmc.MultiSelect(
-                                                    id='filtro-subcanal',
-                                                    label="Subcanal",
-                                                    data=[],
-                                                    value=[],
-                                                    placeholder="Todos los subcanales",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                                dmc.MultiSelect(
-                                                    id='filtro-localidad',
-                                                    label="Localidad",
-                                                    data=[],
-                                                    value=[],
-                                                    placeholder="Todas las localidades",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                                dmc.MultiSelect(
-                                                    id='filtro-lista-precio',
-                                                    label="Lista Precio",
-                                                    data=[],
-                                                    value=[],
-                                                    placeholder="Todas las listas",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                                html.Div([
-                                                    html.Label("Tipo Sucursal", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                                    dmc.SegmentedControl(
-                                                        id='filtro-tipo-sucursal',
-                                                        data=[
-                                                            {"label": "Todas", "value": "TODAS"},
-                                                            {"label": "Sucursales", "value": "SUCURSALES"},
-                                                            {"label": "Casa Central", "value": "CASA_CENTRAL"},
-                                                        ],
-                                                        value="TODAS",
-                                                        size="sm",
-                                                        fullWidth=True,
-                                                    ),
-                                                ]),
-                                                dmc.MultiSelect(
-                                                    id='filtro-sucursal',
-                                                    label="Sucursal",
-                                                    data=[],
-                                                    value=[],
-                                                    placeholder="Todas las sucursales",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                            ]),
-                                        ),
+                            # --- Cliente ---
+                            dmc.Text("Cliente", fw=600, size="sm", c=DARK['text']),
+                            dmc.MultiSelect(
+                                id='filtro-canal',
+                                label="Canal",
+                                data=[],
+                                value=[],
+                                placeholder="Todos los canales",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            dmc.MultiSelect(
+                                id='filtro-subcanal',
+                                label="Subcanal",
+                                data=[],
+                                value=[],
+                                placeholder="Todos los subcanales",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            dmc.MultiSelect(
+                                id='filtro-localidad',
+                                label="Localidad",
+                                data=[],
+                                value=[],
+                                placeholder="Todas las localidades",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            dmc.MultiSelect(
+                                id='filtro-lista-precio',
+                                label="Lista Precio",
+                                data=[],
+                                value=[],
+                                placeholder="Todas las listas",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            html.Div([
+                                html.Label("Tipo Sucursal", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                                dmc.SegmentedControl(
+                                    id='filtro-tipo-sucursal',
+                                    data=[
+                                        {"label": "Todas", "value": "TODAS"},
+                                        {"label": "Sucursales", "value": "SUCURSALES"},
+                                        {"label": "Casa Central", "value": "CASA_CENTRAL"},
                                     ],
+                                    value="TODAS",
+                                    size="sm",
+                                    fullWidth=True,
                                 ),
+                            ]),
+                            dmc.MultiSelect(
+                                id='filtro-sucursal',
+                                label="Sucursal",
+                                data=[],
+                                value=[],
+                                placeholder="Todas las sucursales",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            dmc.Divider(color=DARK['border']),
 
-                                # --- Producto ---
-                                dmc.AccordionItem(
-                                    value="producto",
-                                    children=[
-                                        dmc.AccordionControl("Producto"),
-                                        dmc.AccordionPanel(
-                                            filtro_stack([
-                                                dmc.MultiSelect(
-                                                    id='filtro-generico',
-                                                    label="Generico",
-                                                    data=[g for g in lista_genericos],
-                                                    value=[],
-                                                    placeholder="Todos los genericos",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                                dmc.MultiSelect(
-                                                    id='filtro-marca',
-                                                    label="Marca",
-                                                    data=[m for m in lista_marcas],
-                                                    value=[],
-                                                    placeholder="Todas las marcas",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                            ]),
-                                        ),
-                                    ],
-                                ),
+                            # --- Producto ---
+                            dmc.Text("Producto", fw=600, size="sm", c=DARK['text']),
+                            dmc.MultiSelect(
+                                id='filtro-generico',
+                                label="Generico",
+                                data=[g for g in lista_genericos],
+                                value=[],
+                                placeholder="Todos los genericos",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            dmc.MultiSelect(
+                                id='filtro-marca',
+                                label="Marca",
+                                data=[m for m in lista_marcas],
+                                value=[],
+                                placeholder="Todas las marcas",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            dmc.Divider(color=DARK['border']),
 
-                                # --- Metrica ---
-                                dmc.AccordionItem(
-                                    value="metrica",
-                                    children=[
-                                        dmc.AccordionControl("Metrica"),
-                                        dmc.AccordionPanel(
-                                            dmc.SegmentedControl(
-                                                id='filtro-metrica',
-                                                data=[
-                                                    {"label": "Bultos", "value": "cantidad_total"},
-                                                    {"label": "Facturación", "value": "facturacion"},
-                                                    {"label": "Documentos", "value": "cantidad_documentos"},
-                                                ],
-                                                value="cantidad_total",
-                                                size="sm",
-                                                fullWidth=True,
-                                            ),
-                                        ),
-                                    ],
-                                ),
+                            # --- Metrica ---
+                            dmc.Text("Metrica", fw=600, size="sm", c=DARK['text']),
+                            dmc.SegmentedControl(
+                                id='filtro-metrica',
+                                data=[
+                                    {"label": "Bultos", "value": "cantidad_total"},
+                                    {"label": "Facturación", "value": "facturacion"},
+                                    {"label": "Documentos", "value": "cantidad_documentos"},
+                                ],
+                                value="cantidad_total",
+                                size="sm",
+                                fullWidth=True,
+                            ),
+                            dmc.Divider(color=DARK['border']),
 
-                                # --- Fuerza de Ventas ---
-                                dmc.AccordionItem(
-                                    value="fuerza-ventas",
-                                    children=[
-                                        dmc.AccordionControl("Fuerza de Ventas"),
-                                        dmc.AccordionPanel(
-                                            filtro_stack([
-                                                html.Div([
-                                                    html.Label("Fuerza de Ventas", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                                    dmc.SegmentedControl(
-                                                        id='filtro-fuerza-venta',
-                                                        data=[
-                                                            {"label": "Todos", "value": "TODOS"},
-                                                            {"label": "FV1", "value": "FV1"},
-                                                            {"label": "FV4", "value": "FV4"},
-                                                        ],
-                                                        value="TODOS",
-                                                        size="sm",
-                                                        fullWidth=True,
-                                                    ),
-                                                ]),
-                                                dmc.MultiSelect(
-                                                    id='filtro-ruta',
-                                                    label="Ruta",
-                                                    data=lista_rutas,
-                                                    value=[],
-                                                    placeholder="Todas las rutas",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                                dmc.MultiSelect(
-                                                    id='filtro-preventista',
-                                                    label="Preventista",
-                                                    data=[p for p in lista_preventistas],
-                                                    value=[],
-                                                    placeholder="Todos los preventistas",
-                                                    searchable=True,
-                                                    clearable=True,
-                                                    comboboxProps={"zIndex": 1100},
-                                                ),
-                                            ]),
-                                        ),
-                                    ],
-                                ),
+                            # --- Fuerza de Ventas ---
+                            dmc.Text("Fuerza de Ventas", fw=600, size="sm", c=DARK['text']),
+                            dmc.SegmentedControl(
+                                id='filtro-fuerza-venta',
+                                data=[
+                                    {"label": "Todos", "value": "TODOS"},
+                                    {"label": "FV1", "value": "FV1"},
+                                    {"label": "FV4", "value": "FV4"},
+                                ],
+                                value="TODOS",
+                                size="sm",
+                                fullWidth=True,
+                            ),
+                            dmc.MultiSelect(
+                                id='filtro-ruta',
+                                label="Ruta",
+                                data=lista_rutas,
+                                value=[],
+                                placeholder="Todas las rutas",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            dmc.MultiSelect(
+                                id='filtro-preventista',
+                                label="Preventista",
+                                data=[p for p in lista_preventistas],
+                                value=[],
+                                placeholder="Todos los preventistas",
+                                searchable=True,
+                                clearable=True,
+                                comboboxProps={"zIndex": 1100},
+                            ),
+                            dmc.Divider(color=DARK['border']),
 
-                                # --- Opciones de Mapa ---
-                                dmc.AccordionItem(
-                                    value="opciones-mapa",
+                            # --- Opciones de Mapa ---
+                            dmc.Text("Opciones de Mapa", fw=600, size="sm", c=DARK['text']),
+                            html.Div([
+                                html.Label("Mostrar zonas", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                                dmc.ChipGroup(
+                                    id='opciones-zonas',
                                     children=[
-                                        dmc.AccordionControl("Opciones de Mapa"),
-                                        dmc.AccordionPanel(
-                                            filtro_stack([
-                                                html.Div([
-                                                    html.Label("Mostrar zonas", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                                    dmc.ChipGroup(
-                                                        id='opciones-zonas',
-                                                        children=[
-                                                            dmc.Chip("Zonas por Ruta", value="ruta"),
-                                                            dmc.Chip("Zonas por Preventista", value="preventista"),
-                                                        ],
-                                                        value=[],
-                                                        multiple=True,
-                                                    ),
-                                                ]),
-                                                dmc.Switch(
-                                                    id='opcion-escala-log',
-                                                    label="Escala Logaritmica",
-                                                    checked=True,
-                                                    size="sm",
-                                                ),
-                                                html.Div([
-                                                    html.Label("Tipo mapa calor", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                                    dmc.SegmentedControl(
-                                                        id='tipo-mapa-calor',
-                                                        data=[
-                                                            {"label": "Difuso", "value": "density"},
-                                                            {"label": "Grilla", "value": "grilla"},
-                                                        ],
-                                                        value="density",
-                                                        size="sm",
-                                                        fullWidth=True,
-                                                    ),
-                                                ]),
-                                                html.Div([
-                                                    html.Label("Tamano celda", style={**label_style, 'display': 'block', 'marginBottom': '8px'}),
-                                                    dmc.Slider(
-                                                        id='slider-precision',
-                                                        min=1,
-                                                        max=3,
-                                                        step=0.25,
-                                                        value=2,
-                                                        marks=[
-                                                            {"value": 1, "label": "10km"},
-                                                            {"value": 2, "label": "1km"},
-                                                            {"value": 3, "label": "100m"},
-                                                        ],
-                                                        mb="lg",
-                                                    ),
-                                                ]),
-                                                html.Div([
-                                                    html.Label("Radio difuso", style={**label_style, 'display': 'block', 'marginBottom': '8px'}),
-                                                    dmc.Slider(
-                                                        id='slider-radio-difuso',
-                                                        min=10,
-                                                        max=100,
-                                                        step=10,
-                                                        value=50,
-                                                        marks=[
-                                                            {"value": 10, "label": "10"},
-                                                            {"value": 50, "label": "50"},
-                                                            {"value": 100, "label": "100"},
-                                                        ],
-                                                        mb="lg",
-                                                    ),
-                                                ]),
-                                                html.Div([
-                                                    html.Label("Normalizacion", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                                    dmc.SegmentedControl(
-                                                        id='tipo-normalizacion',
-                                                        data=[
-                                                            {"label": "Normal", "value": "normal"},
-                                                            {"label": "Percentil", "value": "percentil"},
-                                                            {"label": "Limitado", "value": "limitado"},
-                                                        ],
-                                                        value="normal",
-                                                        size="sm",
-                                                        fullWidth=True,
-                                                    ),
-                                                ]),
-                                                dmc.Switch(
-                                                    id='opcion-animacion',
-                                                    label="Activar animacion temporal",
-                                                    checked=False,
-                                                    size="sm",
-                                                ),
-                                                html.Div([
-                                                    html.Label("Granularidad", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                                    dmc.SegmentedControl(
-                                                        id='granularidad-animacion',
-                                                        data=[
-                                                            {"label": "Dia", "value": "dia"},
-                                                            {"label": "Semana", "value": "semana"},
-                                                            {"label": "Mes", "value": "mes"},
-                                                        ],
-                                                        value="semana",
-                                                        size="sm",
-                                                        fullWidth=True,
-                                                    ),
-                                                ]),
-                                            ]),
-                                        ),
+                                        dmc.Chip("Zonas por Ruta", value="ruta"),
+                                        dmc.Chip("Zonas por Preventista", value="preventista"),
                                     ],
+                                    value=[],
+                                    multiple=True,
                                 ),
-                            ],
-                        ),
+                            ]),
+                            dmc.Switch(
+                                id='opcion-escala-log',
+                                label="Escala Logaritmica",
+                                checked=True,
+                                size="sm",
+                            ),
+                            html.Div([
+                                html.Label("Tipo mapa calor", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                                dmc.SegmentedControl(
+                                    id='tipo-mapa-calor',
+                                    data=[
+                                        {"label": "Difuso", "value": "density"},
+                                        {"label": "Grilla", "value": "grilla"},
+                                    ],
+                                    value="density",
+                                    size="sm",
+                                    fullWidth=True,
+                                ),
+                            ]),
+                            html.Div([
+                                html.Label("Tamano celda", style={**label_style, 'display': 'block', 'marginBottom': '8px'}),
+                                dmc.Slider(
+                                    id='slider-precision',
+                                    min=1,
+                                    max=3,
+                                    step=0.25,
+                                    value=2,
+                                    marks=[
+                                        {"value": 1, "label": "10km"},
+                                        {"value": 2, "label": "1km"},
+                                        {"value": 3, "label": "100m"},
+                                    ],
+                                    mb="lg",
+                                ),
+                            ]),
+                            html.Div([
+                                html.Label("Radio difuso", style={**label_style, 'display': 'block', 'marginBottom': '8px'}),
+                                dmc.Slider(
+                                    id='slider-radio-difuso',
+                                    min=10,
+                                    max=100,
+                                    step=10,
+                                    value=50,
+                                    marks=[
+                                        {"value": 10, "label": "10"},
+                                        {"value": 50, "label": "50"},
+                                        {"value": 100, "label": "100"},
+                                    ],
+                                    mb="lg",
+                                ),
+                            ]),
+                            html.Div([
+                                html.Label("Normalizacion", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                                dmc.SegmentedControl(
+                                    id='tipo-normalizacion',
+                                    data=[
+                                        {"label": "Normal", "value": "normal"},
+                                        {"label": "Percentil", "value": "percentil"},
+                                        {"label": "Limitado", "value": "limitado"},
+                                    ],
+                                    value="normal",
+                                    size="sm",
+                                    fullWidth=True,
+                                ),
+                            ]),
+                            dmc.Switch(
+                                id='opcion-animacion',
+                                label="Activar animacion temporal",
+                                checked=False,
+                                size="sm",
+                            ),
+                            html.Div([
+                                html.Label("Granularidad", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
+                                dmc.SegmentedControl(
+                                    id='granularidad-animacion',
+                                    data=[
+                                        {"label": "Dia", "value": "dia"},
+                                        {"label": "Semana", "value": "semana"},
+                                        {"label": "Mes", "value": "mes"},
+                                    ],
+                                    value="semana",
+                                    size="sm",
+                                    fullWidth=True,
+                                ),
+                            ]),
+                        ]),
                     ],
                 ),
             ],
