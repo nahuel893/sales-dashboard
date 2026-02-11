@@ -68,9 +68,9 @@ sales-dashboard/
 
 1. **Clientes sin coordenadas**: Algunos clientes no tienen `latitud`/`longitud`. Para mapas, filtrar coordenadas válidas solo en visualización, NO en queries de datos.
 
-2. **Clientes no en dim_cliente**: Hay ventas en `fact_ventas` para clientes que no existen en `dim_cliente` (clientes anulados). Las queries DEBEN partir de `fact_ventas` con `LEFT JOIN` a `dim_cliente` para incluir todas las ventas.
+2. **Mapas: partir de dim_cliente**: `cargar_ventas_por_cliente()` parte de `dim_cliente WHERE anulado = FALSE` y hace LEFT JOIN a una subquery de `fact_ventas` (con filtros de fecha/artículo). Así aparecen TODOS los clientes activos en el mapa, incluso los que no compraron en el período. Los filtros de cliente (canal, ruta, etc.) van en WHERE sobre dim_cliente.
 
-3. **COALESCE en filtros**: Cuando se filtran campos de `dim_cliente` en SQL, usar siempre `COALESCE()` para manejar NULLs de clientes sin dim_cliente. Ejemplo: `COALESCE(c.des_canal_mkt, 'Sin canal') IN (...)`. Esto aplica tanto a queries directas como a `cargar_ventas_por_fecha()`.
+3. **Queries de métricas temporales**: `cargar_ventas_por_fecha()` y similares siguen partiendo de `fact_ventas` con LEFT JOIN a `dim_cliente` (solo para aplicar filtros de cliente). JOIN simplificado: `f.id_cliente = c.id_cliente` (sin id_sucursal, ya que id_cliente es único).
 
 4. **Fuerzas de Venta (FV)**:
    - FV1 y FV4 son fuerzas de venta independientes
@@ -79,7 +79,7 @@ sales-dashboard/
 
 5. **Claves compuestas de rutas**: Los códigos de ruta NO son globalmente únicos — se repiten entre sucursales. La clave única es `(id_sucursal, id_ruta)`. En filtros SQL usar tuplas: `(c.id_sucursal, c.id_ruta_fvX) IN ((suc1, ruta1), ...)`. Los valores del MultiSelect de rutas son strings compuestos `"id_sucursal|id_ruta"`.
 
-6. **Clientes (`id_cliente`)**: Son globalmente únicos, NO necesitan clave compuesta. JOIN a dim_cliente simplificado: `f.id_cliente = c.id_cliente` (sin id_sucursal).
+6. **Clientes (`id_cliente`)**: Son globalmente únicos, NO necesitan clave compuesta.
 
 ## Sistema de Navegación
 

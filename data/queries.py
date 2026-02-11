@@ -225,27 +225,40 @@ def _process_ventas_df(df):
 
 
 def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None):
-    """Carga ventas agregadas por cliente partiendo de fact_ventas para incluir TODAS las ventas."""
+    """Carga TODOS los clientes activos (anulado=FALSE) de dim_cliente,
+    con métricas de ventas del período via LEFT JOIN a fact_ventas."""
 
-    where_clauses = []
-
+    # --- Subquery: ventas agregadas por cliente (con filtros de fecha y artículo) ---
+    ventas_where = []
     if fecha_desde and fecha_hasta:
-        where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
+        ventas_where.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
 
     join_articulo, where_articulo = _build_articulo_filters(genericos, marcas)
-    where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta)
-
     if where_articulo:
-        where_clauses.extend(where_articulo)
-    if where_cliente:
-        where_clauses.extend(where_cliente)
+        ventas_where.extend(where_articulo)
 
-    where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
+    ventas_where_sql = " AND ".join(ventas_where) if ventas_where else "TRUE"
+
+    ventas_subquery = f"""
+        SELECT f.id_cliente,
+               SUM(f.cantidades_total) as cantidad_total,
+               SUM(f.subtotal_final) as facturacion,
+               COUNT(DISTINCT f.nro_doc) as cantidad_documentos
+        FROM gold.fact_ventas f
+        {join_articulo}
+        WHERE {ventas_where_sql}
+        GROUP BY f.id_cliente
+    """
+
+    # --- Filtros de cliente (sobre dim_cliente) ---
+    where_cliente = ["c.anulado = FALSE"]
+    where_cliente.extend(_build_cliente_filters(rutas, preventistas, fuerza_venta))
+    where_sql = " AND ".join(where_cliente)
 
     query = f"""
         SELECT
-            f.id_cliente,
-            COALESCE(c.razon_social, 'Cliente ' || f.id_cliente::text) as razon_social,
+            c.id_cliente,
+            c.razon_social,
             COALESCE(c.fantasia, '') as fantasia,
             c.latitud,
             c.longitud,
@@ -256,22 +269,18 @@ def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None
             COALESCE(c.des_segmento_mkt, 'Sin segmento') as segmento,
             COALESCE(c.des_subcanal_mkt, 'Sin subcanal') as subcanal,
             COALESCE(c.des_lista_precio, 'Sin lista') as lista_precio,
-            SUM(f.cantidades_total) as cantidad_total,
-            SUM(f.subtotal_final) as facturacion,
-            COUNT(DISTINCT f.nro_doc) as cantidad_documentos,
+            COALESCE(v.cantidad_total, 0) as cantidad_total,
+            COALESCE(v.facturacion, 0) as facturacion,
+            COALESCE(v.cantidad_documentos, 0) as cantidad_documentos,
+            c.id_sucursal,
             c.id_ruta_fv1,
             c.id_ruta_fv4,
             c.des_personal_fv1 as preventista_fv1,
             c.des_personal_fv4 as preventista_fv4,
             COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal
-        FROM gold.fact_ventas f
-        LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
-        {join_articulo}
+        FROM gold.dim_cliente c
+        LEFT JOIN ({ventas_subquery}) v ON c.id_cliente = v.id_cliente
         WHERE {where_sql}
-        GROUP BY f.id_cliente, c.razon_social, c.fantasia, c.latitud, c.longitud,
-                 c.des_localidad, c.des_provincia, c.des_ramo,
-                 c.des_canal_mkt, c.des_segmento_mkt, c.des_subcanal_mkt, c.des_lista_precio,
-                 c.id_ruta_fv1, c.id_ruta_fv4, c.des_personal_fv1, c.des_personal_fv4, c.des_sucursal
     """
 
     with engine.connect() as conn:
