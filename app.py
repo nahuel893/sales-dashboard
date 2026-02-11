@@ -53,6 +53,7 @@ print(f"Cargados {len(df_ventas):,} clientes ({clientes_con_ventas:,} con ventas
 app = Dash(__name__, suppress_callback_exceptions=True,
            external_stylesheets=dmc.styles.ALL)
 app.title = "Medallion ETL - Dashboard"
+server = app.server  # Flask server para gunicorn
 
 # Datos para YTD Dashboard
 print("Cargando datos para YTD Dashboard...")
