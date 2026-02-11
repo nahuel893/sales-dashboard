@@ -403,15 +403,19 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
 
             # Clientes sin ventas (marcados con X)
             if len(df_sin_ventas) > 0:
+                df_sin_ventas = df_sin_ventas.copy()
+                df_sin_ventas['_pad1'] = 0
+                df_sin_ventas['_pad2'] = 0
+                df_sin_ventas['_pad3'] = 0
+                df_sin_ventas['_pad4'] = ''
                 fig.add_trace(go.Scattermap(
                     lat=df_sin_ventas['latitud'], lon=df_sin_ventas['longitud'],
-                    mode='text',
-                    text=['✕'] * len(df_sin_ventas),
-                    textfont=dict(size=10, color='#aaaaaa'),
+                    mode='markers',
+                    marker=dict(size=7, color='#aaaaaa', symbol='cross'),
                     name='Sin ventas',
-                    hovertext=df_sin_ventas['razon_social'],
-                    hovertemplate='<b>%{hovertext}</b><br>Localidad: %{customdata[0]}<br><b>Sin ventas</b><extra></extra>',
-                    customdata=df_sin_ventas[['localidad', 'subcanal']].values
+                    text=df_sin_ventas['razon_social'],
+                    hovertemplate='<b>%{text}</b><br>Localidad: %{customdata[0]}<br><b>Sin ventas</b><extra></extra>',
+                    customdata=df_sin_ventas[['localidad', 'subcanal', '_pad1', '_pad2', '_pad3', '_pad4', 'id_cliente']].values
                 ))
 
             # Clientes con ventas
@@ -1103,12 +1107,11 @@ def actualizar_mapa_compro(fechas_value, canales, subcanales, localidades, lista
             fig.add_trace(go.Scattermap(
                 lat=df_no_compro['latitud'],
                 lon=df_no_compro['longitud'],
-                mode='text',
-                text=['✕'] * len(df_no_compro),
-                textfont=dict(size=12, color='#e74c3c'),
+                mode='markers',
+                marker=dict(size=8, color='#e74c3c', symbol='cross'),
                 name=f'No compro ({len(df_no_compro):,})',
-                hovertext=df_no_compro['razon_social'],
-                hovertemplate='<b>%{hovertext}</b><br>Localidad: %{customdata[0]}<br>Canal: %{customdata[1]}<br><b style="color:red">NO COMPRO</b><extra></extra>',
+                text=df_no_compro['razon_social'],
+                hovertemplate='<b>%{text}</b><br>Localidad: %{customdata[0]}<br>Canal: %{customdata[1]}<br><b style="color:red">NO COMPRO</b><extra></extra>',
                 customdata=df_no_compro[['localidad', 'canal']].values
             ))
 
