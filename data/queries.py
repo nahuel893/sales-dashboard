@@ -265,7 +265,7 @@ def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None
             c.des_personal_fv4 as preventista_fv4,
             COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal
         FROM gold.fact_ventas f
-        LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal
+        LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
         {join_articulo}
         WHERE {where_sql}
         GROUP BY f.id_cliente, c.razon_social, c.fantasia, c.latitud, c.longitud,
@@ -329,7 +329,7 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
             c.des_personal_fv4 as preventista_fv4,
             COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal
         FROM gold.fact_ventas f
-        LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal
+        LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente
         {join_articulo}
         WHERE {where_sql}
         GROUP BY f.id_cliente, c.razon_social, c.fantasia, c.latitud, c.longitud,
@@ -361,7 +361,7 @@ def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, su
         where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
 
     # Filtros de cliente (usando gold.dim_cliente)
-    join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal"
+    join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente"
 
     if canales and len(canales) > 0:
         canales_escaped = [c.replace("'", "''") for c in canales]
@@ -459,7 +459,7 @@ def cargar_ventas_por_cliente_generico(fecha_desde=None, fecha_hasta=None, gener
     # JOIN con dim_cliente solo si hay filtros de cliente
     join_cliente = ""
     if where_cliente:
-        join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal"
+        join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente"
 
     where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
 
@@ -539,7 +539,7 @@ def _build_all_filters(fecha_desde, fecha_hasta, canales, subcanales, localidade
         else:
             where_clauses.append(f"(c.des_personal_fv1 IN ({prev_list}) OR c.des_personal_fv4 IN ({prev_list}))")
 
-    join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal" if need_cliente else ""
+    join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente" if need_cliente else ""
 
     # Filtros dim_articulo
     join_articulo = ""

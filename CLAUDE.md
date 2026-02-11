@@ -79,7 +79,7 @@ sales-dashboard/
 
 5. **Claves compuestas de rutas**: Los códigos de ruta NO son globalmente únicos — se repiten entre sucursales. La clave única es `(id_sucursal, id_ruta)`. En filtros SQL usar tuplas: `(c.id_sucursal, c.id_ruta_fvX) IN ((suc1, ruta1), ...)`. Los valores del MultiSelect de rutas son strings compuestos `"id_sucursal|id_ruta"`.
 
-6. **Clientes (`id_cliente`)**: Son globalmente únicos, NO necesitan clave compuesta.
+6. **Clientes (`id_cliente`)**: Son globalmente únicos, NO necesitan clave compuesta. JOIN a dim_cliente simplificado: `f.id_cliente = c.id_cliente` (sin id_sucursal).
 
 ## Sistema de Navegación
 
