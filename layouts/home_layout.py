@@ -2,15 +2,16 @@
 Layout de página de inicio con tarjetas de navegación a tableros.
 """
 from dash import html, dcc
+from config import DARK
 
 
 def create_home_layout():
     """Crea el layout de la página de inicio con cards para cada tablero."""
 
     card_style = {
-        'backgroundColor': 'white',
+        'backgroundColor': DARK['card'],
         'borderRadius': '12px',
-        'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)',
+        'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.3)',
         'padding': '30px',
         'margin': '15px',
         'width': '300px',
@@ -21,7 +22,8 @@ def create_home_layout():
         'flexDirection': 'column',
         'justifyContent': 'space-between',
         'textDecoration': 'none',
-        'color': 'inherit'
+        'color': 'inherit',
+        'border': f'1px solid {DARK["border"]}'
     }
 
     icon_style = {
@@ -33,12 +35,12 @@ def create_home_layout():
         'fontSize': '20px',
         'fontWeight': 'bold',
         'marginBottom': '10px',
-        'color': '#1a1a2e'
+        'color': DARK['text']
     }
 
     description_style = {
         'fontSize': '14px',
-        'color': '#666',
+        'color': DARK['text_secondary'],
         'lineHeight': '1.5'
     }
 
@@ -106,28 +108,29 @@ def create_home_layout():
         html.Div([
             html.H1("Medallion ETL", style={
                 'margin': '0',
-                'color': 'white',
+                'color': DARK['text'],
                 'fontSize': '36px'
             }),
             html.P("Sistema de Análisis y Visualización de Datos",
-                   style={'margin': '10px 0 0 0', 'color': '#ccc', 'fontSize': '16px'})
+                   style={'margin': '10px 0 0 0', 'color': DARK['text_secondary'], 'fontSize': '16px'})
         ], style={
-            'backgroundColor': '#1a1a2e',
+            'backgroundColor': DARK['header'],
             'padding': '40px',
-            'textAlign': 'center'
+            'textAlign': 'center',
+            'borderBottom': f'1px solid {DARK["border"]}'
         }),
 
         # Contenido principal
         html.Div([
             html.H2("Selecciona un tablero", style={
                 'textAlign': 'center',
-                'color': '#333',
+                'color': DARK['text'],
                 'marginBottom': '10px',
                 'marginTop': '40px'
             }),
             html.P("Elige el tablero que deseas visualizar", style={
                 'textAlign': 'center',
-                'color': '#666',
+                'color': DARK['text_secondary'],
                 'marginBottom': '40px'
             }),
 
@@ -144,7 +147,7 @@ def create_home_layout():
                 }
             )
         ], style={
-            'backgroundColor': '#f5f7fa',
+            'backgroundColor': DARK['bg'],
             'minHeight': 'calc(100vh - 150px)',
             'padding': '20px'
         }),
@@ -153,13 +156,15 @@ def create_home_layout():
         html.Div([
             html.P("© 2025 Medallion ETL Dashboard", style={
                 'textAlign': 'center',
-                'color': '#999',
+                'color': DARK['text_muted'],
                 'margin': '0',
                 'padding': '20px'
             })
         ], style={
-            'backgroundColor': '#1a1a2e'
+            'backgroundColor': DARK['header'],
+            'borderTop': f'1px solid {DARK["border"]}'
         })
     ], style={
-        'fontFamily': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+        'fontFamily': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        'backgroundColor': DARK['bg']
     })

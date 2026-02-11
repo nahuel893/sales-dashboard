@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from dash import callback, Output, Input, html
 
+from config import DARK
 from data.ytd_queries import (
     obtener_ventas_ytd,
     obtener_ventas_por_mes,
@@ -101,8 +102,8 @@ def actualizar_grafico_generico(anio, mes, tipo_sucursal):
 
         if len(df) == 0:
             fig = go.Figure()
-            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
             return fig
 
         # Preparar datos
@@ -156,24 +157,26 @@ def actualizar_grafico_generico(anio, mes, tipo_sucursal):
             y=targets_vals,
             mode='markers',
             name='Objetivo',
-            marker=dict(symbol='line-ew', size=15, color='#2c3e50', line_width=3)
+            marker=dict(symbol='line-ew', size=15, color=DARK['text'], line_width=3)
         ))
 
         fig.update_layout(
             barmode='stack',
             margin=dict(l=10, r=10, t=10, b=50),
             showlegend=True,
-            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(size=14)),
-            xaxis=dict(tickfont=dict(size=14)),
-            yaxis=dict(tickfont=dict(size=14))
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(size=14, color=DARK['text'])),
+            xaxis=dict(tickfont=dict(size=14, color=DARK['text_secondary'])),
+            yaxis=dict(tickfont=dict(size=14, color=DARK['text_secondary'])),
+            plot_bgcolor=DARK['plot_bg'],
+            paper_bgcolor=DARK['paper_bg'],
         )
 
         return fig
 
     except Exception as e:
         fig = go.Figure()
-        fig.add_annotation(text=f"Error: {str(e)[:30]}", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+        fig.add_annotation(text=f"Error: {str(e)[:30]}", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
         return fig
 
 
@@ -192,8 +195,8 @@ def actualizar_grafico_mensual(anio, mes, tipo_sucursal):
 
         if len(df) == 0:
             fig = go.Figure()
-            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
             return fig
 
         meses = [MESES_NOMBRES.get(int(m), str(m)) for m in df['mes']]
@@ -233,7 +236,7 @@ def actualizar_grafico_mensual(anio, mes, tipo_sucursal):
             y=targets_list,
             mode='lines+markers',
             name='Objetivo',
-            line=dict(color='#2c3e50', width=2, dash='dot'),
+            line=dict(color=DARK['text'], width=2, dash='dot'),
             marker=dict(size=6, symbol='square')
         ))
 
@@ -248,17 +251,19 @@ def actualizar_grafico_mensual(anio, mes, tipo_sucursal):
         fig.update_layout(
             margin=dict(l=10, r=10, t=30, b=40),
             showlegend=True,
-            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(size=10)),
-            xaxis=dict(tickfont=dict(size=11)),
-            yaxis=dict(tickfont=dict(size=11))
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(size=10, color=DARK['text'])),
+            xaxis=dict(tickfont=dict(size=11, color=DARK['text_secondary'])),
+            yaxis=dict(tickfont=dict(size=11, color=DARK['text_secondary'])),
+            plot_bgcolor=DARK['plot_bg'],
+            paper_bgcolor=DARK['paper_bg'],
         )
 
         return fig
 
     except Exception as e:
         fig = go.Figure()
-        fig.add_annotation(text=f"Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+        fig.add_annotation(text=f"Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
         return fig
 
 
@@ -276,8 +281,8 @@ def actualizar_grafico_sucursal(anio, mes, tipo_sucursal):
 
         if len(df) == 0:
             fig = go.Figure()
-            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
             return fig
 
         # Limitar a top 6 sucursales
@@ -298,7 +303,7 @@ def actualizar_grafico_sucursal(anio, mes, tipo_sucursal):
             x=valores,
             orientation='h',
             name='Real',
-            marker_color='#1a5276',
+            marker_color='#3498db',
             text=[f'{v:,.0f}' for v in valores],
             textposition='outside',
             textfont=dict(size=17)
@@ -310,7 +315,7 @@ def actualizar_grafico_sucursal(anio, mes, tipo_sucursal):
             x=targets_list,
             orientation='h',
             name='Objetivo',
-            marker_color='#aed6f1',
+            marker_color='rgba(52, 152, 219, 0.3)',
             text=[f'{t:,.0f}' for t in targets_list],
             textposition='outside',
             textfont=dict(size=17)
@@ -320,17 +325,19 @@ def actualizar_grafico_sucursal(anio, mes, tipo_sucursal):
             barmode='group',
             margin=dict(l=0, r=40, t=0, b=0),
             showlegend=True,
-            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(size=11)),
-            xaxis=dict(tickfont=dict(size=11)),
-            yaxis=dict(tickfont=dict(size=11), autorange='reversed', automargin=True)
+            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1, font=dict(size=11, color=DARK['text'])),
+            xaxis=dict(tickfont=dict(size=11, color=DARK['text_secondary'])),
+            yaxis=dict(tickfont=dict(size=11, color=DARK['text_secondary']), autorange='reversed', automargin=True),
+            plot_bgcolor=DARK['plot_bg'],
+            paper_bgcolor=DARK['paper_bg'],
         )
 
         return fig
 
     except Exception as e:
         fig = go.Figure()
-        fig.add_annotation(text="Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+        fig.add_annotation(text="Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
         return fig
 
 
@@ -347,11 +354,11 @@ def actualizar_grafico_canal(anio, mes, tipo_sucursal):
 
         if len(df) == 0:
             fig = go.Figure()
-            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
             return fig
 
-        colores = ['#1a5276', '#2980b9', '#3498db', '#5dade2', '#85c1e9', '#aed6f1']
+        colores = ['#3498db', '#2980b9', '#5dade2', '#85c1e9', '#1abc9c', '#9b59b6']
 
         fig = go.Figure(data=[go.Pie(
             labels=df['canal'],
@@ -359,21 +366,22 @@ def actualizar_grafico_canal(anio, mes, tipo_sucursal):
             hole=0.5,
             marker_colors=colores[:len(df)],
             textinfo='label+percent',
-            textfont=dict(size=17),
+            textfont=dict(size=17, color=DARK['text']),
             insidetextorientation='horizontal'
         )])
 
         fig.update_layout(
             margin=dict(l=10, r=10, t=10, b=10),
-            showlegend=False
+            showlegend=False,
+            paper_bgcolor=DARK['paper_bg'],
         )
 
         return fig
 
     except Exception as e:
         fig = go.Figure()
-        fig.add_annotation(text="Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+        fig.add_annotation(text="Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor=DARK['paper_bg'])
         return fig
 
 
@@ -390,8 +398,8 @@ def actualizar_grafico_crecimiento(anio, mes, tipo_sucursal):
 
         if len(df) == 0:
             fig = go.Figure()
-            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+            fig.add_annotation(text="Sin datos", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
             return fig
 
         meses = [MESES_NOMBRES.get(int(m), str(m)) for m in df['mes']]
@@ -412,21 +420,23 @@ def actualizar_grafico_crecimiento(anio, mes, tipo_sucursal):
         ))
 
         # Línea en 0
-        fig.add_hline(y=0, line_dash="solid", line_color="#2c3e50", line_width=1)
+        fig.add_hline(y=0, line_dash="solid", line_color=DARK['text_secondary'], line_width=1)
 
         fig.update_layout(
             margin=dict(l=10, r=10, t=10, b=40),
             showlegend=False,
-            xaxis=dict(tickfont=dict(size=11)),
-            yaxis=dict(tickfont=dict(size=11), ticksuffix='%')
+            xaxis=dict(tickfont=dict(size=11, color=DARK['text_secondary'])),
+            yaxis=dict(tickfont=dict(size=11, color=DARK['text_secondary']), ticksuffix='%'),
+            plot_bgcolor=DARK['plot_bg'],
+            paper_bgcolor=DARK['paper_bg'],
         )
 
         return fig
 
     except Exception as e:
         fig = go.Figure()
-        fig.add_annotation(text="Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+        fig.add_annotation(text="Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor=DARK['plot_bg'], paper_bgcolor=DARK['paper_bg'])
         return fig
 
 
@@ -452,21 +462,21 @@ def actualizar_gauge_inventario(tipo_sucursal):
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
             value=dias,
-            title={'text': "Días", 'font': {'size': 23}},
-            number={'font': {'size': 68}},
+            title={'text': "Días", 'font': {'size': 23, 'color': DARK['text']}},
+            number={'font': {'size': 68, 'color': DARK['text']}},
             gauge={
-                'axis': {'range': [0, 180], 'tickwidth': 1, 'tickfont': {'size': 11}},
+                'axis': {'range': [0, 180], 'tickwidth': 1, 'tickfont': {'size': 11, 'color': DARK['text_secondary']}},
                 'bar': {'color': color},
-                'bgcolor': 'white',
+                'bgcolor': DARK['surface'],
                 'borderwidth': 2,
-                'bordercolor': '#ddd',
+                'bordercolor': DARK['border'],
                 'steps': [
-                    {'range': [0, 30], 'color': '#d5f5e3'},
-                    {'range': [30, 45], 'color': '#fcf3cf'},
-                    {'range': [45, 180], 'color': '#fadbd8'}
+                    {'range': [0, 30], 'color': 'rgba(39, 174, 96, 0.2)'},
+                    {'range': [30, 45], 'color': 'rgba(241, 196, 15, 0.2)'},
+                    {'range': [45, 180], 'color': 'rgba(231, 76, 60, 0.2)'}
                 ],
                 'threshold': {
-                    'line': {'color': '#2c3e50', 'width': 2},
+                    'line': {'color': DARK['text_secondary'], 'width': 2},
                     'thickness': 0.75,
                     'value': 33  # Objetivo
                 }
@@ -475,7 +485,8 @@ def actualizar_gauge_inventario(tipo_sucursal):
 
         fig.update_layout(
             margin=dict(l=20, r=20, t=30, b=10),
-            height=225
+            height=225,
+            paper_bgcolor=DARK['paper_bg'],
         )
 
         info_text = html.Div([
@@ -484,13 +495,13 @@ def actualizar_gauge_inventario(tipo_sucursal):
             html.Span("Stock: {:,.0f} | Vta/día: {:,.0f}".format(
                 data.get('stock_total', 0),
                 data.get('promedio_diario', 0)
-            ))
+            ), style={'color': DARK['text_secondary']})
         ])
 
         return fig, info_text
 
     except Exception as e:
         fig = go.Figure()
-        fig.add_annotation(text="Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=225)
+        fig.add_annotation(text="Error", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(color=DARK['text_muted']))
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=225, paper_bgcolor=DARK['paper_bg'])
         return fig, "Error al cargar datos"

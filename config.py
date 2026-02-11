@@ -77,16 +77,39 @@ GRANULARIDAD_CONFIG = {
     'mes': ('month', '%Y-%m')
 }
 
+# Paleta de tema oscuro
+DARK = {
+    'bg': '#0f1117',
+    'card': '#1a1a2e',
+    'card_alt': '#16213e',
+    'surface': '#252540',
+    'border': '#2d2d44',
+    'text': '#ffffff',
+    'text_secondary': '#a0a0b0',
+    'text_muted': '#6c6c7e',
+    'header': '#1a1a2e',
+    'accent_blue': '#3498db',
+    'accent_green': '#27ae60',
+    'accent_red': '#e74c3c',
+    'accent_purple': '#9b59b6',
+    'accent_orange': '#e67e22',
+    'accent_yellow': '#f1c40f',
+    'grid': '#2d2d44',
+    'plot_bg': '#1a1a2e',
+    'paper_bg': '#1a1a2e',
+}
+
 # Estilos comunes
 STYLES = {
     'filter_section': {
         'padding': '8px 20px 15px 20px',
-        'backgroundColor': '#f8f9fa'
+        'backgroundColor': DARK['card']
     },
     'filter_label': {
         'fontWeight': 'bold',
         'marginBottom': '5px',
-        'fontSize': '13px'
+        'fontSize': '13px',
+        'color': DARK['text_secondary']
     },
     'map_height': '87vh'
 }

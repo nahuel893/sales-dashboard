@@ -3,6 +3,7 @@ Layout del YTD Dashboard.
 Dashboard de indicadores Year-To-Date con KPIs, gráficos y comparación con targets.
 """
 from dash import html, dcc
+from config import DARK
 
 
 # Nombres de meses en español
@@ -17,41 +18,44 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
 
     # Estilos (aumentados 25%)
     kpi_card_style = {
-        'backgroundColor': 'white',
+        'backgroundColor': DARK['card'],
         'padding': '18px',
         'marginBottom': '12px',
-        'borderLeft': '5px solid #1a5276',
-        'boxShadow': '0 1px 3px rgba(0,0,0,0.1)'
+        'borderLeft': f'5px solid {DARK["accent_blue"]}',
+        'boxShadow': '0 1px 3px rgba(0,0,0,0.3)',
+        'borderRadius': '4px'
     }
 
     kpi_value_style = {
         'fontSize': '53px',
         'fontWeight': 'bold',
-        'color': '#1a1a2e',
+        'color': DARK['text'],
         'margin': '0'
     }
 
     kpi_label_style = {
         'fontSize': '15px',
-        'color': '#666',
+        'color': DARK['text_secondary'],
         'margin': '5px 0 0 0',
         'textTransform': 'uppercase'
     }
 
     chart_card_style = {
-        'backgroundColor': 'white',
+        'backgroundColor': DARK['card'],
         'padding': '18px',
         'margin': '6px',
-        'boxShadow': '0 1px 3px rgba(0,0,0,0.1)',
-        'height': '100%'
+        'boxShadow': '0 1px 3px rgba(0,0,0,0.3)',
+        'height': '100%',
+        'borderRadius': '4px',
+        'border': f'1px solid {DARK["border"]}'
     }
 
     chart_title_style = {
         'fontSize': '18px',
         'fontWeight': 'bold',
-        'color': '#1a5276',
+        'color': DARK['accent_blue'],
         'marginBottom': '12px',
-        'borderBottom': '2px solid #1a5276',
+        'borderBottom': f'2px solid {DARK["border"]}',
         'paddingBottom': '6px'
     }
 
@@ -61,7 +65,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
             html.Div([
                 dcc.Link(
                     html.Span("← Inicio", style={
-                        'color': '#aaa',
+                        'color': DARK['text_secondary'],
                         'fontSize': '14px',
                         'padding': '8px 15px',
                         'backgroundColor': 'rgba(255,255,255,0.1)',
@@ -76,17 +80,17 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                 html.Div([
                     html.H1("Dashboard YTD", style={
                         'margin': '0',
-                        'color': 'white',
+                        'color': DARK['text'],
                         'fontSize': '30px'
                     }),
                     html.P("Análisis de Rendimiento Acumulado Anual",
-                           style={'margin': '5px 0 0 0', 'color': '#ccc', 'fontSize': '15px'})
+                           style={'margin': '5px 0 0 0', 'color': DARK['text_secondary'], 'fontSize': '15px'})
                 ], style={'flex': '1'}),
 
                 # Filtros
                 html.Div([
                     html.Div([
-                        html.Label("Tipo Sucursal:", style={'color': 'white', 'fontSize': '14px', 'marginRight': '10px'}),
+                        html.Label("Tipo Sucursal:", style={'color': DARK['text_secondary'], 'fontSize': '14px', 'marginRight': '10px'}),
                         dcc.Dropdown(
                             id='ytd-tipo-sucursal',
                             options=[
@@ -101,7 +105,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                     ], style={'display': 'flex', 'alignItems': 'center', 'marginRight': '20px'}),
 
                     html.Div([
-                        html.Label("Año:", style={'color': 'white', 'fontSize': '14px', 'marginRight': '10px'}),
+                        html.Label("Año:", style={'color': DARK['text_secondary'], 'fontSize': '14px', 'marginRight': '10px'}),
                         dcc.Dropdown(
                             id='ytd-anio',
                             options=[{'label': str(a), 'value': a} for a in anios_disponibles],
@@ -112,7 +116,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                     ], style={'display': 'flex', 'alignItems': 'center', 'marginRight': '20px'}),
 
                     html.Div([
-                        html.Label("Hasta Mes:", style={'color': 'white', 'fontSize': '14px', 'marginRight': '10px'}),
+                        html.Label("Hasta Mes:", style={'color': DARK['text_secondary'], 'fontSize': '14px', 'marginRight': '10px'}),
                         dcc.Dropdown(
                             id='ytd-mes',
                             options=[{'label': MESES[m], 'value': m} for m in range(1, 13)],
@@ -124,9 +128,10 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                 ], style={'display': 'flex', 'alignItems': 'center'})
             ], style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center'})
         ], style={
-            'backgroundColor': '#1a5276',
+            'backgroundColor': DARK['card_alt'],
             'padding': '15px 20px',
-            'marginBottom': '0'
+            'marginBottom': '0',
+            'borderBottom': f'1px solid {DARK["border"]}'
         }),
 
         # Contenido principal
@@ -136,10 +141,10 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                 html.Div("Indicadores", style={
                     'fontSize': '18px',
                     'fontWeight': 'bold',
-                    'color': '#1a5276',
+                    'color': DARK['accent_blue'],
                     'padding': '12px 18px',
-                    'backgroundColor': 'white',
-                    'borderBottom': '2px solid #1a5276',
+                    'backgroundColor': DARK['card'],
+                    'borderBottom': f'2px solid {DARK["border"]}',
                     'marginBottom': '12px'
                 }),
 
@@ -148,7 +153,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                     html.Div([
                         html.P(id='ytd-kpi-sales', children="0", style=kpi_value_style),
                         html.Div([
-                            html.Span("Interanual ", style={'fontSize': '21px', 'color': '#666'}),
+                            html.Span("Interanual ", style={'fontSize': '21px', 'color': DARK['text_secondary']}),
                             html.Span(id='ytd-kpi-yoy', children="0%", style={
                                 'fontSize': '21px',
                                 'fontWeight': 'bold'
@@ -185,21 +190,21 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
 
                 # Ganancia Bruta (placeholder)
                 html.Div([
-                    html.P(id='ytd-kpi-profit', children="--", style={**kpi_value_style, 'color': '#999'}),
+                    html.P(id='ytd-kpi-profit', children="--", style={**kpi_value_style, 'color': DARK['text_muted']}),
                     html.P("Ganancia Bruta", style=kpi_label_style),
-                    html.Span("(Próximamente)", style={'fontSize': '13px', 'color': '#999'})
-                ], style={**kpi_card_style, 'borderLeftColor': '#bdc3c7'}),
+                    html.Span("(Próximamente)", style={'fontSize': '13px', 'color': DARK['text_muted']})
+                ], style={**kpi_card_style, 'borderLeftColor': DARK['border']}),
 
                 # Margen de Ganancia (placeholder)
                 html.Div([
-                    html.P(id='ytd-kpi-margin', children="--%", style={**kpi_value_style, 'color': '#999'}),
+                    html.P(id='ytd-kpi-margin', children="--%", style={**kpi_value_style, 'color': DARK['text_muted']}),
                     html.P("Margen de Ganancia", style=kpi_label_style),
-                    html.Span("(Próximamente)", style={'fontSize': '13px', 'color': '#999'})
-                ], style={**kpi_card_style, 'borderLeftColor': '#bdc3c7'}),
+                    html.Span("(Próximamente)", style={'fontSize': '13px', 'color': DARK['text_muted']})
+                ], style={**kpi_card_style, 'borderLeftColor': DARK['border']}),
 
             ], style={
                 'width': '220px',
-                'backgroundColor': '#ecf0f1',
+                'backgroundColor': DARK['surface'],
                 'padding': '12px',
                 'minHeight': 'calc(100vh - 100px)'
             }),
@@ -247,7 +252,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                         html.Div(id='ytd-inventory-info', style={
                             'textAlign': 'center',
                             'fontSize': '14px',
-                            'color': '#666'
+                            'color': DARK['text_secondary']
                         })
                     ], style={**chart_card_style, 'flex': '0.8'})
                 ], style={'display': 'flex', 'marginBottom': '12px'}),
@@ -268,15 +273,15 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
                             html.Div("--", style={
                                 'fontSize': '68px',
                                 'fontWeight': 'bold',
-                                'color': '#999',
+                                'color': DARK['text_muted'],
                                 'textAlign': 'center',
                                 'marginTop': '50px'
                             }),
-                            html.Div("Días", style={'textAlign': 'center', 'color': '#999', 'fontSize': '16px'}),
+                            html.Div("Días", style={'textAlign': 'center', 'color': DARK['text_muted'], 'fontSize': '16px'}),
                             html.Div("(Próximamente)", style={
                                 'textAlign': 'center',
                                 'fontSize': '14px',
-                                'color': '#999',
+                                'color': DARK['text_muted'],
                                 'marginTop': '25px'
                             })
                         ])
@@ -286,7 +291,7 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
             ], style={
                 'flex': '1',
                 'padding': '10px',
-                'backgroundColor': '#ecf0f1',
+                'backgroundColor': DARK['bg'],
                 'overflowY': 'auto'
             })
 
@@ -297,5 +302,5 @@ def create_ytd_layout(anio_actual, mes_actual, anios_disponibles):
 
     ], style={
         'fontFamily': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        'backgroundColor': '#ecf0f1'
+        'backgroundColor': DARK['bg']
     })

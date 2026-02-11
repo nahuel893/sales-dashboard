@@ -3,13 +3,14 @@ Layout principal del dashboard de ventas.
 """
 from dash import html, dcc
 import dash_mantine_components as dmc
+from config import DARK
 
 
-def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_genericos, lista_marcas, lista_rutas, lista_preventistas):
+def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_default, lista_genericos, lista_marcas, lista_rutas, lista_preventistas):
     """Crea y retorna el layout del dashboard de ventas."""
 
     # Estilo común para labels de sección
-    label_style = {'fontWeight': 'bold', 'fontSize': '14px', 'color': '#333'}
+    label_style = {'fontWeight': 'bold', 'fontSize': '14px', 'color': DARK['text_secondary']}
 
     # Helper: stack vertical de filtros con separación
     def filtro_stack(children):
@@ -24,11 +25,17 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
         # =================================================================
         dmc.Drawer(
             id='drawer-filtros',
-            title=dmc.Text("Filtros", fw=700, size="lg"),
+            title=dmc.Text("Filtros", fw=700, size="lg", c=DARK['text']),
             position="left",
             size="370px",
             padding="md",
             zIndex=1000,
+            styles={
+                "header": {"backgroundColor": DARK['card'], "borderBottom": f"1px solid {DARK['border']}"},
+                "body": {"backgroundColor": DARK['card']},
+                "content": {"backgroundColor": DARK['card']},
+                "close": {"color": DARK['text_secondary']},
+            },
             children=[
                 dmc.ScrollArea(
                     h="calc(100vh - 80px)",
@@ -36,6 +43,11 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                         dmc.Accordion(
                             multiple=True,
                             value=["fechas", "cliente", "producto", "metrica", "fuerza-ventas", "opciones-mapa"],
+                            styles={
+                                "control": {"backgroundColor": DARK['surface'], "color": DARK['text']},
+                                "panel": {"backgroundColor": DARK['card']},
+                                "item": {"borderColor": DARK['border']},
+                            },
                             children=[
                                 # --- Fechas ---
                                 dmc.AccordionItem(
@@ -47,7 +59,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                 id='filtro-fechas',
                                                 label="Rango de Fechas",
                                                 type="range",
-                                                value=[str(fecha_desde_default), str(fecha_max)],
+                                                value=[str(fecha_desde_default), str(fecha_hasta_default)],
                                                 valueFormat="DD/MM/YYYY",
                                                 w="100%",
                                                 popoverProps={"zIndex": 1100},
@@ -351,7 +363,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
             html.Div([
                 dcc.Link(
                     html.Span("← Inicio", style={
-                        'color': '#aaa',
+                        'color': DARK['text_secondary'],
                         'fontSize': '14px',
                         'textDecoration': 'none',
                         'padding': '8px 15px',
@@ -363,22 +375,25 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                     style={'textDecoration': 'none'}
                 ),
             ], style={'marginBottom': '10px'}),
-            html.H1("Dashboard de Ventas", style={'margin': '0', 'color': 'white'}),
+            html.H1("Dashboard de Ventas", style={'margin': '0', 'color': DARK['text']}),
             html.P("Medallion ETL - Visualizacion de datos de ventas",
-                   style={'margin': '5px 0 0 0', 'color': '#ccc'})
+                   style={'margin': '5px 0 0 0', 'color': DARK['text_secondary']})
         ], style={
-            'backgroundColor': '#1a1a2e',
+            'backgroundColor': DARK['header'],
             'padding': '20px',
-            'marginBottom': '0'
+            'marginBottom': '0',
+            'borderBottom': f'1px solid {DARK["border"]}'
         }),
 
         # PESTANAS SUPERIORES PRINCIPALES
         dcc.Tabs(id='tabs-principales', value='tab-mapas', children=[
-            dcc.Tab(label='Mapas', value='tab-mapas', style={'fontWeight': 'bold', 'padding': '10px 20px'}),
-            dcc.Tab(label='Tablero de Ventas', value='tab-tablero-principal', style={'fontWeight': 'bold', 'padding': '10px 20px'}),
+            dcc.Tab(label='Mapas', value='tab-mapas', style={'fontWeight': 'bold', 'padding': '10px 20px', 'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},
+                    selected_style={'fontWeight': 'bold', 'padding': '10px 20px', 'backgroundColor': DARK['card'], 'color': DARK['text'], 'borderBottom': f'3px solid {DARK["accent_blue"]}'}),
+            dcc.Tab(label='Tablero de Ventas', value='tab-tablero-principal', style={'fontWeight': 'bold', 'padding': '10px 20px', 'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},
+                    selected_style={'fontWeight': 'bold', 'padding': '10px 20px', 'backgroundColor': DARK['card'], 'color': DARK['text'], 'borderBottom': f'3px solid {DARK["accent_blue"]}'}),
         ], style={
-            'backgroundColor': '#2d2d44',
-            'borderBottom': '3px solid #007bff'
+            'backgroundColor': DARK['surface'],
+            'borderBottom': f'1px solid {DARK["border"]}'
         }),
 
         # Botón de Filtros
@@ -392,8 +407,8 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
             ),
         ], style={
             'padding': '10px 20px',
-            'backgroundColor': '#f8f9fa',
-            'borderBottom': '1px solid #dee2e6',
+            'backgroundColor': DARK['card'],
+            'borderBottom': f'1px solid {DARK["border"]}',
         }),
 
         # KPIs
@@ -402,8 +417,8 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
             'display': 'flex',
             'justifyContent': 'space-around',
             'alignItems': 'center',
-            'backgroundColor': '#fff',
-            'borderBottom': '1px solid #ddd'
+            'backgroundColor': DARK['card'],
+            'borderBottom': f'1px solid {DARK["border"]}'
         }),
 
         # =====================================================================
@@ -436,8 +451,8 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                 ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top'}),
             ], style={'padding': '0 10px 5px 10px'}),
         ], style={
-            'backgroundColor': '#fff',
-            'borderBottom': '2px solid #dee2e6',
+            'backgroundColor': DARK['card'],
+            'borderBottom': f'2px solid {DARK["border"]}',
         }),
 
         # =====================================================================
@@ -446,7 +461,10 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
         html.Div(id='seccion-mapas', children=[
             # Pestanas de mapas
             dcc.Tabs(id='tabs-mapas', value='tab-burbujas', children=[
-                dcc.Tab(label='Mapa de Burbujas', value='tab-burbujas', children=[
+                dcc.Tab(label='Mapa de Burbujas', value='tab-burbujas',
+                        style={'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},
+                        selected_style={'backgroundColor': DARK['card'], 'color': DARK['text'], 'borderBottom': f'2px solid {DARK["accent_blue"]}'},
+                        children=[
                     html.Div([
                         dcc.Loading(
                             id='loading-mapa',
@@ -455,7 +473,10 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                         )
                     ], style={'padding': '10px'})
                 ]),
-                dcc.Tab(label='Mapa de Calor', value='tab-calor', children=[
+                dcc.Tab(label='Mapa de Calor', value='tab-calor',
+                        style={'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},
+                        selected_style={'backgroundColor': DARK['card'], 'color': DARK['text'], 'borderBottom': f'2px solid {DARK["accent_blue"]}'},
+                        children=[
                     html.Div([
                         dcc.Loading(
                             id='loading-mapa-calor',
@@ -464,7 +485,10 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                         )
                     ], style={'padding': '10px'})
                 ]),
-                dcc.Tab(label='Compro', value='tab-compro', children=[
+                dcc.Tab(label='Compro', value='tab-compro',
+                        style={'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},
+                        selected_style={'backgroundColor': DARK['card'], 'color': DARK['text'], 'borderBottom': f'2px solid {DARK["accent_blue"]}'},
+                        children=[
                     html.Div([
                         dcc.Loading(
                             id='loading-mapa-compro',
@@ -473,8 +497,8 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                         )
                     ], style={'padding': '10px'})
                 ]),
-            ], style={'marginBottom': '0'}),
-        ]),
+            ], style={'marginBottom': '0', 'backgroundColor': DARK['surface']}),
+        ], style={'backgroundColor': DARK['bg']}),
 
         # =====================================================================
         # SECCION TABLERO (visible cuando tab-tablero-principal esta activo)
@@ -493,11 +517,11 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                         w=400,
                     ),
                 ], style={'display': 'inline-block', 'marginRight': '30px'}),
-            ], style={'padding': '15px 20px', 'backgroundColor': '#e8f4f8', 'borderBottom': '2px solid #1a1a2e'}),
+            ], style={'padding': '15px 20px', 'backgroundColor': DARK['surface'], 'borderBottom': f'2px solid {DARK["border"]}'}),
 
             # Grafica de lineas - Comparacion por Año
             html.Div([
-                html.H5("Comparacion Anual (Enero - Diciembre)", style={'textAlign': 'center', 'marginBottom': '5px'}),
+                html.H5("Comparacion Anual (Enero - Diciembre)", style={'textAlign': 'center', 'marginBottom': '5px', 'color': DARK['text']}),
                 dcc.Loading(
                     id='loading-grafico-linea',
                     type='circle',
@@ -507,11 +531,11 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
 
             # Tabla comparativa
             html.Div([
-                html.H5("Tabla Comparativa por Mes", style={'textAlign': 'center', 'marginBottom': '15px'}),
+                html.H5("Tabla Comparativa por Mes", style={'textAlign': 'center', 'marginBottom': '15px', 'color': DARK['text']}),
                 html.Div(id='tabla-comparativa-container', children=[
-                    html.P("Seleccione años para ver la comparación", style={'textAlign': 'center', 'color': 'gray'})
+                    html.P("Seleccione años para ver la comparación", style={'textAlign': 'center', 'color': DARK['text_muted']})
                 ])
-            ], style={'padding': '20px', 'backgroundColor': 'white', 'margin': '0 20px 20px 20px', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
-        ], style={'padding': '10px', 'backgroundColor': '#fafafa', 'display': 'none'}),
+            ], style={'padding': '20px', 'backgroundColor': DARK['card'], 'margin': '0 20px 20px 20px', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.3)', 'border': f'1px solid {DARK["border"]}'}),
+        ], style={'padding': '10px', 'backgroundColor': DARK['bg'], 'display': 'none'}),
 
-    ], style={'fontFamily': 'Arial, sans-serif'})
+    ], style={'fontFamily': 'Arial, sans-serif', 'backgroundColor': DARK['bg']})
