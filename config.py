@@ -16,7 +16,7 @@ except ImportError:
 SERVER_CONFIG = {
     'host': '127.0.0.1',
     'port': 8050,
-    'debug': True
+    'debug': False
 }
 
 # Labels para métricas

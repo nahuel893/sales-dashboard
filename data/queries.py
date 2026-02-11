@@ -551,6 +551,7 @@ def cargar_ventas_cliente_detalle(id_cliente):
             v.bultos
         FROM gold.dim_articulo a
         LEFT JOIN ventas v ON a.id_articulo = v.id_articulo
+        WHERE a.generico IN ('CERVEZAS', 'VINOS CCU', 'AGUAS DANONE', 'FRATELLI B', 'VINOS', 'VINOS FINOS')
         ORDER BY a.generico, a.marca, a.des_articulo, v.anio, v.mes
     """
     with engine.connect() as conn:

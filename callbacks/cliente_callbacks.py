@@ -16,7 +16,7 @@ def _get_excel_styles():
     """Importa openpyxl y crea estilos la primera vez que se necesitan."""
     global _openpyxl_styles
     if _openpyxl_styles is None:
-        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.styles import Font, PatternFill, Alignment
         _openpyxl_styles = {
             'FONT_BOLD': Font(bold=True),
             'FONT_HEADER': Font(bold=True, size=11),
@@ -214,18 +214,14 @@ def _build_generico_accordion(df_all, periodos):
             # Tabla de articulos con meses en columnas
             table = _build_articulo_table(df_marca, periodos)
 
-            btn_style = {
-                'padding': '4px 12px', 'fontSize': '12px', 'cursor': 'pointer',
-                'border': '1px solid #ccc', 'borderRadius': '4px', 'backgroundColor': '#fff',
-            }
-            botones = html.Div([
-                html.Button("Imprimir", className='btn-imprimir-marca',
-                            **{'data-generico': generico, 'data-marca': marca},
-                            style=btn_style),
-                html.Button("Excel", className='btn-excel-marca',
-                            **{'data-generico': generico, 'data-marca': marca},
-                            style={**btn_style, 'color': '#217346'}),
-            ], style={'marginBottom': '8px', 'display': 'flex', 'gap': '8px'})
+            btn_excel = html.Button("Excel", className='btn-excel-marca',
+                        **{'data-generico': generico, 'data-marca': marca},
+                        style={
+                            'padding': '4px 12px', 'fontSize': '12px', 'cursor': 'pointer',
+                            'border': '1px solid #217346', 'borderRadius': '4px',
+                            'backgroundColor': '#fff', 'color': '#217346',
+                            'marginBottom': '8px',
+                        })
 
             marca_items.append(
                 dmc.AccordionItem([
@@ -236,10 +232,7 @@ def _build_generico_accordion(df_all, periodos):
                                       style={'color': '#666', 'marginLeft': '10px'}),
                         ]),
                     ),
-                    dmc.AccordionPanel(html.Div([
-                        botones,
-                        html.Div(table, className='tabla-marca-content'),
-                    ])),
+                    dmc.AccordionPanel(html.Div([btn_excel, table])),
                 ], value=f"{generico}-{marca}")
             )
 
@@ -351,7 +344,6 @@ def _build_articulo_table(df_marca, periodos):
 # =============================================================================
 
 
-
 def _preparar_datos_excel(id_cliente):
     """Carga y prepara datos del cliente para exportar a Excel."""
     df_all = cargar_ventas_cliente_detalle(id_cliente)
@@ -381,7 +373,7 @@ def _preparar_datos_excel(id_cliente):
 
 
 def _escribir_tabla_marca(ws, row, df_marca, periodos, escribir_header=True):
-    """Escribe una tabla de artículos por marca en la hoja. Retorna la fila siguiente."""
+    """Escribe una tabla de articulos por marca en la hoja. Retorna la fila siguiente."""
     from openpyxl.styles import Alignment
     s = _get_excel_styles()
 
@@ -431,14 +423,14 @@ def _escribir_tabla_marca(ws, row, df_marca, periodos, escribir_header=True):
     cell_gt.font = s['FONT_BOLD']
     cell_gt.alignment = s['ALIGN_RIGHT']
     cell_gt.number_format = '#,##0'
-    cell_gt.fill = _FILL_SUBTOTAL
+    cell_gt.fill = s['FILL_SUBTOTAL']
     row += 1
 
     return row
 
 
 def _generar_excel_marca(id_cliente, generico, marca):
-    """Genera Excel para una marca específica."""
+    """Genera Excel para una marca especifica."""
     from openpyxl import Workbook
     s = _get_excel_styles()
 
@@ -471,7 +463,7 @@ def _generar_excel_marca(id_cliente, generico, marca):
 
 
 def _generar_excel_completo(id_cliente):
-    """Genera Excel con todo el árbol genérico→marca→artículo con subtotales."""
+    """Genera Excel con todo el arbol generico->marca->articulo con subtotales."""
     from openpyxl import Workbook
     s = _get_excel_styles()
 
@@ -554,9 +546,8 @@ def _generar_excel_completo(id_cliente):
 # CALLBACKS EXCEL
 # =============================================================================
 
-# Setup event delegation para botones de Imprimir y Excel por marca.
+# Event delegation para botones Excel por marca.
 # Se ejecuta una vez al cargar la pagina de detalle de cliente.
-# Usa dash_clientside.set_props para escribir al Store sin pattern-matching.
 clientside_callback(
     """
     function(storeData) {
@@ -571,35 +562,6 @@ clientside_callback(
                 dash_clientside.set_props('excel-marca-trigger', {
                     data: gen + '||' + marca + '||' + Date.now()
                 });
-                return;
-            }
-
-            var printBtn = e.target.closest('.btn-imprimir-marca');
-            if (printBtn) {
-                var generico = printBtn.getAttribute('data-generico') || '';
-                var marca2 = printBtn.getAttribute('data-marca') || '';
-                var panel = printBtn.closest('.mantine-Accordion-panel');
-                if (!panel) return;
-                var contenido = panel.querySelector('.tabla-marca-content');
-                if (!contenido) return;
-                var headerEl = document.querySelector('#cliente-header-content h1');
-                var cliente = headerEl ? headerEl.textContent.trim() : '';
-                var titulo = generico + ' — ' + marca2;
-                var w = window.open('', '_blank', 'width=900,height=600');
-                w.document.write(
-                    '<html><head><title>' + titulo + '</title>' +
-                    '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0}' +
-                    'h2{margin:0 0 4px;font-size:18px}h3{margin:0 0 12px;color:#666;font-size:14px;font-weight:normal}' +
-                    'table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;border:1px solid #ccc;font-size:11px}' +
-                    'th{background:#f0f0f0;font-weight:bold}</style></head><body>'
-                );
-                w.document.write('<h2>' + titulo + '</h2>');
-                if (cliente) w.document.write('<h3>' + cliente + '</h3>');
-                w.document.write(contenido.innerHTML);
-                w.document.write('</body></html>');
-                w.document.close();
-                w.focus();
-                w.print();
             }
         });
         return dash_clientside.no_update;
@@ -618,7 +580,7 @@ clientside_callback(
     prevent_initial_call=True
 )
 def exportar_marca_excel(trigger_value, store_data):
-    """Exporta a Excel la tabla de una marca específica."""
+    """Exporta a Excel la tabla de una marca especifica."""
     if not trigger_value or '||' not in str(trigger_value) or not store_data:
         return no_update
 
@@ -644,7 +606,7 @@ def exportar_marca_excel(trigger_value, store_data):
     prevent_initial_call=True
 )
 def exportar_completo_excel(n_clicks, store_data):
-    """Exporta a Excel todo el árbol genérico→marca→artículo con subtotales."""
+    """Exporta a Excel todo el arbol generico->marca->articulo con subtotales."""
     if not n_clicks or not store_data:
         return no_update
 
