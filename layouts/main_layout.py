@@ -35,7 +35,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                     children=[
                         dmc.Accordion(
                             multiple=True,
-                            value=["fechas", "cliente"],
+                            value=["fechas", "cliente", "producto", "metrica", "fuerza-ventas", "opciones-mapa"],
                             children=[
                                 # --- Fechas ---
                                 dmc.AccordionItem(
@@ -50,6 +50,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                 value=[str(fecha_desde_default), str(fecha_max)],
                                                 valueFormat="DD/MM/YYYY",
                                                 w="100%",
+                                                popoverProps={"zIndex": 1100},
                                             ),
                                         ),
                                     ],
@@ -70,6 +71,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                     placeholder="Todos los canales",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                                 dmc.MultiSelect(
                                                     id='filtro-subcanal',
@@ -79,6 +81,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                     placeholder="Todos los subcanales",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                                 dmc.MultiSelect(
                                                     id='filtro-localidad',
@@ -88,6 +91,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                     placeholder="Todas las localidades",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                                 dmc.MultiSelect(
                                                     id='filtro-lista-precio',
@@ -97,6 +101,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                     placeholder="Todas las listas",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                                 html.Div([
                                                     html.Label("Tipo Sucursal", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
@@ -120,6 +125,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                     placeholder="Todas las sucursales",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                             ]),
                                         ),
@@ -141,6 +147,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                     placeholder="Todos los genericos",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                                 dmc.MultiSelect(
                                                     id='filtro-marca',
@@ -150,6 +157,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                     placeholder="Todas las marcas",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                             ]),
                                         ),
@@ -201,11 +209,12 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                 dmc.MultiSelect(
                                                     id='filtro-ruta',
                                                     label="Ruta",
-                                                    data=[{"label": str(r), "value": str(r)} for r in lista_rutas],
+                                                    data=lista_rutas,
                                                     value=[],
                                                     placeholder="Todas las rutas",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                                 dmc.MultiSelect(
                                                     id='filtro-preventista',
@@ -215,6 +224,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
                                                     placeholder="Todos los preventistas",
                                                     searchable=True,
                                                     clearable=True,
+                                                    comboboxProps={"zIndex": 1100},
                                                 ),
                                             ]),
                                         ),
@@ -394,6 +404,40 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, lista_generi
             'alignItems': 'center',
             'backgroundColor': '#fff',
             'borderBottom': '1px solid #ddd'
+        }),
+
+        # =====================================================================
+        # RESUMEN DE VENTAS (gráficos compactos arriba de los mapas)
+        # =====================================================================
+        html.Div(id='seccion-resumen', children=[
+            # Fila 1: Evolución temporal (full width)
+            html.Div([
+                dcc.Loading(
+                    type='circle',
+                    children=[dcc.Graph(id='grafico-evolucion', style={'height': '260px'},
+                                        config={'displayModeBar': False})]
+                )
+            ], style={'padding': '5px 10px 0 10px'}),
+            # Fila 2: Top Genéricos + Top Marcas (50/50)
+            html.Div([
+                html.Div([
+                    dcc.Loading(
+                        type='circle',
+                        children=[dcc.Graph(id='grafico-top-genericos', style={'height': '260px'},
+                                            config={'displayModeBar': False})]
+                    )
+                ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                html.Div([
+                    dcc.Loading(
+                        type='circle',
+                        children=[dcc.Graph(id='grafico-top-marcas', style={'height': '260px'},
+                                            config={'displayModeBar': False})]
+                    )
+                ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+            ], style={'padding': '0 10px 5px 10px'}),
+        ], style={
+            'backgroundColor': '#fff',
+            'borderBottom': '2px solid #dee2e6',
         }),
 
         # =====================================================================

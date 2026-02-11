@@ -77,6 +77,10 @@ sales-dashboard/
    - Cada una tiene sus propias rutas (`id_ruta_fv1`, `id_ruta_fv4`) y preventistas (`des_personal_fv1`, `des_personal_fv4`)
    - Los filtros de ruta/preventista deben considerar la FV seleccionada
 
+5. **Claves compuestas de rutas**: Los códigos de ruta NO son globalmente únicos — se repiten entre sucursales. La clave única es `(id_sucursal, id_ruta)`. En filtros SQL usar tuplas: `(c.id_sucursal, c.id_ruta_fvX) IN ((suc1, ruta1), ...)`. Los valores del MultiSelect de rutas son strings compuestos `"id_sucursal|id_ruta"`.
+
+6. **Clientes (`id_cliente`)**: Son globalmente únicos, NO necesitan clave compuesta.
+
 ## Sistema de Navegación
 
 El proyecto usa routing basado en URL:

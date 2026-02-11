@@ -11,7 +11,8 @@ from dash import callback, clientside_callback, Output, Input, State, html
 from data.queries import (
     obtener_rutas, obtener_preventistas, obtener_marcas, obtener_anios_disponibles,
     cargar_ventas_por_cliente, cargar_ventas_animacion, cargar_ventas_por_fecha,
-    cargar_ventas_por_cliente_generico
+    cargar_ventas_por_cliente_generico,
+    cargar_ventas_por_generico_top, cargar_ventas_por_marca_top
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
 from config import METRICA_LABELS
@@ -46,10 +47,8 @@ def actualizar_rutas_preventistas(fuerza_venta):
     """Actualiza opciones de Ruta y Preventista segun la Fuerza de Venta seleccionada."""
     fv = fuerza_venta if fuerza_venta != 'TODOS' else None
 
-    rutas = obtener_rutas(fv)
+    opciones_rutas = obtener_rutas(fv)  # ya retorna [{"label": ..., "value": "suc|ruta"}]
     preventistas = obtener_preventistas(fv)
-
-    opciones_rutas = [{'label': str(r), 'value': str(r)} for r in rutas]
     opciones_preventistas = [{'label': p, 'value': p} for p in preventistas]
 
     return opciones_rutas, [], opciones_preventistas, []
@@ -119,6 +118,138 @@ def actualizar_sucursal_por_tipo(tipo_sucursal, opciones_sucursales):
         return [s for s in todas_sucursales if s == 'CASA CENTRAL']
 
     return []
+
+
+# =============================================================================
+# CALLBACK RESUMEN DE VENTAS (evolución + top genéricos + top marcas)
+# =============================================================================
+
+@callback(
+    [Output('grafico-evolucion', 'figure'),
+     Output('grafico-top-genericos', 'figure'),
+     Output('grafico-top-marcas', 'figure')],
+    [Input('filtro-fechas', 'value'),
+     Input('filtro-canal', 'value'),
+     Input('filtro-subcanal', 'value'),
+     Input('filtro-localidad', 'value'),
+     Input('filtro-lista-precio', 'value'),
+     Input('filtro-sucursal', 'value'),
+     Input('filtro-metrica', 'value'),
+     Input('filtro-generico', 'value'),
+     Input('filtro-marca', 'value'),
+     Input('filtro-ruta', 'value'),
+     Input('filtro-preventista', 'value'),
+     Input('filtro-fuerza-venta', 'value')]
+)
+def actualizar_resumen_ventas(fechas_value, canales, subcanales, localidades, listas_precio,
+                               sucursales, metrica, genericos, marcas, rutas, preventistas,
+                               fuerza_venta):
+    """Actualiza los 3 gráficos del resumen: evolución temporal, top genéricos y top marcas."""
+
+    start_date, end_date = (fechas_value or [None, None])[:2]
+    fv = fuerza_venta if fuerza_venta != 'TODOS' else None
+    metrica = metrica or 'cantidad_total'
+    metrica_label = METRICA_LABELS.get(metrica, metrica)
+
+    # --- Gráfico de evolución temporal ---
+    df_fecha = cargar_ventas_por_fecha(
+        start_date, end_date, canales, subcanales, localidades,
+        listas_precio, sucursales, genericos, marcas, rutas, preventistas, fv
+    )
+
+    fig_evolucion = go.Figure()
+    tick_format = None
+    if len(df_fecha) > 0:
+        df_fecha['fecha'] = pd.to_datetime(df_fecha['fecha'])
+
+        # Determinar granularidad: diario si <= 62 días, mensual si más
+        rango_dias = (df_fecha['fecha'].max() - df_fecha['fecha'].min()).days
+        if rango_dias > 62:
+            df_fecha['periodo'] = df_fecha['fecha'].dt.to_period('M').dt.to_timestamp()
+            df_agrupado = df_fecha.groupby('periodo')[metrica].sum().reset_index()
+            x_col = 'periodo'
+            tick_format = '%b %Y'
+        else:
+            df_agrupado = df_fecha.rename(columns={'fecha': 'dia'})
+            x_col = 'dia'
+            tick_format = '%d/%m'
+
+        fig_evolucion.add_trace(go.Bar(
+            x=df_agrupado[x_col], y=df_agrupado[metrica],
+            marker_color='#3498db', opacity=0.7,
+            hovertemplate='%{x|' + tick_format + '}: %{y:,.0f}<extra></extra>'
+        ))
+        fig_evolucion.add_trace(go.Scatter(
+            x=df_agrupado[x_col], y=df_agrupado[metrica],
+            mode='lines', line=dict(color='#e74c3c', width=2),
+            hoverinfo='skip'
+        ))
+
+    evolucion_xaxis = dict(tickformat=tick_format) if tick_format else {}
+    fig_evolucion.update_layout(
+        title=dict(text=f'Evolución de {metrica_label}', font=dict(size=14)),
+        margin=dict(t=35, b=30, l=50, r=10),
+        xaxis=evolucion_xaxis,
+        yaxis=dict(tickformat=',.0f'),
+        showlegend=False,
+        plot_bgcolor='white',
+    )
+    fig_evolucion.update_xaxes(showgrid=False)
+    fig_evolucion.update_yaxes(showgrid=True, gridcolor='#eee')
+
+    # --- Gráfico top 10 genéricos ---
+    df_gen = cargar_ventas_por_generico_top(
+        start_date, end_date, canales, subcanales, localidades,
+        listas_precio, sucursales, genericos, marcas, rutas,
+        preventistas, fv, metrica=metrica, top_n=10
+    )
+
+    fig_genericos = go.Figure()
+    if len(df_gen) > 0:
+        df_gen = df_gen.sort_values('valor', ascending=True)
+        fig_genericos.add_trace(go.Bar(
+            x=df_gen['valor'], y=df_gen['generico'],
+            orientation='h', marker_color='#27ae60',
+            hovertemplate='%{y}: %{x:,.0f}<extra></extra>'
+        ))
+
+    fig_genericos.update_layout(
+        title=dict(text=f'Top 10 Genéricos - {metrica_label}', font=dict(size=14)),
+        margin=dict(t=35, b=20, l=120, r=10),
+        xaxis=dict(tickformat=',.0f'),
+        showlegend=False,
+        plot_bgcolor='white',
+    )
+    fig_genericos.update_xaxes(showgrid=True, gridcolor='#eee')
+    fig_genericos.update_yaxes(showgrid=False)
+
+    # --- Gráfico top 10 marcas ---
+    df_marca = cargar_ventas_por_marca_top(
+        start_date, end_date, canales, subcanales, localidades,
+        listas_precio, sucursales, genericos, marcas, rutas,
+        preventistas, fv, metrica=metrica, top_n=10
+    )
+
+    fig_marcas = go.Figure()
+    if len(df_marca) > 0:
+        df_marca = df_marca.sort_values('valor', ascending=True)
+        fig_marcas.add_trace(go.Bar(
+            x=df_marca['valor'], y=df_marca['marca'],
+            orientation='h', marker_color='#e67e22',
+            hovertemplate='%{y}: %{x:,.0f}<extra></extra>'
+        ))
+
+    fig_marcas.update_layout(
+        title=dict(text=f'Top 10 Marcas - {metrica_label}', font=dict(size=14)),
+        margin=dict(t=35, b=20, l=120, r=10),
+        xaxis=dict(tickformat=',.0f'),
+        showlegend=False,
+        plot_bgcolor='white',
+    )
+    fig_marcas.update_xaxes(showgrid=True, gridcolor='#eee')
+    fig_marcas.update_yaxes(showgrid=False)
+
+    return fig_evolucion, fig_genericos, fig_marcas
 
 
 # =============================================================================

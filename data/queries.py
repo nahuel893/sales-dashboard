@@ -40,31 +40,43 @@ def obtener_marcas(genericos=None):
 
 
 def obtener_rutas(fuerza_venta=None):
-    """Obtiene lista de rutas disponibles según la fuerza de venta seleccionada."""
+    """Obtiene lista de rutas con clave compuesta (id_sucursal, id_ruta).
+    Retorna lista de dicts con label y value para dmc.MultiSelect.
+    Value es 'id_sucursal|id_ruta', label es 'id_ruta (sucursal)'."""
     if fuerza_venta == 'FV1':
         query = """
-            SELECT DISTINCT id_ruta_fv1 as id_ruta
-            FROM gold.dim_cliente
-            WHERE id_ruta_fv1 IS NOT NULL
-            ORDER BY id_ruta_fv1
+            SELECT DISTINCT c.id_sucursal, c.id_ruta_fv1 as id_ruta,
+                   COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal
+            FROM gold.dim_cliente c
+            WHERE c.id_ruta_fv1 IS NOT NULL
+            ORDER BY sucursal, id_ruta
         """
     elif fuerza_venta == 'FV4':
         query = """
-            SELECT DISTINCT id_ruta_fv4 as id_ruta
-            FROM gold.dim_cliente
-            WHERE id_ruta_fv4 IS NOT NULL
-            ORDER BY id_ruta_fv4
+            SELECT DISTINCT c.id_sucursal, c.id_ruta_fv4 as id_ruta,
+                   COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal
+            FROM gold.dim_cliente c
+            WHERE c.id_ruta_fv4 IS NOT NULL
+            ORDER BY sucursal, id_ruta
         """
     else:
         query = """
-            SELECT DISTINCT id_ruta_fv1 as id_ruta FROM gold.dim_cliente WHERE id_ruta_fv1 IS NOT NULL
+            SELECT DISTINCT c.id_sucursal, c.id_ruta_fv1 as id_ruta,
+                   COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal
+            FROM gold.dim_cliente c WHERE c.id_ruta_fv1 IS NOT NULL
             UNION
-            SELECT DISTINCT id_ruta_fv4 as id_ruta FROM gold.dim_cliente WHERE id_ruta_fv4 IS NOT NULL
-            ORDER BY id_ruta
+            SELECT DISTINCT c.id_sucursal, c.id_ruta_fv4 as id_ruta,
+                   COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal
+            FROM gold.dim_cliente c WHERE c.id_ruta_fv4 IS NOT NULL
+            ORDER BY sucursal, id_ruta
         """
     with engine.connect() as conn:
         df = pd.read_sql(query, conn)
-    return df['id_ruta'].tolist()
+    return [
+        {"label": f"{row['id_ruta']} ({row['sucursal']})",
+         "value": f"{row['id_sucursal']}|{row['id_ruta']}"}
+        for _, row in df.iterrows()
+    ]
 
 
 def obtener_preventistas(fuerza_venta=None):
@@ -137,18 +149,38 @@ def _build_articulo_filters(genericos, marcas):
     return join_articulo, where_articulo
 
 
+def _parse_rutas_compuestas(rutas):
+    """Parsea valores compuestos 'id_sucursal|id_ruta' a tuplas SQL."""
+    parsed = []
+    for r in rutas:
+        parts = str(r).split('|')
+        if len(parts) == 2:
+            parsed.append((int(parts[0]), int(parts[1])))
+    return parsed
+
+
+def _build_ruta_where(rutas, fuerza_venta):
+    """Construye WHERE para rutas con clave compuesta (id_sucursal, id_ruta)."""
+    parsed = _parse_rutas_compuestas(rutas)
+    if not parsed:
+        return None
+    tuples_sql = ", ".join([f"({suc}, {rta})" for suc, rta in parsed])
+    if fuerza_venta == 'FV1':
+        return f"(c.id_sucursal, c.id_ruta_fv1) IN ({tuples_sql})"
+    elif fuerza_venta == 'FV4':
+        return f"(c.id_sucursal, c.id_ruta_fv4) IN ({tuples_sql})"
+    else:
+        return f"((c.id_sucursal, c.id_ruta_fv1) IN ({tuples_sql}) OR (c.id_sucursal, c.id_ruta_fv4) IN ({tuples_sql}))"
+
+
 def _build_cliente_filters(rutas, preventistas, fuerza_venta):
     """Construye where para filtros de cliente (ruta/preventista)."""
     where_cliente = []
 
     if rutas and len(rutas) > 0:
-        ruta_list = ",".join([str(r) for r in rutas])
-        if fuerza_venta == 'FV1':
-            where_cliente.append(f"c.id_ruta_fv1 IN ({ruta_list})")
-        elif fuerza_venta == 'FV4':
-            where_cliente.append(f"c.id_ruta_fv4 IN ({ruta_list})")
-        else:
-            where_cliente.append(f"(c.id_ruta_fv1 IN ({ruta_list}) OR c.id_ruta_fv4 IN ({ruta_list}))")
+        ruta_where = _build_ruta_where(rutas, fuerza_venta)
+        if ruta_where:
+            where_cliente.append(ruta_where)
 
     if preventistas and len(preventistas) > 0:
         prev_escaped = [p.replace("'", "''") for p in preventistas]
@@ -351,15 +383,11 @@ def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, su
         sucursales_escaped = [s.replace("'", "''") for s in sucursales]
         where_clauses.append(f"COALESCE(c.des_sucursal, 'Sin sucursal') IN ('" + "','".join(sucursales_escaped) + "')")
 
-    # Filtros de ruta y preventista según fuerza de venta
+    # Filtros de ruta (clave compuesta id_sucursal|id_ruta)
     if rutas and len(rutas) > 0:
-        ruta_list = ",".join([str(r) for r in rutas])
-        if fuerza_venta == 'FV1':
-            where_clauses.append(f"c.id_ruta_fv1 IN ({ruta_list})")
-        elif fuerza_venta == 'FV4':
-            where_clauses.append(f"c.id_ruta_fv4 IN ({ruta_list})")
-        else:
-            where_clauses.append(f"(c.id_ruta_fv1 IN ({ruta_list}) OR c.id_ruta_fv4 IN ({ruta_list}))")
+        ruta_where = _build_ruta_where(rutas, fuerza_venta)
+        if ruta_where:
+            where_clauses.append(ruta_where)
 
     if preventistas and len(preventistas) > 0:
         prev_escaped = [p.replace("'", "''") for p in preventistas]
@@ -459,6 +487,152 @@ def cargar_ventas_por_cliente_generico(fecha_desde=None, fecha_hasta=None, gener
     with engine.connect() as conn:
         df = pd.read_sql(query, conn)
 
+    return df
+
+
+def _build_all_filters(fecha_desde, fecha_hasta, canales, subcanales, localidades,
+                       listas_precio, sucursales, genericos, marcas, rutas,
+                       preventistas, fuerza_venta):
+    """Construye join y where para todos los filtros (reutilizable)."""
+    where_clauses = []
+    need_cliente = False
+
+    if fecha_desde and fecha_hasta:
+        where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
+
+    # Filtros dim_cliente
+    if canales and len(canales) > 0:
+        need_cliente = True
+        canales_escaped = [c.replace("'", "''") for c in canales]
+        where_clauses.append(f"COALESCE(c.des_canal_mkt, 'Sin canal') IN ('" + "','".join(canales_escaped) + "')")
+    if subcanales and len(subcanales) > 0:
+        need_cliente = True
+        subcanales_escaped = [s.replace("'", "''") for s in subcanales]
+        where_clauses.append(f"COALESCE(c.des_subcanal_mkt, 'Sin subcanal') IN ('" + "','".join(subcanales_escaped) + "')")
+    if localidades and len(localidades) > 0:
+        need_cliente = True
+        localidades_escaped = [l.replace("'", "''") for l in localidades]
+        where_clauses.append(f"COALESCE(c.des_localidad, 'Sin localidad') IN ('" + "','".join(localidades_escaped) + "')")
+    if listas_precio and len(listas_precio) > 0:
+        need_cliente = True
+        listas_escaped = [l.replace("'", "''") for l in listas_precio]
+        where_clauses.append(f"COALESCE(c.des_lista_precio, 'Sin lista') IN ('" + "','".join(listas_escaped) + "')")
+    if sucursales and len(sucursales) > 0:
+        need_cliente = True
+        sucursales_escaped = [s.replace("'", "''") for s in sucursales]
+        where_clauses.append(f"COALESCE(c.des_sucursal, 'Sin sucursal') IN ('" + "','".join(sucursales_escaped) + "')")
+
+    # Rutas y preventistas
+    if rutas and len(rutas) > 0:
+        need_cliente = True
+        ruta_where = _build_ruta_where(rutas, fuerza_venta)
+        if ruta_where:
+            where_clauses.append(ruta_where)
+    if preventistas and len(preventistas) > 0:
+        need_cliente = True
+        prev_escaped = [p.replace("'", "''") for p in preventistas]
+        prev_list = "'" + "','".join(prev_escaped) + "'"
+        if fuerza_venta == 'FV1':
+            where_clauses.append(f"c.des_personal_fv1 IN ({prev_list})")
+        elif fuerza_venta == 'FV4':
+            where_clauses.append(f"c.des_personal_fv4 IN ({prev_list})")
+        else:
+            where_clauses.append(f"(c.des_personal_fv1 IN ({prev_list}) OR c.des_personal_fv4 IN ({prev_list}))")
+
+    join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente AND f.id_sucursal = c.id_sucursal" if need_cliente else ""
+
+    # Filtros dim_articulo
+    join_articulo = ""
+    if genericos and len(genericos) > 0:
+        join_articulo = "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
+        genericos_escaped = [g.replace("'", "''") for g in genericos]
+        where_clauses.append(f"a.generico IN ('" + "','".join(genericos_escaped) + "')")
+    if marcas and len(marcas) > 0:
+        if not join_articulo:
+            join_articulo = "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
+        marcas_escaped = [m.replace("'", "''") for m in marcas]
+        where_clauses.append(f"a.marca IN ('" + "','".join(marcas_escaped) + "')")
+
+    where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
+    return join_cliente, join_articulo, where_sql
+
+
+def cargar_ventas_por_generico_top(fecha_desde=None, fecha_hasta=None, canales=None,
+                                    subcanales=None, localidades=None, listas_precio=None,
+                                    sucursales=None, genericos=None, marcas=None, rutas=None,
+                                    preventistas=None, fuerza_venta=None, metrica='cantidad_total',
+                                    top_n=10):
+    """Top N genéricos por métrica seleccionada, respetando todos los filtros."""
+    join_cliente, join_articulo, where_sql = _build_all_filters(
+        fecha_desde, fecha_hasta, canales, subcanales, localidades,
+        listas_precio, sucursales, genericos, marcas, rutas,
+        preventistas, fuerza_venta
+    )
+    # Siempre necesitamos dim_articulo para el genérico
+    if not join_articulo:
+        join_articulo = "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
+
+    metrica_sql = {
+        'cantidad_total': 'SUM(f.cantidades_total)',
+        'facturacion': 'SUM(f.subtotal_final)',
+        'cantidad_documentos': 'COUNT(DISTINCT f.nro_doc)',
+    }
+    agg = metrica_sql.get(metrica, 'SUM(f.cantidades_total)')
+
+    query = f"""
+        SELECT
+            COALESCE(a.generico, 'Sin categoria') as generico,
+            {agg} as valor
+        FROM gold.fact_ventas f
+        {join_cliente}
+        {join_articulo}
+        WHERE {where_sql}
+        GROUP BY a.generico
+        ORDER BY valor DESC
+        LIMIT {int(top_n)}
+    """
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
+    df['valor'] = df['valor'].astype(float)
+    return df
+
+
+def cargar_ventas_por_marca_top(fecha_desde=None, fecha_hasta=None, canales=None,
+                                 subcanales=None, localidades=None, listas_precio=None,
+                                 sucursales=None, genericos=None, marcas=None, rutas=None,
+                                 preventistas=None, fuerza_venta=None, metrica='cantidad_total',
+                                 top_n=10):
+    """Top N marcas por métrica seleccionada, respetando todos los filtros."""
+    join_cliente, join_articulo, where_sql = _build_all_filters(
+        fecha_desde, fecha_hasta, canales, subcanales, localidades,
+        listas_precio, sucursales, genericos, marcas, rutas,
+        preventistas, fuerza_venta
+    )
+    if not join_articulo:
+        join_articulo = "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
+
+    metrica_sql = {
+        'cantidad_total': 'SUM(f.cantidades_total)',
+        'facturacion': 'SUM(f.subtotal_final)',
+        'cantidad_documentos': 'COUNT(DISTINCT f.nro_doc)',
+    }
+    agg = metrica_sql.get(metrica, 'SUM(f.cantidades_total)')
+
+    query = f"""
+        SELECT
+            COALESCE(a.marca, 'Sin marca') as marca,
+            {agg} as valor
+        FROM gold.fact_ventas f
+        {join_cliente}
+        {join_articulo}
+        WHERE {where_sql}
+        GROUP BY a.marca
+        ORDER BY valor DESC
+        LIMIT {int(top_n)}
+    """
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
+    df['valor'] = df['valor'].astype(float)
     return df
 
 
