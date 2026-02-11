@@ -109,10 +109,11 @@ def cargar_detalle_cliente(store_data):
     arts_con_venta = set(df_con_venta['id_articulo'].unique())
     df_sin_venta_arts = df_all[~df_all['id_articulo'].isin(arts_con_venta)].drop_duplicates(subset=['id_articulo'])
 
-    # Periodos solo de articulos con venta
+    # Periodos solo de articulos con venta (ultimos 12 meses)
     periodos = sorted(
         df_con_venta[['anio', 'mes']].drop_duplicates().values.tolist()
     ) if len(df_con_venta) > 0 else []
+    periodos = periodos[-12:]
 
     # Rearmar df_all: con_venta + sin_venta con bultos=0
     if len(df_sin_venta_arts) > 0:
@@ -475,6 +476,7 @@ def _preparar_datos_excel(id_cliente):
     periodos = sorted(
         df_con_venta[['anio', 'mes']].drop_duplicates().values.tolist()
     ) if len(df_con_venta) > 0 else []
+    periodos = periodos[-12:]
 
     if len(df_sin_venta_arts) > 0:
         df_sv = df_sin_venta_arts[['id_articulo', 'generico', 'marca', 'articulo']].copy()
