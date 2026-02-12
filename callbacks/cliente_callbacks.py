@@ -109,11 +109,17 @@ def cargar_detalle_cliente(store_data):
     arts_con_venta = set(df_con_venta['id_articulo'].unique())
     df_sin_venta_arts = df_all[~df_all['id_articulo'].isin(arts_con_venta)].drop_duplicates(subset=['id_articulo'])
 
-    # Periodos solo de articulos con venta (ultimos 12 meses)
-    periodos = sorted(
-        df_con_venta[['anio', 'mes']].drop_duplicates().values.tolist()
-    ) if len(df_con_venta) > 0 else []
-    periodos = periodos[-12:]
+    # Ultimos 12 meses calendario desde hoy
+    from datetime import date
+    hoy = date.today()
+    periodos = []
+    for i in range(11, -1, -1):
+        m = hoy.month - i
+        a = hoy.year
+        while m <= 0:
+            m += 12
+            a -= 1
+        periodos.append([a, m])
 
     # Rearmar df_all: con_venta + sin_venta con bultos=0
     if len(df_sin_venta_arts) > 0:
@@ -473,10 +479,16 @@ def _preparar_datos_excel(id_cliente):
     arts_con_venta = set(df_con_venta['id_articulo'].unique())
     df_sin_venta_arts = df_all[~df_all['id_articulo'].isin(arts_con_venta)].drop_duplicates(subset=['id_articulo'])
 
-    periodos = sorted(
-        df_con_venta[['anio', 'mes']].drop_duplicates().values.tolist()
-    ) if len(df_con_venta) > 0 else []
-    periodos = periodos[-12:]
+    from datetime import date
+    hoy = date.today()
+    periodos = []
+    for i in range(11, -1, -1):
+        m = hoy.month - i
+        a = hoy.year
+        while m <= 0:
+            m += 12
+            a -= 1
+        periodos.append([a, m])
 
     if len(df_sin_venta_arts) > 0:
         df_sv = df_sin_venta_arts[['id_articulo', 'generico', 'marca', 'articulo']].copy()
