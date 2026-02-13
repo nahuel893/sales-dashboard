@@ -252,7 +252,8 @@ def _calcular_zonas_ruta(df):
             'lons': hull_puntos[:, 0].tolist(),
             'lats': hull_puntos[:, 1].tolist(),
             'n_clientes': len(grupo),
-            'n_clientes_zona': len(puntos_filtrados)
+            'n_clientes_zona': len(puntos_filtrados),
+            'clientes': grupo['id_cliente'].tolist(),
         })
         color_idx += 1
 
@@ -335,7 +336,8 @@ def _calcular_zonas_preventista(df):
                 'lons': hull_puntos[:, 0].tolist(),
                 'lats': hull_puntos[:, 1].tolist(),
                 'n_clientes': len(grupo_ruta),
-                'n_clientes_zona': len(puntos_filtrados)
+                'n_clientes_zona': len(puntos_filtrados),
+                'clientes': grupo_ruta['id_cliente'].tolist(),
             })
             ruta_num += 1
 

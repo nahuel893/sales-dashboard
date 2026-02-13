@@ -441,8 +441,24 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                             id='loading-mapa',
                             type='circle',
                             children=[dcc.Graph(id='mapa-ventas', style={'height': '87vh'})]
-                        )
-                    ], style={'padding': '10px'})
+                        ),
+                        # Overlay de badges de rutas
+                        html.Div(
+                            id='route-badges-overlay',
+                            style={
+                                'position': 'absolute',
+                                'top': '10px',
+                                'left': '50%',
+                                'transform': 'translateX(-50%)',
+                                'zIndex': 1000,
+                                'display': 'flex',
+                                'flexWrap': 'wrap',
+                                'gap': '6px',
+                                'maxWidth': '80%',
+                                'justifyContent': 'center',
+                            }
+                        ),
+                    ], style={'padding': '10px', 'position': 'relative'})
                 ]),
                 dcc.Tab(label='Mapa de Calor', value='tab-calor',
                         style={'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},

@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import callback, clientside_callback, Output, Input, State, html
+import dash_mantine_components as dmc
 
 from data.queries import (
     obtener_rutas, obtener_preventistas, obtener_marcas, obtener_anios_disponibles,
@@ -258,12 +259,74 @@ def actualizar_resumen_ventas(fechas_value, canales, subcanales, localidades, li
 
 
 # =============================================================================
+# HELPER: Contenido de badge de zona para HoverCard
+# =============================================================================
+
+def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, color_borde):
+    """Construye el contenido HTML del HoverCard para una zona/ruta."""
+    header_style = {
+        'padding': '8px 12px',
+        'backgroundColor': color_borde.replace('0.8', '0.25'),
+        'borderBottom': f'1px solid {DARK["border"]}',
+    }
+    section_title = {
+        'fontSize': '11px', 'fontWeight': '700', 'color': DARK['accent_blue'],
+        'padding': '6px 12px 2px', 'textTransform': 'uppercase',
+    }
+    row_style = {
+        'display': 'flex', 'justifyContent': 'space-between',
+        'padding': '2px 12px', 'fontSize': '12px', 'color': DARK['text'],
+    }
+    total_row = {
+        'display': 'flex', 'justifyContent': 'space-between',
+        'padding': '4px 12px', 'fontSize': '12px', 'fontWeight': '700',
+        'color': DARK['text'], 'borderTop': f'1px solid {DARK["border"]}',
+    }
+
+    content = [
+        # Header
+        html.Div([
+            html.Div(nombre, style={'fontWeight': '700', 'fontSize': '13px', 'color': DARK['text']}),
+            html.Div(f"{n_total} clientes", style={'fontSize': '11px', 'color': DARK['text_secondary']}),
+        ], style=header_style),
+        # Sección Ventas
+        html.Div('Ventas (bultos) — MAct / MAnt', style=section_title),
+    ]
+    for gen, row in resumen.iterrows():
+        content.append(html.Div([
+            html.Span(gen, style={'flex': '1'}),
+            html.Span(f"{row['bultos_act']:,.0f} / {row['bultos_ant']:,.0f}",
+                       style={'fontWeight': '600', 'textAlign': 'right'}),
+        ], style=row_style))
+    content.append(html.Div([
+        html.Span('Total', style={'flex': '1'}),
+        html.Span(f"{total_act:,.0f} / {total_ant:,.0f}", style={'textAlign': 'right'}),
+    ], style=total_row))
+
+    # Sección Clientes C/NC
+    content.append(html.Div('Clientes (C/NC) — MAct / MAnt', style=section_title))
+    for gen, row in resumen.iterrows():
+        c_act = int(row['cli_act'])
+        nc_act = n_total - c_act
+        c_ant = int(row['cli_ant'])
+        nc_ant = n_total - c_ant
+        content.append(html.Div([
+            html.Span(gen, style={'flex': '1'}),
+            html.Span(f"{c_act}/{nc_act} / {c_ant}/{nc_ant}",
+                       style={'fontWeight': '600', 'textAlign': 'right'}),
+        ], style=row_style))
+
+    return content
+
+
+# =============================================================================
 # CALLBACK MAPA DE BURBUJAS
 # =============================================================================
 
 @callback(
     [Output('mapa-ventas', 'figure'),
-     Output('kpis-container', 'children')],
+     Output('kpis-container', 'children'),
+     Output('route-badges-overlay', 'children')],
     [Input('filtro-fechas', 'value'),
      Input('filtro-canal', 'value'),
      Input('filtro-subcanal', 'value'),
@@ -284,6 +347,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     sucursales, metrica, genericos, marcas, rutas, preventistas,
                     fuerza_venta, opciones_zonas, opcion_animacion, granularidad):
     """Actualiza el mapa y KPIs segun los filtros."""
+    route_badges = []
 
     start_date, end_date = (fechas_value or [None, None])[:2]
     fv = fuerza_venta if fuerza_venta != 'TODOS' else None
@@ -388,18 +452,84 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 for tipo_zona in opciones_zonas:
                     zonas = calcular_zonas(df_mapa, tipo_zona)
                     for zona in zonas:
+                        n_total = zona['n_clientes']
+
+                        # Construir contenido para badge overlay
+                        badge_content = []
+                        if len(df_generico) > 0:
+                            clientes_zona = set(zona.get('clientes', []))
+                            df_zona_gen = df_generico[df_generico['id_cliente'].isin(clientes_zona)]
+                            if len(df_zona_gen) > 0:
+                                df_zg = df_zona_gen.copy()
+                                df_zg['compro_act'] = df_zg['bultos_act'] > 0
+                                df_zg['compro_ant'] = df_zg['bultos_ant'] > 0
+                                resumen = df_zg.groupby('generico').agg(
+                                    bultos_act=('bultos_act', 'sum'),
+                                    bultos_ant=('bultos_ant', 'sum'),
+                                    cli_act=('compro_act', 'sum'),
+                                    cli_ant=('compro_ant', 'sum'),
+                                ).sort_values('bultos_act', ascending=False)
+
+                                total_act = resumen['bultos_act'].sum()
+                                total_ant = resumen['bultos_ant'].sum()
+
+                                badge_content = _build_zona_badge_content(
+                                    zona['nombre'], n_total, resumen,
+                                    total_act, total_ant, zona['color_borde']
+                                )
+
+                        if not badge_content:
+                            badge_content = [html.Div(f"{zona['nombre']} — {n_total} clientes",
+                                                      style={'padding': '8px', 'color': '#fff'})]
+
+                        route_badges.append(
+                            dmc.HoverCard(
+                                position='bottom', withArrow=True, shadow='md',
+                                children=[
+                                    dmc.HoverCardTarget(
+                                        html.Div(
+                                            zona['nombre'],
+                                            style={
+                                                'padding': '4px 10px',
+                                                'borderRadius': '12px',
+                                                'fontSize': '11px',
+                                                'fontWeight': '600',
+                                                'color': '#fff',
+                                                'backgroundColor': zona['color_borde'].replace('0.8', '0.65'),
+                                                'cursor': 'pointer',
+                                                'whiteSpace': 'nowrap',
+                                                'border': f"1px solid {zona['color_borde']}",
+                                            }
+                                        )
+                                    ),
+                                    dmc.HoverCardDropdown(
+                                        badge_content,
+                                        style={
+                                            'backgroundColor': DARK['card'],
+                                            'border': f"1px solid {DARK['border']}",
+                                            'padding': '0',
+                                            'maxHeight': '400px',
+                                            'overflowY': 'auto',
+                                        }
+                                    ),
+                                ]
+                            )
+                        )
+
                         fig.add_trace(go.Scattermap(
                             lat=zona['lats'], lon=zona['lons'],
                             mode='lines', fill='toself',
                             fillcolor=zona['color'],
                             line=dict(color=zona['color_borde'], width=2),
-                            name=f"{zona['nombre']} ({zona['n_clientes']} clientes)",
-                            hoverinfo='name', showlegend=True
+                            name=f"{zona['nombre']} ({n_total} clientes)",
+                            hoverinfo='name',
+                            showlegend=True
                         ))
 
-            # Clientes sin ventas (marcados con X)
+            # Clientes sin ventas (marcados con circulo rojo)
             if len(df_sin_ventas) > 0:
                 df_sin_ventas = df_sin_ventas.copy()
+                df_sin_ventas['desglose_generico'] = df_sin_ventas['id_cliente'].map(desglose_map).fillna('')
                 df_sin_ventas['_pad1'] = 0
                 df_sin_ventas['_pad2'] = 0
                 df_sin_ventas['_pad3'] = 0
@@ -410,8 +540,15 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     marker=dict(size=7, color='#ff0000', opacity=0.9),
                     name='Sin ventas',
                     text=df_sin_ventas['razon_social'],
-                    hovertemplate='<b>[%{customdata[6]}] %{text}</b><br>Localidad: %{customdata[0]}<br><b>Sin ventas</b><extra></extra>',
-                    customdata=df_sin_ventas[['localidad', 'subcanal', '_pad1', '_pad2', '_pad3', '_pad4', 'id_cliente']].values
+                    hovertemplate=(
+                        '<b>[%{customdata[6]}] %{text}</b><br>'
+                        'Localidad: %{customdata[0]}<br>'
+                        '<b>Sin ventas en periodo</b><br>'
+                        '─────────────<br>'
+                        '%{customdata[7]}'
+                        '<extra></extra>'
+                    ),
+                    customdata=df_sin_ventas[['localidad', 'subcanal', '_pad1', '_pad2', '_pad3', '_pad4', 'id_cliente', 'desglose_generico']].values
                 ))
 
             # Clientes con ventas
@@ -491,7 +628,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
         ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
     ]
 
-    return fig, kpis
+    return fig, kpis, route_badges
 
 
 # =============================================================================
