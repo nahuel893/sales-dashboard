@@ -331,18 +331,15 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
         if usar_animacion and 'periodo' in df.columns:
             df_con_ventas = df_mapa[df_mapa['cantidad_total'] > 0].copy()
             if len(df_con_ventas) > 0:
-                # Calcular min/max de la metrica para escala dinamica
-                val_min = df_con_ventas[metrica].min()
-                val_max = df_con_ventas[metrica].max()
-
-                df_con_ventas['size'] = 10 + (df_con_ventas[metrica] / val_max * 30) if val_max > 0 else 15
+                # Escala fija 0-15: tamaño y color
+                df_con_ventas['size'] = 10 + (df_con_ventas[metrica].clip(upper=15) / 15 * 30)
 
                 fig = px.scatter_map(
                     df_con_ventas,
                     lat='latitud', lon='longitud',
                     size='size', color=metrica,
                     color_continuous_scale=[[0, 'rgb(30, 80, 180)'], [0.35, 'rgb(0, 180, 220)'], [0.65, 'rgb(80, 200, 80)'], [1, 'rgb(240, 220, 0)']],
-                    range_color=[val_min, val_max],
+                    range_color=[0, 15],
                     animation_frame='periodo',
                     hover_name='razon_social',
                     hover_data={'latitud': False, 'longitud': False, 'size': False, 'periodo': True, metrica: ':,.0f'},
@@ -420,13 +417,8 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
 
             # Clientes con ventas
             if len(df_con_ventas) > 0:
-                # Calcular min/max de la metrica para escala dinamica
-                val_min = df_con_ventas[metrica].min()
-                val_max = df_con_ventas[metrica].max()
-
-                # Normalizar tamanio de burbujas al rango filtrado
-                size_col = df_con_ventas[metrica]
-                size_normalized = 10 + (size_col / val_max * 30) if val_max > 0 else 15
+                # Escala fija 0-15: tamaño y color
+                size_normalized = 10 + (df_con_ventas[metrica].clip(upper=15) / 15 * 30)
 
                 fig.add_trace(go.Scattermap(
                     lat=df_con_ventas['latitud'], lon=df_con_ventas['longitud'],
@@ -435,8 +427,8 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                         size=size_normalized,
                         color=df_con_ventas[metrica],
                         colorscale=[[0, 'rgb(30, 80, 180)'], [0.35, 'rgb(0, 180, 220)'], [0.65, 'rgb(80, 200, 80)'], [1, 'rgb(240, 220, 0)']],
-                        cmin=val_min,
-                        cmax=val_max,
+                        cmin=0,
+                        cmax=15,
                         showscale=True,
                         colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f'),
                         opacity=0.8
