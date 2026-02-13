@@ -332,7 +332,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             df_con_ventas = df_mapa[df_mapa['cantidad_total'] > 0].copy()
             if len(df_con_ventas) > 0:
                 # Escala fija 0-15: tamaño y color
-                df_con_ventas['size'] = 10 + (df_con_ventas[metrica].clip(upper=15) / 15 * 30)
+                df_con_ventas['size'] = 5 + (df_con_ventas[metrica].clip(upper=15) / 15 * 15)
 
                 fig = px.scatter_map(
                     df_con_ventas,
@@ -348,7 +348,8 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 )
                 fig.update_layout(
                     margin={'r': 0, 't': 30, 'l': 0, 'b': 0},
-                    coloraxis_colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f')
+                    coloraxis_colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f'),
+                    hoverlabel=dict(font=dict(family='monospace'))
                 )
                 fig.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 800
                 fig.layout.updatemenus[0].buttons[0].args[1]['transition']['duration'] = 300
@@ -362,20 +363,18 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             df_con_ventas = df_mapa[df_mapa['cantidad_total'] > 0].copy()
             df_sin_ventas = df_mapa[df_mapa['cantidad_total'] == 0].copy()
 
-            # Cargar desglose por genérico para hover
+            # Cargar desglose por genérico para hover (mes actual y anterior)
             df_generico = cargar_ventas_por_cliente_generico(
-                start_date, end_date, genericos, marcas, rutas, preventistas, fv
+                genericos, marcas, rutas, preventistas, fv
             )
-            # Formatear desglose como string por cliente
+            # Formatear desglose como texto por cliente (MAct / MAnt)
             if len(df_generico) > 0:
                 def _fmt_generico(grupo):
-                    lines = []
+                    lines = ['<b>Genérico — MAct / MAnt</b>']
                     for _, row in grupo.iterrows():
-                        val = row[metrica] if metrica in grupo.columns else row['cantidad_total']
-                        if metrica == 'facturacion':
-                            lines.append(f"{row['generico']}: ${val:,.0f}")
-                        else:
-                            lines.append(f"{row['generico']}: {val:,.0f}")
+                        act = f"{row['bultos_act']:,.0f}" if row['bultos_act'] else '0'
+                        ant = f"{row['bultos_ant']:,.0f}" if row['bultos_ant'] else '0'
+                        lines.append(f"{row['generico']}: <b>{act}</b> / {ant}")
                     return '<br>'.join(lines)
                 desglose_map = df_generico.groupby('id_cliente').apply(_fmt_generico).to_dict()
             else:
@@ -418,7 +417,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             # Clientes con ventas
             if len(df_con_ventas) > 0:
                 # Escala fija 0-15: tamaño y color
-                size_normalized = 10 + (df_con_ventas[metrica].clip(upper=15) / 15 * 30)
+                size_normalized = 5 + (df_con_ventas[metrica].clip(upper=15) / 15 * 15)
 
                 fig.add_trace(go.Scattermap(
                     lat=df_con_ventas['latitud'], lon=df_con_ventas['longitud'],
@@ -450,7 +449,8 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 map=dict(style='open-street-map', center=dict(lat=center_lat, lon=center_lon), zoom=8),
                 margin={'r': 0, 't': 0, 'l': 0, 'b': 0},
                 showlegend=True,
-                legend=dict(yanchor='top', y=0.99, xanchor='left', x=0.01, bgcolor='rgba(255,255,255,0.8)')
+                legend=dict(yanchor='top', y=0.99, xanchor='left', x=0.01, bgcolor='rgba(255,255,255,0.8)'),
+                hoverlabel=dict(font=dict(family='monospace'))
             )
     else:
         fig = px.scatter_map(lat=[-24.8], lon=[-65.4], zoom=7, map_style='open-street-map')

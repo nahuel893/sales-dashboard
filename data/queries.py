@@ -446,13 +446,23 @@ def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, su
     return df
 
 
-def cargar_ventas_por_cliente_generico(fecha_desde=None, fecha_hasta=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, top_n=5):
-    """Obtiene top N genéricos por cliente para el hover del mapa."""
+def cargar_ventas_por_cliente_generico(genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, top_n=5):
+    """Obtiene top N genéricos por cliente con bultos del mes actual y anterior."""
+    from datetime import date
 
-    where_clauses = []
+    hoy = date.today()
+    act_anio, act_mes = hoy.year, hoy.month
+    # Mes anterior
+    ant_mes = act_mes - 1
+    ant_anio = act_anio
+    if ant_mes <= 0:
+        ant_mes += 12
+        ant_anio -= 1
 
-    if fecha_desde and fecha_hasta:
-        where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
+    where_clauses = [
+        f"(f.fecha_comprobante >= '{ant_anio}-{ant_mes:02d}-01' "
+        f"AND f.fecha_comprobante < '{act_anio}-{act_mes:02d}-01'::date + interval '1 month')"
+    ]
 
     join_articulo, where_articulo = _build_articulo_filters(genericos, marcas)
     where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta)
@@ -477,9 +487,13 @@ def cargar_ventas_por_cliente_generico(fecha_desde=None, fecha_hasta=None, gener
             SELECT
                 f.id_cliente,
                 COALESCE(a.generico, 'Sin categoria') as generico,
+                SUM(CASE WHEN EXTRACT(YEAR FROM f.fecha_comprobante) = {act_anio}
+                          AND EXTRACT(MONTH FROM f.fecha_comprobante) = {act_mes}
+                         THEN f.cantidades_total ELSE 0 END) as bultos_act,
+                SUM(CASE WHEN EXTRACT(YEAR FROM f.fecha_comprobante) = {ant_anio}
+                          AND EXTRACT(MONTH FROM f.fecha_comprobante) = {ant_mes}
+                         THEN f.cantidades_total ELSE 0 END) as bultos_ant,
                 SUM(f.cantidades_total) as cantidad_total,
-                SUM(f.subtotal_final) as facturacion,
-                COUNT(DISTINCT f.nro_doc) as cantidad_documentos,
                 ROW_NUMBER() OVER (PARTITION BY f.id_cliente ORDER BY SUM(f.cantidades_total) DESC) as rn
             FROM gold.fact_ventas f
             {join_cliente}
@@ -487,7 +501,7 @@ def cargar_ventas_por_cliente_generico(fecha_desde=None, fecha_hasta=None, gener
             WHERE {where_sql}
             GROUP BY f.id_cliente, a.generico
         )
-        SELECT id_cliente, generico, cantidad_total, facturacion, cantidad_documentos
+        SELECT id_cliente, generico, bultos_act, bultos_ant, cantidad_total
         FROM ventas_generico
         WHERE rn <= {top_n}
         ORDER BY id_cliente, cantidad_total DESC
