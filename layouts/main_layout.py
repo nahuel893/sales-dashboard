@@ -12,6 +12,20 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
     # Estilo común para labels de sección
     label_style = {'fontWeight': 'bold', 'fontSize': '14px', 'color': DARK['text_secondary']}
 
+    # Estilos oscuros para inputs dmc dentro del drawer
+    dark_input_styles = {
+        "input": {"backgroundColor": DARK['surface'], "borderColor": DARK['border'], "color": DARK['text']},
+        "label": {"color": DARK['text_secondary']},
+        "dropdown": {"backgroundColor": DARK['surface'], "borderColor": DARK['border']},
+        "option": {"color": DARK['text']},
+        "pill": {"backgroundColor": DARK['accent_blue'], "color": DARK['text']},
+    }
+    dark_segmented_styles = {
+        "root": {"backgroundColor": DARK['surface']},
+        "label": {"color": DARK['text_secondary']},
+        "indicator": {"backgroundColor": DARK['accent_blue']},
+    }
+
     return html.Div([
         # Div oculto para clientside callback de click en mapa
         html.Div(id='click-output-dummy', style={'display': 'none'}),
@@ -47,6 +61,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 valueFormat="DD/MM/YYYY",
                                 w="100%",
                                 popoverProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.Divider(color=DARK['border']),
 
@@ -61,6 +76,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
                                 id='filtro-subcanal',
@@ -71,6 +87,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
                                 id='filtro-localidad',
@@ -81,6 +98,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
                                 id='filtro-lista-precio',
@@ -91,6 +109,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             html.Div([
                                 html.Label("Tipo Sucursal", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
@@ -104,6 +123,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                     value="TODAS",
                                     size="sm",
                                     fullWidth=True,
+                                    styles=dark_segmented_styles,
                                 ),
                             ]),
                             dmc.MultiSelect(
@@ -115,6 +135,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.Divider(color=DARK['border']),
 
@@ -129,6 +150,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
                                 id='filtro-marca',
@@ -139,6 +161,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.Divider(color=DARK['border']),
 
@@ -154,6 +177,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 value="cantidad_total",
                                 size="sm",
                                 fullWidth=True,
+                                styles=dark_segmented_styles,
                             ),
                             dmc.Divider(color=DARK['border']),
 
@@ -169,6 +193,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 value="TODOS",
                                 size="sm",
                                 fullWidth=True,
+                                styles=dark_segmented_styles,
                             ),
                             dmc.MultiSelect(
                                 id='filtro-ruta',
@@ -179,6 +204,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
                                 id='filtro-preventista',
@@ -189,6 +215,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 searchable=True,
                                 clearable=True,
                                 comboboxProps={"zIndex": 1100},
+                                styles=dark_input_styles,
                             ),
                             dmc.Divider(color=DARK['border']),
 
@@ -211,6 +238,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 label="Escala Logaritmica",
                                 checked=True,
                                 size="sm",
+                                styles={"label": {"color": DARK['text_secondary']}},
                             ),
                             html.Div([
                                 html.Label("Tipo mapa calor", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
@@ -223,6 +251,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                     value="density",
                                     size="sm",
                                     fullWidth=True,
+                                    styles=dark_segmented_styles,
                                 ),
                             ]),
                             html.Div([
@@ -268,6 +297,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                     ],
                                     value="normal",
                                     size="sm",
+                                    styles=dark_segmented_styles,
                                     fullWidth=True,
                                 ),
                             ]),
@@ -276,6 +306,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 label="Activar animacion temporal",
                                 checked=False,
                                 size="sm",
+                                styles={"label": {"color": DARK['text_secondary']}},
                             ),
                             html.Div([
                                 html.Label("Granularidad", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
@@ -288,6 +319,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                     ],
                                     value="semana",
                                     size="sm",
+                                    styles=dark_segmented_styles,
                                     fullWidth=True,
                                 ),
                             ]),
