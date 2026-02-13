@@ -304,7 +304,7 @@ def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, co
     ], style=total_row))
 
     # Sección Clientes C/NC
-    content.append(html.Div('Clientes (C/NC) — MAct / MAnt', style=section_title))
+    content.append(html.Div(f'Clientes (C/NC) — MAct / MAnt — Total: {n_total}', style=section_title))
     for gen, row in resumen.iterrows():
         c_act = int(row['cli_act'])
         nc_act = n_total - c_act
