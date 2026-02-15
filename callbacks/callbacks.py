@@ -303,16 +303,14 @@ def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, co
         html.Span(f"{total_act:,.0f} / {total_ant:,.0f}", style={'textAlign': 'right'}),
     ], style=total_row))
 
-    # Sección Clientes C/NC
-    content.append(html.Div(f'Clientes (C/NC) — MAct / MAnt — Total: {n_total}', style=section_title))
+    # Sección Clientes compradores
+    content.append(html.Div(f'Compradores — MAct / MAnt — Total: {n_total}', style=section_title))
     for gen, row in resumen.iterrows():
         c_act = int(row['cli_act'])
-        nc_act = n_total - c_act
         c_ant = int(row['cli_ant'])
-        nc_ant = n_total - c_ant
         content.append(html.Div([
             html.Span(gen, style={'flex': '1'}),
-            html.Span(f"{c_act}/{nc_act} / {c_ant}/{nc_ant}",
+            html.Span(f"{c_act} / {c_ant}",
                        style={'fontWeight': '600', 'textAlign': 'right'}),
         ], style=row_style))
 
