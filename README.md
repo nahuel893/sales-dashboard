@@ -1,283 +1,329 @@
 # Sales Dashboard - Medallion ETL
 
-Dashboard interactivo multi-tablero de ventas con mapas geolocalizados, construido con Dash/Plotly. Conecta a un sistema ETL medallion (PostgreSQL) y presenta análisis geográficos, KPIs y evolución temporal.
+Dashboard interactivo multi-tablero de ventas con mapas geolocalizados, construido con Dash/Plotly. Conecta a un sistema ETL medallion (PostgreSQL) y presenta analisis geograficos, KPIs, evolucion temporal, dashboard YTD y detalle por cliente.
 
-## Características Principales
+## Caracteristicas Principales
 
-- **Sistema de navegación multi-tablero**: Página de inicio con cards para seleccionar entre diferentes dashboards
-- **Mapas interactivos**: Burbujas y calor con datos geolocalizados
-- **KPIs en tiempo real**: Clientes, bultos, facturación, documentos
-- **Filtros avanzados**: Cascada entre genérico→marca, fuerza de venta→ruta→preventista
-- **Animaciones temporales**: Visualización por día/semana/mes
-- **Zonas geográficas**: Convex hull por ruta o preventista
-- **Comparación anual**: Gráficos de evolución año vs año
+- **Sistema de navegacion multi-tablero**: Home, Ventas, YTD, Clientes, Detalle Cliente
+- **Tema oscuro completo**: Paleta dark centralizada en config.py aplicada a toda la UI
+- **Mapas interactivos**: Burbujas (escala fija 0-15), calor (difuso/grilla), compro/no compro
+- **KPIs en tiempo real**: Clientes, bultos, facturacion, documentos
+- **Filtros avanzados**: Panel lateral con cascada generico->marca, FV->ruta->preventista
+- **Hover enriquecido**: Top 5 genericos por cliente con MAct/MAnt (mes actual vs anterior)
+- **Badges de ruta**: Overlay sobre el mapa con desglose ventas y compradores por zona
+- **Zonas geograficas**: Convex hull por ruta o preventista con colores distintos
+- **Animaciones temporales**: Visualizacion por dia/semana/mes
+- **Comparacion anual**: Graficos de evolucion ano vs ano + tabla comparativa
+- **Detalle de cliente**: Tabla jerarquica generico->marca->articulo, ultimos 12 meses
+- **Export Excel**: 3 hojas (por generico, por marca, detalle articulos)
+- **Dashboard YTD**: 7 KPIs + 6 graficos con target automatico (+10% interanual)
 
 ## Estructura del Proyecto
 
 ```
 sales-dashboard/
-├── app.py                    # Punto de entrada, routing entre tableros
-├── config.py                 # Configuración central (colores, estilos)
-├── database.py               # Conexión SQLAlchemy a PostgreSQL
-├── CLAUDE.md                 # Guía para asistentes AI
+├── app.py                     # Punto de entrada, routing entre tableros
+├── config.py                  # Configuracion central (colores, estilos, tema DARK)
+├── database.py                # Conexion SQLAlchemy a PostgreSQL
+├── .env.example               # Plantilla de variables de entorno
+├── requirements.txt           # Dependencias Python
+├── VERSION                    # Version actual del proyecto
+├── CHANGELOG.md               # Historial de cambios
+├── ROADMAP.md                 # Plan de versiones futuras
+├── CLAUDE.md                  # Guia para asistentes AI
+├── CONTEXT_IA.md              # Esquema de BD y contexto de datos
 │
 ├── layouts/
-│   ├── home_layout.py        # Página de inicio con cards
-│   └── main_layout.py        # Layout del dashboard de ventas
+│   ├── home_layout.py         # Pagina de inicio con cards de navegacion
+│   ├── main_layout.py         # Dashboard de ventas (mapas + filtros + KPIs)
+│   ├── ytd_layout.py          # Dashboard YTD (KPIs + graficos)
+│   ├── cliente_layout.py      # Detalle de cliente individual
+│   └── clientes_layout.py     # Busqueda de clientes
 │
 ├── callbacks/
-│   └── callbacks.py          # Callbacks de interactividad
+│   ├── callbacks.py           # Callbacks del dashboard de ventas
+│   ├── ytd_callbacks.py       # Callbacks del dashboard YTD
+│   ├── cliente_callbacks.py   # Callbacks del detalle de cliente
+│   └── clientes_callbacks.py  # Callbacks de busqueda de clientes
 │
 ├── data/
-│   └── queries.py            # Funciones de consulta SQL
+│   ├── queries.py             # Queries SQL (ventas + clientes)
+│   └── ytd_queries.py         # Queries SQL del dashboard YTD
 │
 ├── utils/
-│   └── visualization.py      # Utilidades (grillas, zonas convex hull)
+│   └── visualization.py       # Grillas de calor, zonas convex hull
 │
-└── components/               # (reservado para componentes reutilizables)
+├── components/                # (reservado para componentes reutilizables)
+│
+└── docs/
+    ├── EVALUACION_TECNICA_DASHBOARD.md
+    └── TODO_CORRECCIONES.md
 ```
 
-## Instalación
+## Instalacion
 
 ### Requisitos
 - Python 3.8+
 - PostgreSQL con esquema medallion (gold layer)
-- Archivo `.env` en `~/Desktop/medallion-etl/`
+
+### Configuracion
+
+```bash
+cd ~/Desktop/sales-dashboard
+
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con las credenciales reales
+```
+
+El archivo `.env` debe contener:
+
+```env
+POSTGRES_USER=tu_usuario
+POSTGRES_PASSWORD=tu_password
+POSTGRES_DB=tu_base_de_datos
+POSTGRES_HOST=192.168.1.x
+POSTGRES_PORT=5432
+```
 
 ### Dependencias
 
 ```bash
-pip install dash plotly pandas numpy sqlalchemy psycopg2-binary pydantic-settings scipy
+pip install -r requirements.txt
 ```
 
-### Variables de Entorno
+Dependencias principales:
+- `dash`, `plotly`, `dash-mantine-components` (UI y graficos)
+- `pandas`, `numpy` (procesamiento de datos)
+- `sqlalchemy`, `psycopg2-binary` (conexion PostgreSQL)
+- `pydantic`, `pydantic-settings` (configuracion)
+- `scipy` (zonas convex hull)
+- `openpyxl` (export Excel)
 
-El archivo `~/Desktop/medallion-etl/.env` debe contener:
-
-```env
-POSTGRES_USER=usuario
-POSTGRES_PASSWORD=contraseña
-DATABASE=nombre_db
-IP_SERVER=192.168.1.x
-```
-
-## Ejecución
+## Ejecucion
 
 ```bash
-cd ~/Desktop/sales-dashboard
 python3 app.py
 ```
 
 Acceder en: http://localhost:8050
 
-## Sistema de Navegación
+Para acceso en red local, `config.py` tiene `host: '0.0.0.0'`.
 
-El dashboard usa un sistema de routing basado en URL:
+## Sistema de Navegacion
 
-| URL | Descripción |
-|-----|-------------|
-| `/` | Página de inicio con cards de selección |
-| `/ventas` | Dashboard de ventas (mapas, KPIs, análisis) |
-| `/nuevo` | Placeholder para futuros tableros |
+| URL | Pagina | Descripcion |
+|-----|--------|-------------|
+| `/` | Home | Cards de seleccion de tableros |
+| `/ventas` | Dashboard Ventas | Mapas interactivos, KPIs, comparacion anual |
+| `/ytd` | Dashboard YTD | Indicadores acumulados anuales, targets |
+| `/clientes` | Buscar Clientes | Busqueda por nombre o codigo |
+| `/cliente/<id>` | Detalle Cliente | Ventas por generico/marca/articulo, export Excel |
+| `/nuevo` | Placeholder | Reservado para futuros tableros |
 
-### Agregar un Nuevo Tablero
-
-1. Crear layout en `layouts/nuevo_tablero_layout.py`
-2. Crear callbacks en `callbacks/nuevo_tablero_callbacks.py`
-3. Agregar ruta en `app.py` dentro de `display_page()`
-4. Agregar card en `layouts/home_layout.py`
-
-## Módulos
+## Modulos
 
 ### app.py
-
-Punto de entrada principal con routing:
-- Carga datos iniciales (filtros, fechas)
-- Define rutas URL
-- Importa callbacks
+Punto de entrada principal:
+- Inicializa Dash con `dmc.MantineProvider`
+- Pre-carga datos iniciales (filtros, fechas, listas)
+- Define routing URL -> layout
+- Importa todos los callbacks
+- Exporta `server` para gunicorn
 
 ### config.py
-
-Configuración centralizada:
+Configuracion centralizada:
 - `SERVER_CONFIG`: host, port, debug
-- `METRICA_LABELS`: Labels para métricas
+- `DARK`: Paleta de colores del tema oscuro (16+ colores)
+- `METRICA_LABELS`: Labels para metricas (Bultos, Facturacion, Documentos)
 - `COLOR_SCALE_*`: Escalas de colores para mapas
-- `ZONE_COLORS`: Colores para zonas geográficas
-- `GRANULARIDAD_CONFIG`: Configuración temporal
+- `ZONE_COLORS`: Colores para zonas geograficas
+- `GRANULARIDAD_CONFIG`: Opciones de granularidad temporal
 - `STYLES`: Estilos CSS comunes
 
 ### database.py
-
-Conexión a PostgreSQL:
-- Lee credenciales desde `.env`
-- Exporta `engine` para queries
-- Función `get_db()` para sesiones
+Conexion a PostgreSQL:
+- `Settings` con `pydantic-settings` (lee `.env`)
+- Exporta `engine` (SQLAlchemy) para queries
+- Funcion `get_db()` para sesiones
 
 ### data/queries.py
+Funciones de acceso a datos del dashboard de ventas y clientes:
 
-Funciones de acceso a datos:
-
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
-| `obtener_genericos()` | Lista de genéricos de artículos |
-| `obtener_marcas(genericos)` | Marcas (filtradas por genéricos) |
-| `obtener_rutas(fv)` | Rutas según fuerza de venta |
-| `obtener_preventistas(fv)` | Preventistas según fuerza de venta |
-| `obtener_rango_fechas()` | Rango min/max de fechas |
-| `obtener_anios_disponibles()` | Años con datos |
-| `cargar_ventas_por_cliente(...)` | Ventas agregadas por cliente |
-| `cargar_ventas_por_fecha(...)` | Ventas agregadas por fecha |
-| `cargar_ventas_animacion(...)` | Ventas por cliente y período |
+| `cargar_ventas_por_cliente(...)` | Ventas por cliente (mapas). Parte de dim_cliente |
+| `cargar_ventas_por_fecha(...)` | Ventas por fecha (graficos). Parte de fact_ventas |
+| `cargar_ventas_animacion(...)` | Ventas por periodo (animaciones) |
+| `cargar_ventas_por_cliente_generico(...)` | Top N genericos por cliente, MAct/MAnt |
+| `cargar_ventas_por_generico_top(...)` | Top genericos por metrica |
+| `cargar_ventas_por_marca_top(...)` | Top marcas por metrica |
+| `buscar_clientes(texto)` | Busqueda por nombre/codigo |
+| `cargar_info_cliente(id)` | Datos maestros del cliente |
+| `cargar_ventas_cliente_detalle(id)` | Historico con jerarquia generico/marca/articulo |
+| `obtener_genericos()` | Lista de genericos |
+| `obtener_marcas(genericos)` | Marcas filtradas por generico |
+| `obtener_rutas(fv)` | Rutas con clave compuesta |
+| `obtener_preventistas(fv)` | Preventistas por FV |
+| `obtener_rango_fechas()` | Min/max fechas |
+
+### data/ytd_queries.py
+Funciones del dashboard YTD:
+
+| Funcion | Descripcion |
+|---------|-------------|
+| `obtener_ventas_ytd(...)` | Acumulado YTD |
+| `obtener_ventas_por_mes(...)` | Desglose mensual |
+| `obtener_ventas_por_generico(...)` | Por categoria |
+| `obtener_ventas_por_sucursal(...)` | Por sucursal |
+| `obtener_ventas_por_canal(...)` | Por canal |
+| `calcular_target_automatico(...)` | Target (ano anterior +10%) |
+| `calcular_crecimiento_mensual(...)` | Crecimiento % YoY |
+| `obtener_dias_inventario(...)` | Stock / venta diaria |
 
 ### utils/visualization.py
+Funciones de visualizacion:
 
-Funciones de visualización:
-
-| Función | Descripción |
+| Funcion | Descripcion |
 |---------|-------------|
 | `crear_grilla_calor_optimizada()` | Grilla de celdas para mapa de calor |
-| `calcular_zonas()` | Convex hull para zonas geográficas |
+| `calcular_zonas()` | Convex hull por ruta o preventista |
 | `_filtrar_outliers_iqr()` | Filtra outliers por IQR |
 
-### layouts/
+## Dashboard de Ventas
 
-- **home_layout.py**: `create_home_layout()` - Cards de navegación
-- **main_layout.py**: `create_ventas_layout()` - Dashboard de ventas completo
+### Mapas
+- **Mapa de Burbujas**: Escala fija 0-15, hover con top 5 genericos MAct/MAnt, click abre detalle cliente, badges overlay con info de zona
+- **Mapa de Calor**: Modo difuso (density) o grilla, escala log, normalizacion configurable
+- **Mapa Compro/No Compro**: Verde (con ventas) vs rojo (sin ventas)
 
-### callbacks/callbacks.py
+### Tablero Comparativo
+- Selector de anos (multi-select)
+- Grafico de lineas: evolucion mensual por ano
+- Tabla: meses x anos con crecimiento %
+- Top 10 genericos y marcas
 
-Callbacks principales:
+### Filtros (Panel lateral dmc.Drawer)
+Todos los componentes con tema oscuro (dark_input_styles):
+- Rango de fechas (DatePickerInput)
+- Canal, Subcanal, Localidad, Lista Precio (MultiSelect)
+- Tipo Sucursal, Sucursal (SegmentedControl + MultiSelect)
+- Generico, Marca (MultiSelect cascada)
+- Fuerza de Venta (SegmentedControl), Ruta, Preventista (MultiSelect)
+- Metrica (SegmentedControl: Bultos/Facturacion/Documentos)
+- Opciones de zonas (Switch), Animacion (Switch + SegmentedControl granularidad)
 
-| Callback | Descripción |
-|----------|-------------|
-| `actualizar_marcas_por_generico` | Filtro cascada genérico→marca |
-| `actualizar_rutas_preventistas` | Actualiza según fuerza de venta |
-| `actualizar_filtros` | Actualiza opciones de filtros |
-| `actualizar_mapa` | Mapa de burbujas + KPIs |
-| `actualizar_mapa_calor` | Mapa de calor |
-| `actualizar_grafico_anios` | Gráfico comparación anual |
-| `actualizar_tabla_comparativa` | Tabla meses vs años |
+## Dashboard YTD
+
+### KPIs (7 indicadores)
+- Ventas YTD (bultos), Interanual (%), Objetivo, Cumplimiento (%), Ventas Ano Anterior
+- Ganancia Bruta y Margen (placeholders)
+
+### Graficos (6 tipos)
+- Ventas por Generico (barras apiladas + target)
+- Real vs Objetivo mensual (semaforo: verde >=100%, amarillo 90-99%, rojo <90%)
+- Ventas por Sucursal (barras horizontales, top 6)
+- Ventas por Canal (dona)
+- Crecimiento mensual (barras +/-)
+- Dias de Inventario (gauge: verde <=30, amarillo 30-45, rojo >45)
+
+### Filtros
+- Ano, Mes (hasta), Tipo Sucursal (TODAS/SUCURSALES/CASA_CENTRAL)
+
+## Detalle de Cliente
+
+- **Header**: Info completa del cliente (nombre, codigo, canal, sucursal, ruta, preventista)
+- **KPIs**: 3 metricas del mes actual con texto explicativo
+- **Tabla plana**: Jerarquia generico->marca->articulo, ultimos 12 meses calendario
+  - Subtotales por marca y generico
+  - Jump-to dropdowns para navegar rapidamente
+  - Separacion articulos con/sin ventas
+- **Export Excel**: Boton para descarga completa (3 hojas) o por marca individual
 
 ## Modelo de Datos
 
 ### Tablas Gold Layer
 
-**gold.fact_ventas**
+**gold.fact_ventas** (hechos de ventas)
 ```
-id_cliente, id_articulo, fecha_comprobante, nro_doc
-cantidades_total (bultos), subtotal_final (facturación)
-anulado (boolean)
+id_cliente, id_articulo, id_sucursal, fecha_comprobante, nro_doc
+cantidades_total (bultos), subtotal_final (facturacion)
+anulado (boolean) - NO se filtra
 ```
 
-**gold.dim_cliente**
+**gold.dim_cliente** (dimension clientes)
 ```
-id_cliente, razon_social, fantasia
-latitud, longitud
+id_cliente (unico global), razon_social, fantasia
+latitud, longitud, id_sucursal
 des_localidad, des_provincia, des_ramo
 des_canal_mkt, des_segmento_mkt, des_subcanal_mkt
 des_lista_precio, des_sucursal
-id_ruta_fv1, id_ruta_fv4
-des_personal_fv1, des_personal_fv4
+id_ruta_fv1, id_ruta_fv4, des_personal_fv1, des_personal_fv4
+anulado (boolean) - se filtra en queries de mapa
 ```
 
-**gold.dim_articulo**
+**gold.dim_articulo** (dimension articulos)
 ```
-id_articulo, generico, marca
+id_articulo, des_articulo, generico, marca
 ```
+
+**gold.fact_stock** (stock actual - usado en YTD)
 
 ### Consideraciones de Datos
 
-1. **Ventas anuladas**: Filtrar siempre con `f.anulado = FALSE`
-2. **Clientes sin coordenadas**: Incluir en totales, filtrar solo para visualización de mapas
-3. **Clientes no en dim_cliente**: Las queries parten de `fact_ventas` con `LEFT JOIN` a `dim_cliente`
+1. **Ventas anuladas**: NO filtrar `anulado` en fact_ventas — incluir todas
+2. **Clientes en mapa**: Partir de `dim_cliente WHERE anulado = FALSE`, LEFT JOIN a fact_ventas
+3. **Metricas temporales**: Partir de `fact_ventas`, LEFT JOIN a dim_cliente
+4. **Claves compuestas**: Rutas usan `(id_sucursal, id_ruta)`. Clientes son unicos globales.
+5. **Clientes sin coordenadas**: Incluir en totales, filtrar solo para mapa
 
-## Funcionalidades
-
-### Página de Inicio
-- Cards clickeables para cada tablero
-- Diseño responsive
-- Navegación por URL
-
-### Dashboard de Ventas
-
-#### Mapa de Burbujas
-- Clientes con ventas: burbujas coloreadas según métrica
-- Clientes sin ventas: puntos grises
-- Zonas por ruta/preventista (convex hull)
-- Animación temporal
-
-#### Mapa de Calor
-- **Modo Difuso**: density_map de Plotly
-- **Modo Grilla**: celdas agrupadas por color
-- Opciones: escala log, normalización
-- Animación temporal
-
-#### Tablero de Ventas
-- Selector de años (multi-select)
-- Gráfico de líneas: meses vs años
-- Tabla comparativa con crecimiento %
-
-#### KPIs
-- Total clientes (activos/inactivos)
-- Bultos vendidos
-- Facturación total
-- Documentos emitidos
-
-### Filtros
-
-| Categoría | Filtros |
-|-----------|---------|
-| Temporal | Rango de fechas, Años |
-| Cliente | Canal, Subcanal, Localidad, Lista Precio, Sucursal |
-| Producto | Genérico, Marca (cascada) |
-| Fuerza de Venta | FV1/FV4/TODOS, Ruta, Preventista |
-| Métrica | Bultos, Facturación, Documentos |
+Ver `CONTEXT_IA.md` para esquema completo.
 
 ## Flujo de Datos
 
 ```
-Usuario → Filtros → Callback → Query SQL → DataFrame → Plotly → UI
+Usuario -> Filtros -> Callback -> Query SQL -> DataFrame -> Plotly -> UI
+                                  (PostgreSQL)   (pandas)   (dash)
 ```
 
-1. Usuario cambia filtros
-2. Callback detecta cambio (Input)
-3. Query a PostgreSQL vía SQLAlchemy
-4. Procesamiento en pandas
-5. Creación de figura Plotly
-6. Actualización del componente (Output)
-
-## Configuración Avanzada
+## Configuracion Avanzada
 
 ### Cambiar Puerto/Host
+Editar `config.py` -> `SERVER_CONFIG`
 
-Editar `config.py`:
-```python
-SERVER_CONFIG = {
-    'host': '0.0.0.0',  # Para acceso en red
-    'port': 8050,
-    'debug': False      # Desactivar en producción
-}
-```
-
-### Agregar Nueva Métrica
-
+### Agregar Nueva Metrica
 1. Agregar campo en query SQL
-2. Agregar label en `config.py` → `METRICA_LABELS`
-3. Agregar opción en dropdown de métrica en layout
+2. Agregar label en `config.py` -> `METRICA_LABELS`
+3. Agregar opcion en dropdown de metrica en layout
+
+### Agregar Nuevo Tablero
+1. Crear layout en `layouts/`
+2. Crear callbacks en `callbacks/`
+3. Agregar ruta en `app.py` -> `display_page()`
+4. Agregar card en `layouts/home_layout.py`
+
+## Deployment
+
+- **Repositorio**: GitHub (`github`) + servidor produccion (`production`)
+- **Produccion**: `nahuel@100.72.221.10:/srv/git/sales-dashboard.git`
+- **Branch**: `main` (trunk-based development, version unica en produccion)
+- **Versionado**: Semantico (`MAJOR.MINOR.PATCH`) con git tags anotados
 
 ## Troubleshooting
 
-### Error de conexión a base de datos
-- Verificar que el archivo `.env` existe en `~/Desktop/medallion-etl/`
+### Error de conexion a BD
+- Verificar que `.env` existe en la raiz del proyecto (NO en medallion-etl)
 - Verificar credenciales y accesibilidad del servidor PostgreSQL
 
 ### scipy no disponible
-- Las zonas (convex hull) requieren scipy
-- Instalar con: `pip install scipy`
+- Las zonas (convex hull) requieren scipy: `pip install scipy`
+
+### openpyxl no disponible
+- El export Excel requiere openpyxl: `pip install openpyxl`
 
 ### Datos no coinciden entre KPIs y tablas
-- Verificar que las queries usen `fact_ventas` como tabla base
-- Verificar filtro `anulado = FALSE`
+- Verificar que las queries NO filtren por `anulado`
+- Verificar que mapas partan de `dim_cliente` y metricas de `fact_ventas`
 
 ## Licencia
 
