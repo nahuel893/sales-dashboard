@@ -1,0 +1,16 @@
+#busqueda-cliente-mapa .Select-control,
+#busqueda-cliente-mapa {
+    background-color: #1e1e2f !important;
+    color: #e0e0e0 !important;
+}
+#busqueda-cliente-mapa .Select-menu-outer {
+    background-color: #1e1e2f !important;
+    border-color: #3a3a5c !important;
+}
+#busqueda-cliente-mapa .VirtualizedSelectOption {
+    background-color: #1e1e2f !important;
+    color: #e0e0e0 !important;
+}
+#busqueda-cliente-mapa .VirtualizedSelectFocusedOption {
+    background-color: #2a2a4a !important;
+}

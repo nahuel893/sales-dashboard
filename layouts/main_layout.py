@@ -418,25 +418,6 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                             'right': '10px',
                             'zIndex': 1001,
                         }),
-                        # CSS oscuro para el dcc.Dropdown de búsqueda
-                        html.Style("""
-                            #busqueda-cliente-mapa .Select-control,
-                            #busqueda-cliente-mapa {
-                                background-color: #1e1e2f !important;
-                                color: #e0e0e0 !important;
-                            }
-                            #busqueda-cliente-mapa .Select-menu-outer {
-                                background-color: #1e1e2f !important;
-                                border-color: #3a3a5c !important;
-                            }
-                            #busqueda-cliente-mapa .VirtualizedSelectOption {
-                                background-color: #1e1e2f !important;
-                                color: #e0e0e0 !important;
-                            }
-                            #busqueda-cliente-mapa .VirtualizedSelectFocusedOption {
-                                background-color: #2a2a4a !important;
-                            }
-                        """),
                         # Overlay de badges de rutas
                         html.Div(
                             id='route-badges-overlay',
