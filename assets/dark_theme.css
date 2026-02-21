@@ -2,37 +2,66 @@
    SEARCH DROPDOWN ON MAP — forced dark (high specificity by ID)
    ============================================================ */
 
-#busqueda-cliente-mapa,
-#busqueda-cliente-mapa * {
-    color: #e8e8f0 !important;
+#busqueda-cliente-mapa {
+    background-color: #1a1a2e !important;
     border-color: #3d3d5c !important;
 }
 
-#busqueda-cliente-mapa,
-#busqueda-cliente-mapa > div,
-#busqueda-cliente-mapa div,
-#busqueda-cliente-mapa input,
-#busqueda-cliente-mapa span {
+#busqueda-cliente-mapa .dash-dropdown-wrapper {
+    background-color: #1a1a2e !important;
+    border-color: #3d3d5c !important;
+}
+
+/* Search input: texto que se tipea */
+#busqueda-cliente-mapa .dash-dropdown-search {
+    background-color: #1a1a2e !important;
+    color: #ffffff !important;
+    caret-color: #ffffff !important;
+}
+
+/* Placeholder */
+#busqueda-cliente-mapa .dash-dropdown-placeholder,
+#busqueda-cliente-mapa .dash-dropdown-value.dash-dropdown-placeholder {
+    color: #7a7a8e !important;
+}
+
+/* Valor seleccionado */
+#busqueda-cliente-mapa .dash-dropdown-value {
+    color: #e8e8f0 !important;
+}
+
+/* Panel de opciones */
+#busqueda-cliente-mapa .dash-dropdown-content,
+#busqueda-cliente-mapa .dash-dropdown-options {
+    background-color: #1a1a2e !important;
+    border-color: #3d3d5c !important;
+}
+
+#busqueda-cliente-mapa .dash-dropdown-option {
     background-color: #1a1a2e !important;
     color: #e8e8f0 !important;
 }
 
-#busqueda-cliente-mapa input::placeholder,
-#busqueda-cliente-mapa [class*="placeholder"] {
-    color: #7a7a8e !important;
-}
-
-#busqueda-cliente-mapa [class*="option"]:hover {
+#busqueda-cliente-mapa .dash-dropdown-option:hover {
     background-color: #2a3a5e !important;
     color: #ffffff !important;
+}
+
+/* Iconos */
+#busqueda-cliente-mapa .dash-dropdown-clear,
+#busqueda-cliente-mapa .dash-dropdown-trigger-icon,
+#busqueda-cliente-mapa .dash-dropdown-search-icon {
+    color: #7a7a8e !important;
 }
 
 #busqueda-cliente-mapa svg {
     fill: #7a7a8e !important;
 }
 
-#busqueda-cliente-mapa svg:hover {
-    fill: #e8e8f0 !important;
+/* Grid containers internos */
+#busqueda-cliente-mapa .dash-dropdown-search-container,
+#busqueda-cliente-mapa .dash-dropdown-trigger {
+    background-color: #1a1a2e !important;
 }
 
 
