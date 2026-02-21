@@ -303,11 +303,11 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             # Formatear desglose como texto por cliente (MAct / MAnt)
             if len(df_generico) > 0:
                 def _fmt_generico(grupo):
-                    lines = ['<b>Genérico — MAct / MAnt</b>']
+                    lines = ['<b>Genérico — MAct | MAnt</b>']
                     for _, row in grupo.iterrows():
                         act = f"{row['bultos_act']:,.0f}" if row['bultos_act'] else '0'
                         ant = f"{row['bultos_ant']:,.0f}" if row['bultos_ant'] else '0'
-                        lines.append(f"{row['generico']}: <b>{act}</b> / {ant}")
+                        lines.append(f"{row['generico']}: <b>{act}</b> | {ant}")
                     return '<br>'.join(lines)
                 desglose_map = df_generico.groupby('id_cliente').apply(_fmt_generico).to_dict()
             else:
