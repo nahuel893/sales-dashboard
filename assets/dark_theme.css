@@ -148,14 +148,20 @@
     border-color: #5a7bbf !important;
 }
 
-/* Search input */
+/* Search input (rendered in portal, needs explicit dark bg) */
 .dash-dropdown-search {
-    background-color: transparent !important;
-    color: #e8e8f0 !important;
+    background-color: #1a1a2e !important;
+    color: #ffffff !important;
+    caret-color: #ffffff !important;
 }
 
 .dash-dropdown-search::placeholder {
     color: #6c6c7e !important;
+}
+
+/* Search container (parent of the search input in the portal) */
+.dash-dropdown-search-container {
+    background-color: #1a1a2e !important;
 }
 
 /* Selected value display */
