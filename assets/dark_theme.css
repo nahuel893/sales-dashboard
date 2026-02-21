@@ -236,16 +236,26 @@
     color: #c8c8d8 !important;
 }
 
+/* Hover / keyboard-active: fondo sutil */
 .mantine-Combobox-option:hover,
 .mantine-Combobox-option[data-combobox-active] {
-    background-color: #2a3a5e !important;
+    background-color: #252545 !important;
     color: #ffffff !important;
 }
 
+/* Ya seleccionado: acento azul claro, borde izquierdo */
 .mantine-Combobox-option[data-combobox-selected] {
-    background-color: #1e3a6e !important;
-    color: #ffffff !important;
+    background-color: #1a3060 !important;
+    color: #5ab8f5 !important;
     font-weight: 600 !important;
+    border-left: 3px solid #3498db !important;
+}
+
+/* Seleccionado + hover: combinar ambos */
+.mantine-Combobox-option[data-combobox-selected]:hover,
+.mantine-Combobox-option[data-combobox-selected][data-combobox-active] {
+    background-color: #1e3a70 !important;
+    color: #7dccff !important;
 }
 
 /* MultiSelect search input inside combobox */
