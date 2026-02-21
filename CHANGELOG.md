@@ -15,6 +15,41 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.2.0] - 2026-02-21
+
+### Agregado
+
+#### Hover Enriquecido del Mapa de Burbujas
+- Info del cliente en hover: ruta, preventista, lista de precio, fantasia, sucursal
+- Layout tabular con columnas alineadas (monospace, pre-formateado en Python)
+- Desglose de genericos con numeros alineados a la derecha (MAct | MAnt)
+- Genericos fijos (`GENERICOS_HOVER_FIJOS`): CERVEZAS, AGUAS DANONE, SIDRAS Y LICORES, VINOS CCU, FRATELLI B, VINOS, VINOS FINOS siempre visibles en hover aunque tengan 0 ventas
+- Genericos con 0 ventas en MAct/MAnt ahora aparecen (ranking por ventas historicas totales)
+- Desglose default para clientes sin ventas historicas (todos los fijos en 0)
+
+#### Busqueda de Clientes en Mapa
+- Highlight del cliente buscado: halo blanco semi-transparente (size 30) + pin magenta (size 18)
+- Busqueda no recarga el mapa: highlight via clientside callback (JS, sin server roundtrip)
+- Al limpiar el buscador, el highlight desaparece sin recargar
+
+### Cambiado
+- Escala de colores del mapa: de azul-celeste-verde-amarillo a rojo-amarillo-verde (semaforo)
+- Hover bgcolor: del color del marker (default Plotly) en vez de fondo oscuro fijo
+- Separador en desglose generico: de `/` a `|` (MAct | MAnt)
+
+### Removido
+- Canal y localidad del hover del mapa (simplificacion)
+- Facturacion del hover del mapa (dato sensible)
+- Genericos no-producto excluidos de filtro y hover: ENVACES CCU, AGUAS Y SODAS, APERITIVOS, DISPENSER, ENVASES PALAU, GASEOSA, MARKETING BRANCA, MARKETING
+
+### Tecnico
+- `config.py`: nuevas constantes `GENERICOS_EXCLUIDOS`, `GENERICOS_HOVER_FIJOS`
+- `data/queries.py`: `obtener_genericos()` y `cargar_ventas_por_cliente_generico()` filtran por `GENERICOS_EXCLUIDOS`
+- `callbacks/callbacks.py`: `_build_hover_lines()` pre-formatea columnas de info; `_fmt_generico()` alinea numeros; clientside callback para highlight de busqueda
+- Busqueda de cliente cambio de `Input` a clientside callback independiente (no dispara recarga del mapa)
+
+---
+
 ## [1.1.0] - 2026-02-20
 
 ### Agregado
