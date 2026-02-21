@@ -17,8 +17,16 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
         "input": {"backgroundColor": DARK['surface'], "borderColor": DARK['border'], "color": DARK['text']},
         "label": {"color": DARK['text_secondary']},
         "dropdown": {"backgroundColor": DARK['surface'], "borderColor": DARK['border']},
-        "option": {"color": DARK['text']},
+        "option": {"color": DARK['text'], "backgroundColor": DARK['surface']},
         "pill": {"backgroundColor": DARK['accent_blue'], "color": DARK['text']},
+    }
+    # Props del combobox (dropdown de opciones) con zIndex y estilos de opciones
+    dark_combobox_props = {
+        "zIndex": 1100,
+        "styles": {
+            "dropdown": {"backgroundColor": DARK['surface'], "borderColor": DARK['border']},
+            "option": {"color": DARK['text'], "backgroundColor": DARK['surface']},
+        },
     }
     dark_segmented_styles = {
         "root": {"backgroundColor": DARK['surface']},
@@ -78,7 +86,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todos los canales",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
@@ -89,7 +97,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todos los subcanales",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
@@ -100,7 +108,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todas las localidades",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
@@ -111,7 +119,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todas las listas",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             html.Div([
@@ -137,7 +145,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todas las sucursales",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             dmc.Divider(color=DARK['border']),
@@ -152,7 +160,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todos los genericos",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
@@ -163,7 +171,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todas las marcas",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             dmc.Divider(color=DARK['border']),
@@ -206,7 +214,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todas las rutas",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             dmc.MultiSelect(
@@ -217,7 +225,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 placeholder="Todos los preventistas",
                                 searchable=True,
                                 clearable=True,
-                                comboboxProps={"zIndex": 1100},
+                                comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
                             dmc.Divider(color=DARK['border']),

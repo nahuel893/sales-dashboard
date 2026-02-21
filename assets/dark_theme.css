@@ -236,10 +236,13 @@
     color: #c8c8d8 !important;
 }
 
-/* Hover / keyboard-active: fondo sutil */
+/* Hover / keyboard-active: fondo visible para contraste con texto */
 .mantine-Combobox-option:hover,
-.mantine-Combobox-option[data-combobox-active] {
-    background-color: #252545 !important;
+.mantine-Combobox-option[data-combobox-active],
+.mantine-Combobox-option[data-combobox-active="true"],
+div.mantine-Combobox-option:hover,
+div.mantine-Combobox-option[data-combobox-active] {
+    background-color: #2d4a7a !important;
     color: #ffffff !important;
 }
 
