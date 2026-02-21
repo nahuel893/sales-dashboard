@@ -305,19 +305,29 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             df_generico = cargar_ventas_por_cliente_generico(
                 genericos, marcas, rutas, preventistas, fv
             )
-            # Formatear desglose como texto por cliente (MAct / MAnt)
+            # Formatear desglose como texto por cliente (MAct | MAnt)
             if len(df_generico) > 0:
                 def _fmt_generico(grupo):
-                    lines = ['<b>Genérico — MAct | MAnt</b>']
+                    lines = ['<b>Genérico        MAct |  MAnt</b>']
                     for _, row in grupo.iterrows():
                         act = f"{row['bultos_act']:,.0f}" if row['bultos_act'] else '0'
                         ant = f"{row['bultos_ant']:,.0f}" if row['bultos_ant'] else '0'
-                        lines.append(f"{row['generico']}: <b>{act}</b> | {ant}")
+                        gen = row['generico'][:14]
+                        lines.append(f"{gen:<14} <b>{act:>6}</b> | {ant:>6}")
                     return '<br>'.join(lines)
                 desglose_map = df_generico.groupby('id_cliente').apply(_fmt_generico).to_dict()
             else:
                 desglose_map = {}
             df_con_ventas['desglose_generico'] = df_con_ventas['id_cliente'].map(desglose_map).fillna('')
+
+            # Pre-formatear líneas de info para hover tabular
+            def _build_hover_lines(df):
+                """Pre-formatea columnas de info alineadas para hover."""
+                W = 18  # ancho primera columna de valor
+                df['_h_line1'] = df.apply(lambda r: f"Ruta  {str(r['ruta']):<{W}}Prev  {r['preventista']}", axis=1)
+                df['_h_line2'] = df.apply(lambda r: f"Canal {str(r['canal']):<{W}}LP    {r['lista_precio']}", axis=1)
+                df['_h_line3'] = df.apply(lambda r: f"Loc   {str(r['localidad']):<{W}}Suc   {r['sucursal']}", axis=1)
+                return df
 
             fig = go.Figure()
 
