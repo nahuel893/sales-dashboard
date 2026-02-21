@@ -15,7 +15,7 @@ from data.queries import (
     cargar_ventas_por_cliente_generico, buscar_clientes,
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
-from config import METRICA_LABELS, DARK
+from config import METRICA_LABELS, DARK, GENERICOS_HOVER_FIJOS
 
 
 # =============================================================================
@@ -307,16 +307,31 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             if len(df_generico) > 0:
                 def _fmt_generico(grupo):
                     lines = ['<b>Genérico        MAct |  MAnt</b>']
+                    seen = set()
                     for _, row in grupo.iterrows():
                         act = f"{row['bultos_act']:,.0f}" if row['bultos_act'] else '0'
                         ant = f"{row['bultos_ant']:,.0f}" if row['bultos_ant'] else '0'
-                        gen = row['generico'][:14]
+                        gen_name = row['generico']
+                        seen.add(gen_name)
+                        gen = gen_name[:14]
                         lines.append(f"{gen:<14} <b>{act:>6}</b> | {ant:>6}")
+                    for gen_name in GENERICOS_HOVER_FIJOS:
+                        if gen_name not in seen:
+                            gen = gen_name[:14]
+                            lines.append(f"{gen:<14} <b>{'0':>6}</b> | {'0':>6}")
                     return '<br>'.join(lines)
                 desglose_map = df_generico.groupby('id_cliente').apply(_fmt_generico).to_dict()
             else:
                 desglose_map = {}
-            df_con_ventas['desglose_generico'] = df_con_ventas['id_cliente'].map(desglose_map).fillna('')
+
+            # Desglose default para clientes sin ventas históricas
+            _default_lines = ['<b>Genérico        MAct |  MAnt</b>']
+            for gen_name in GENERICOS_HOVER_FIJOS:
+                gen = gen_name[:14]
+                _default_lines.append(f"{gen:<14} <b>{'0':>6}</b> | {'0':>6}")
+            _default_desglose = '<br>'.join(_default_lines)
+
+            df_con_ventas['desglose_generico'] = df_con_ventas['id_cliente'].map(desglose_map).fillna(_default_desglose)
 
             # Pre-formatear líneas de info para hover tabular
             def _build_hover_lines(df):
@@ -410,7 +425,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             # Clientes sin ventas (marcados con circulo rojo)
             if len(df_sin_ventas) > 0:
                 df_sin_ventas = df_sin_ventas.copy()
-                df_sin_ventas['desglose_generico'] = df_sin_ventas['id_cliente'].map(desglose_map).fillna('')
+                df_sin_ventas['desglose_generico'] = df_sin_ventas['id_cliente'].map(desglose_map).fillna(_default_desglose)
                 df_sin_ventas = _build_hover_lines(df_sin_ventas)
                 fig.add_trace(go.Scattermap(
                     lat=df_sin_ventas['latitud'], lon=df_sin_ventas['longitud'],

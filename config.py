@@ -105,6 +105,12 @@ GENERICOS_EXCLUIDOS = [
     'ENVASES PALAU', 'GASEOSA', 'MARKETING BRANCA', 'MARKETING',
 ]
 
+# Genéricos que siempre aparecen en el hover del mapa (aunque tengan 0 ventas)
+GENERICOS_HOVER_FIJOS = [
+    'CERVEZAS', 'AGUAS DANONE', 'SIDRAS Y LICORES', 'VINOS CCU',
+    'FRATELLI B', 'VINOS', 'VINOS FINOS',
+]
+
 # Estilos comunes
 STYLES = {
     'filter_section': {
