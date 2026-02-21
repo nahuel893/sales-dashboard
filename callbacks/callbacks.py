@@ -414,6 +414,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             if len(df_sin_ventas) > 0:
                 df_sin_ventas = df_sin_ventas.copy()
                 df_sin_ventas['desglose_generico'] = df_sin_ventas['id_cliente'].map(desglose_map).fillna('')
+                df_sin_ventas = _build_hover_lines(df_sin_ventas)
                 fig.add_trace(go.Scattermap(
                     lat=df_sin_ventas['latitud'], lon=df_sin_ventas['longitud'],
                     mode='markers',
@@ -422,25 +423,32 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     text=df_sin_ventas['razon_social'],
                     hovertemplate=(
                         '<b>[%{customdata[6]}] %{text}</b><br>'
-                        '%{customdata[9]}<br>'
-                        'Ruta: %{customdata[1]} | Prev: %{customdata[7]}<br>'
-                        'Canal: %{customdata[10]} | LP: %{customdata[8]}<br>'
-                        'Localidad: %{customdata[0]} | Suc: %{customdata[11]}<br>'
-                        '─────────────<br>'
+                        '%{customdata[0]}<br>'
+                        '%{customdata[1]}<br>'
+                        '%{customdata[2]}<br>'
+                        '%{customdata[3]}<br>'
+                        '──────────────────────────────────<br>'
                         '<b>Sin ventas en periodo</b><br>'
-                        '─────────────<br>'
+                        '──────────────────────────────────<br>'
                         '%{customdata[5]}'
                         '<extra></extra>'
                     ),
-                    customdata=df_sin_ventas[['localidad', 'ruta', 'cantidad_total', 'facturacion',
-                                              'cantidad_documentos', 'desglose_generico', 'id_cliente',
-                                              'preventista', 'lista_precio', 'fantasia', 'canal', 'sucursal']].values
+                    customdata=df_sin_ventas[['fantasia', '_h_line1', '_h_line2', '_h_line3',
+                                              'cantidad_documentos', 'desglose_generico', 'id_cliente']].values
                 ))
 
             # Clientes con ventas
             if len(df_con_ventas) > 0:
                 # Escala fija 0-15: tamaño y color
                 size_normalized = 5 + (df_con_ventas[metrica].clip(upper=15) / 15 * 15)
+
+                df_con_ventas = _build_hover_lines(df_con_ventas)
+                df_con_ventas['_h_metrics'] = df_con_ventas.apply(
+                    lambda r: (
+                        f"Bultos {r['cantidad_total']:>10,.0f}<br>"
+                        f"Docs   {r['cantidad_documentos']:>10,.0f}"
+                    ), axis=1
+                )
 
                 fig.add_trace(go.Scattermap(
                     lat=df_con_ventas['latitud'], lon=df_con_ventas['longitud'],
@@ -459,19 +467,18 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     text=df_con_ventas['razon_social'],
                     hovertemplate=(
                         '<b>%{text}</b> [%{customdata[6]}]<br>'
-                        '%{customdata[9]}<br>'
-                        'Ruta: %{customdata[1]} | Prev: %{customdata[7]}<br>'
-                        'Canal: %{customdata[10]} | LP: %{customdata[8]}<br>'
-                        'Localidad: %{customdata[0]} | Suc: %{customdata[11]}<br>'
-                        '─────────────<br>'
-                        'Bultos: %{customdata[2]:,.0f} | Fact: $%{customdata[3]:,.2f} | Docs: %{customdata[4]:,.0f}<br>'
-                        '─────────────<br>'
+                        '%{customdata[0]}<br>'
+                        '%{customdata[1]}<br>'
+                        '%{customdata[2]}<br>'
+                        '%{customdata[3]}<br>'
+                        '──────────────────────────────────<br>'
+                        '%{customdata[4]}<br>'
+                        '──────────────────────────────────<br>'
                         '%{customdata[5]}'
                         '<extra></extra>'
                     ),
-                    customdata=df_con_ventas[['localidad', 'ruta', 'cantidad_total', 'facturacion',
-                                              'cantidad_documentos', 'desglose_generico', 'id_cliente',
-                                              'preventista', 'lista_precio', 'fantasia', 'canal', 'sucursal']].values
+                    customdata=df_con_ventas[['fantasia', '_h_line1', '_h_line2', '_h_line3',
+                                              '_h_metrics', 'desglose_generico', 'id_cliente']].values
                 ))
 
             fig.update_layout(
