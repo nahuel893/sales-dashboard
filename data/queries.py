@@ -580,85 +580,6 @@ def _build_all_filters(fecha_desde, fecha_hasta, canales, subcanales, localidade
     return join_cliente, join_articulo, where_sql
 
 
-def cargar_ventas_por_generico_top(fecha_desde=None, fecha_hasta=None, canales=None,
-                                    subcanales=None, localidades=None, listas_precio=None,
-                                    sucursales=None, genericos=None, marcas=None, rutas=None,
-                                    preventistas=None, fuerza_venta=None, metrica='cantidad_total',
-                                    top_n=10):
-    """Top N genéricos por métrica seleccionada, respetando todos los filtros."""
-    join_cliente, join_articulo, where_sql = _build_all_filters(
-        fecha_desde, fecha_hasta, canales, subcanales, localidades,
-        listas_precio, sucursales, genericos, marcas, rutas,
-        preventistas, fuerza_venta
-    )
-    # Siempre necesitamos dim_articulo para el genérico
-    if not join_articulo:
-        join_articulo = "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
-
-    metrica_sql = {
-        'cantidad_total': 'SUM(f.cantidades_total)',
-        'facturacion': 'SUM(f.subtotal_final)',
-        'cantidad_documentos': 'COUNT(DISTINCT f.nro_doc)',
-    }
-    agg = metrica_sql.get(metrica, 'SUM(f.cantidades_total)')
-
-    query = f"""
-        SELECT
-            COALESCE(a.generico, 'Sin categoria') as generico,
-            {agg} as valor
-        FROM gold.fact_ventas f
-        {join_cliente}
-        {join_articulo}
-        WHERE {where_sql}
-        GROUP BY a.generico
-        ORDER BY valor DESC
-        LIMIT {int(top_n)}
-    """
-    with engine.connect() as conn:
-        df = pd.read_sql(query, conn)
-    df['valor'] = df['valor'].astype(float)
-    return df
-
-
-def cargar_ventas_por_marca_top(fecha_desde=None, fecha_hasta=None, canales=None,
-                                 subcanales=None, localidades=None, listas_precio=None,
-                                 sucursales=None, genericos=None, marcas=None, rutas=None,
-                                 preventistas=None, fuerza_venta=None, metrica='cantidad_total',
-                                 top_n=10):
-    """Top N marcas por métrica seleccionada, respetando todos los filtros."""
-    join_cliente, join_articulo, where_sql = _build_all_filters(
-        fecha_desde, fecha_hasta, canales, subcanales, localidades,
-        listas_precio, sucursales, genericos, marcas, rutas,
-        preventistas, fuerza_venta
-    )
-    if not join_articulo:
-        join_articulo = "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
-
-    metrica_sql = {
-        'cantidad_total': 'SUM(f.cantidades_total)',
-        'facturacion': 'SUM(f.subtotal_final)',
-        'cantidad_documentos': 'COUNT(DISTINCT f.nro_doc)',
-    }
-    agg = metrica_sql.get(metrica, 'SUM(f.cantidades_total)')
-
-    query = f"""
-        SELECT
-            COALESCE(a.marca, 'Sin marca') as marca,
-            {agg} as valor
-        FROM gold.fact_ventas f
-        {join_cliente}
-        {join_articulo}
-        WHERE {where_sql}
-        GROUP BY a.marca
-        ORDER BY valor DESC
-        LIMIT {int(top_n)}
-    """
-    with engine.connect() as conn:
-        df = pd.read_sql(query, conn)
-    df['valor'] = df['valor'].astype(float)
-    return df
-
-
 def buscar_clientes(texto_busqueda, limite=50):
     """Busca clientes por razon social, fantasia o ID."""
     texto = texto_busqueda.strip().replace("'", "''")
@@ -679,7 +600,9 @@ def buscar_clientes(texto_busqueda, limite=50):
             COALESCE(c.des_provincia, 'Sin provincia') as provincia,
             COALESCE(c.des_canal_mkt, 'Sin canal') as canal,
             COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal,
-            COALESCE(c.des_ramo, 'Sin ramo') as ramo
+            COALESCE(c.des_ramo, 'Sin ramo') as ramo,
+            c.latitud,
+            c.longitud
         FROM gold.dim_cliente c
         WHERE (
             c.razon_social ILIKE '%%{texto}%%'

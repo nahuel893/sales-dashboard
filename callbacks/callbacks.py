@@ -6,14 +6,13 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import callback, clientside_callback, Output, Input, State, html
+from dash import callback, clientside_callback, Output, Input, State, html, ctx, no_update
 import dash_mantine_components as dmc
 
 from data.queries import (
     obtener_rutas, obtener_preventistas, obtener_marcas, obtener_anios_disponibles,
     cargar_ventas_por_cliente, cargar_ventas_animacion, cargar_ventas_por_fecha,
-    cargar_ventas_por_cliente_generico,
-    cargar_ventas_por_generico_top, cargar_ventas_por_marca_top
+    cargar_ventas_por_cliente_generico, buscar_clientes,
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
 from config import METRICA_LABELS, DARK
@@ -122,143 +121,6 @@ def actualizar_sucursal_por_tipo(tipo_sucursal, opciones_sucursales):
 
 
 # =============================================================================
-# CALLBACK RESUMEN DE VENTAS (evolución + top genéricos + top marcas)
-# =============================================================================
-
-@callback(
-    [Output('grafico-evolucion', 'figure'),
-     Output('grafico-top-genericos', 'figure'),
-     Output('grafico-top-marcas', 'figure')],
-    [Input('filtro-fechas', 'value'),
-     Input('filtro-canal', 'value'),
-     Input('filtro-subcanal', 'value'),
-     Input('filtro-localidad', 'value'),
-     Input('filtro-lista-precio', 'value'),
-     Input('filtro-sucursal', 'value'),
-     Input('filtro-metrica', 'value'),
-     Input('filtro-generico', 'value'),
-     Input('filtro-marca', 'value'),
-     Input('filtro-ruta', 'value'),
-     Input('filtro-preventista', 'value'),
-     Input('filtro-fuerza-venta', 'value')]
-)
-def actualizar_resumen_ventas(fechas_value, canales, subcanales, localidades, listas_precio,
-                               sucursales, metrica, genericos, marcas, rutas, preventistas,
-                               fuerza_venta):
-    """Actualiza los 3 gráficos del resumen: evolución temporal, top genéricos y top marcas."""
-
-    start_date, end_date = (fechas_value or [None, None])[:2]
-    fv = fuerza_venta if fuerza_venta != 'TODOS' else None
-    metrica = metrica or 'cantidad_total'
-    metrica_label = METRICA_LABELS.get(metrica, metrica)
-
-    # --- Gráfico de evolución temporal ---
-    df_fecha = cargar_ventas_por_fecha(
-        start_date, end_date, canales, subcanales, localidades,
-        listas_precio, sucursales, genericos, marcas, rutas, preventistas, fv
-    )
-
-    fig_evolucion = go.Figure()
-    tick_format = None
-    if len(df_fecha) > 0:
-        df_fecha['fecha'] = pd.to_datetime(df_fecha['fecha'])
-
-        # Determinar granularidad: diario si <= 62 días, mensual si más
-        rango_dias = (df_fecha['fecha'].max() - df_fecha['fecha'].min()).days
-        if rango_dias > 62:
-            df_fecha['periodo'] = df_fecha['fecha'].dt.to_period('M').dt.to_timestamp()
-            df_agrupado = df_fecha.groupby('periodo')[metrica].sum().reset_index()
-            x_col = 'periodo'
-            tick_format = '%b %Y'
-        else:
-            df_agrupado = df_fecha.rename(columns={'fecha': 'dia'})
-            x_col = 'dia'
-            tick_format = '%d/%m'
-
-        fig_evolucion.add_trace(go.Bar(
-            x=df_agrupado[x_col], y=df_agrupado[metrica],
-            marker_color='#3498db', opacity=0.7,
-            hovertemplate='%{x|' + tick_format + '}: %{y:,.0f}<extra></extra>'
-        ))
-        fig_evolucion.add_trace(go.Scatter(
-            x=df_agrupado[x_col], y=df_agrupado[metrica],
-            mode='lines', line=dict(color='#e74c3c', width=2),
-            hoverinfo='skip'
-        ))
-
-    evolucion_xaxis = dict(tickformat=tick_format, color=DARK['text_secondary']) if tick_format else {'color': DARK['text_secondary']}
-    fig_evolucion.update_layout(
-        title=dict(text=f'Evolución de {metrica_label}', font=dict(size=14, color=DARK['text'])),
-        margin=dict(t=35, b=30, l=50, r=10),
-        xaxis=evolucion_xaxis,
-        yaxis=dict(tickformat=',.0f', color=DARK['text_secondary']),
-        showlegend=False,
-        plot_bgcolor=DARK['plot_bg'],
-        paper_bgcolor=DARK['paper_bg'],
-    )
-    fig_evolucion.update_xaxes(showgrid=False)
-    fig_evolucion.update_yaxes(showgrid=True, gridcolor=DARK['grid'])
-
-    # --- Gráfico top 10 genéricos ---
-    df_gen = cargar_ventas_por_generico_top(
-        start_date, end_date, canales, subcanales, localidades,
-        listas_precio, sucursales, genericos, marcas, rutas,
-        preventistas, fv, metrica=metrica, top_n=10
-    )
-
-    fig_genericos = go.Figure()
-    if len(df_gen) > 0:
-        df_gen = df_gen.sort_values('valor', ascending=True)
-        fig_genericos.add_trace(go.Bar(
-            x=df_gen['valor'], y=df_gen['generico'],
-            orientation='h', marker_color='#27ae60',
-            hovertemplate='%{y}: %{x:,.0f}<extra></extra>'
-        ))
-
-    fig_genericos.update_layout(
-        title=dict(text=f'Top 10 Genéricos - {metrica_label}', font=dict(size=14, color=DARK['text'])),
-        margin=dict(t=35, b=20, l=120, r=10),
-        xaxis=dict(tickformat=',.0f', color=DARK['text_secondary']),
-        yaxis=dict(color=DARK['text_secondary']),
-        showlegend=False,
-        plot_bgcolor=DARK['plot_bg'],
-        paper_bgcolor=DARK['paper_bg'],
-    )
-    fig_genericos.update_xaxes(showgrid=True, gridcolor=DARK['grid'])
-    fig_genericos.update_yaxes(showgrid=False)
-
-    # --- Gráfico top 10 marcas ---
-    df_marca = cargar_ventas_por_marca_top(
-        start_date, end_date, canales, subcanales, localidades,
-        listas_precio, sucursales, genericos, marcas, rutas,
-        preventistas, fv, metrica=metrica, top_n=10
-    )
-
-    fig_marcas = go.Figure()
-    if len(df_marca) > 0:
-        df_marca = df_marca.sort_values('valor', ascending=True)
-        fig_marcas.add_trace(go.Bar(
-            x=df_marca['valor'], y=df_marca['marca'],
-            orientation='h', marker_color='#e67e22',
-            hovertemplate='%{y}: %{x:,.0f}<extra></extra>'
-        ))
-
-    fig_marcas.update_layout(
-        title=dict(text=f'Top 10 Marcas - {metrica_label}', font=dict(size=14, color=DARK['text'])),
-        margin=dict(t=35, b=20, l=120, r=10),
-        xaxis=dict(tickformat=',.0f', color=DARK['text_secondary']),
-        yaxis=dict(color=DARK['text_secondary']),
-        showlegend=False,
-        plot_bgcolor=DARK['plot_bg'],
-        paper_bgcolor=DARK['paper_bg'],
-    )
-    fig_marcas.update_xaxes(showgrid=True, gridcolor=DARK['grid'])
-    fig_marcas.update_yaxes(showgrid=False)
-
-    return fig_evolucion, fig_genericos, fig_marcas
-
-
-# =============================================================================
 # HELPER: Contenido de badge de zona para HoverCard
 # =============================================================================
 
@@ -323,7 +185,6 @@ def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, co
 
 @callback(
     [Output('mapa-ventas', 'figure'),
-     Output('kpis-container', 'children'),
      Output('route-badges-overlay', 'children')],
     [Input('filtro-fechas', 'value'),
      Input('filtro-canal', 'value'),
@@ -339,11 +200,13 @@ def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, co
      Input('filtro-fuerza-venta', 'value'),
      Input('opciones-zonas', 'value'),
      Input('opcion-animacion', 'checked'),
-     Input('granularidad-animacion', 'value')]
+     Input('granularidad-animacion', 'value'),
+     Input('busqueda-cliente-store', 'data')]
 )
 def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_precio,
                     sucursales, metrica, genericos, marcas, rutas, preventistas,
-                    fuerza_venta, opciones_zonas, opcion_animacion, granularidad):
+                    fuerza_venta, opciones_zonas, opcion_animacion, granularidad,
+                    cliente_buscado):
     """Actualiza el mapa y KPIs segun los filtros."""
     route_badges = []
 
@@ -389,6 +252,14 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             center_lat = -24.8
             center_lon = -65.4
 
+        # Override centro/zoom si se buscó un cliente
+        zoom_level = 8
+        if (ctx.triggered_id == 'busqueda-cliente-store'
+                and cliente_buscado and cliente_buscado.get('lat')):
+            center_lat = cliente_buscado['lat']
+            center_lon = cliente_buscado['lon']
+            zoom_level = cliente_buscado.get('zoom', 16)
+
         # MAPA ANIMADO
         if usar_animacion and 'periodo' in df.columns:
             df_con_ventas = df_mapa[df_mapa['cantidad_total'] > 0].copy()
@@ -405,7 +276,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     animation_frame='periodo',
                     hover_name='razon_social',
                     hover_data={'latitud': False, 'longitud': False, 'size': False, 'periodo': True, metrica: ':,.0f'},
-                    zoom=8, center=dict(lat=center_lat, lon=center_lon),
+                    zoom=zoom_level, center=dict(lat=center_lat, lon=center_lon),
                     map_style='open-street-map', opacity=0.8
                 )
                 fig.update_layout(
@@ -581,7 +452,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 ))
 
             fig.update_layout(
-                map=dict(style='open-street-map', center=dict(lat=center_lat, lon=center_lon), zoom=8),
+                map=dict(style='open-street-map', center=dict(lat=center_lat, lon=center_lon), zoom=zoom_level),
                 margin={'r': 0, 't': 0, 'l': 0, 'b': 0},
                 showlegend=True,
                 legend=dict(yanchor='top', y=0.99, xanchor='left', x=0.01, bgcolor='rgba(255,255,255,0.8)'),
@@ -591,42 +462,56 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
         fig = px.scatter_map(lat=[-24.8], lon=[-65.4], zoom=7, map_style='open-street-map')
         fig.update_layout(margin={'r': 0, 't': 0, 'l': 0, 'b': 0})
 
-    # KPIs
-    n_con_ventas = len(df[df['cantidad_total'] > 0])
-    n_sin_ventas = len(df[df['cantidad_total'] == 0])
+    return fig, route_badges
 
-    kpis = [
-        html.Div([
-            html.Span("", style={'fontSize': '36px'}),
-            html.Div([
-                html.Div(f"{len(df):,}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': DARK['text']}),
-                html.Div([
-                    html.Span("Clientes ", style={'fontSize': '16px', 'color': DARK['text_secondary']}),
-                    html.Span(f"({n_con_ventas:,} activos)", style={'fontSize': '14px', 'color': DARK['accent_green']})
-                ])
-            ])
-        ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
-        html.Div([
-            html.Div([
-                html.Div(f"{df['cantidad_total'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': DARK['accent_red']}),
-                html.Div("Bultos vendidos", style={'fontSize': '16px', 'color': DARK['text_secondary']})
-            ])
-        ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
-        html.Div([
-            html.Div([
-                html.Div(f"${df['facturacion'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': DARK['accent_green']}),
-                html.Div("Facturacion", style={'fontSize': '16px', 'color': DARK['text_secondary']})
-            ])
-        ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
-        html.Div([
-            html.Div([
-                html.Div(f"{df['cantidad_documentos'].sum():,.0f}", style={'fontSize': '32px', 'fontWeight': 'bold', 'color': DARK['accent_blue']}),
-                html.Div("Documentos", style={'fontSize': '16px', 'color': DARK['text_secondary']})
-            ])
-        ], style={'display': 'flex', 'alignItems': 'center', 'gap': '15px'}),
-    ]
 
-    return fig, kpis, route_badges
+# =============================================================================
+# CALLBACKS BUSQUEDA DE CLIENTE EN MAPA
+# =============================================================================
+
+@callback(
+    Output('busqueda-cliente-mapa', 'options'),
+    Input('busqueda-cliente-mapa', 'search_value'),
+    prevent_initial_call=True,
+)
+def buscar_cliente_en_mapa(search_value):
+    """Poblar opciones del dropdown de búsqueda de cliente."""
+    if not search_value or len(search_value) < 2:
+        return no_update
+    df = buscar_clientes(search_value, limite=10)
+    opciones = []
+    for _, row in df.iterrows():
+        lat = row.get('latitud')
+        lon = row.get('longitud')
+        has_coords = pd.notna(lat) and pd.notna(lon) and lat != 0 and lon != 0
+        suffix = '' if has_coords else ' (sin ubicación)'
+        label = f"[{row['id_cliente']}] {row['razon_social']} - {row['localidad']}{suffix}"
+        value = f"{row['id_cliente']}|{lat}|{lon}" if has_coords else f"{row['id_cliente']}||"
+        opciones.append({'label': label, 'value': value})
+    return opciones
+
+
+@callback(
+    Output('busqueda-cliente-store', 'data'),
+    Input('busqueda-cliente-mapa', 'value'),
+    prevent_initial_call=True,
+)
+def seleccionar_cliente_buscado(value):
+    """Escribir coordenadas del cliente seleccionado en el store."""
+    if not value:
+        return {}
+    parts = value.split('|')
+    id_cliente = parts[0]
+    lat_str = parts[1] if len(parts) > 1 else ''
+    lon_str = parts[2] if len(parts) > 2 else ''
+    if lat_str and lon_str and lat_str != 'nan' and lon_str != 'nan':
+        return {
+            'lat': float(lat_str),
+            'lon': float(lon_str),
+            'zoom': 16,
+            'id_cliente': int(id_cliente),
+        }
+    return {}
 
 
 # =============================================================================

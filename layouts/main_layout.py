@@ -30,6 +30,9 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
         # Div oculto para clientside callback de click en mapa
         html.Div(id='click-output-dummy', style={'display': 'none'}),
 
+        # Store para coordenadas del cliente buscado
+        dcc.Store(id='busqueda-cliente-store', data={}),
+
         # =================================================================
         # DRAWER DE FILTROS (panel lateral colapsable)
         # =================================================================
@@ -382,50 +385,6 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
             'borderBottom': f'1px solid {DARK["border"]}',
         }),
 
-        # KPIs
-        html.Div(id='kpis-container', style={
-            'padding': '20px 40px',
-            'display': 'flex',
-            'justifyContent': 'space-around',
-            'alignItems': 'center',
-            'backgroundColor': DARK['card'],
-            'borderBottom': f'1px solid {DARK["border"]}'
-        }),
-
-        # =====================================================================
-        # RESUMEN DE VENTAS (gráficos compactos arriba de los mapas)
-        # =====================================================================
-        html.Div(id='seccion-resumen', children=[
-            # Fila 1: Evolución temporal (full width)
-            html.Div([
-                dcc.Loading(
-                    type='circle',
-                    children=[dcc.Graph(id='grafico-evolucion', style={'height': '260px'},
-                                        config={'displayModeBar': False})]
-                )
-            ], style={'padding': '5px 10px 0 10px'}),
-            # Fila 2: Top Genéricos + Top Marcas (50/50)
-            html.Div([
-                html.Div([
-                    dcc.Loading(
-                        type='circle',
-                        children=[dcc.Graph(id='grafico-top-genericos', style={'height': '260px'},
-                                            config={'displayModeBar': False})]
-                    )
-                ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-                html.Div([
-                    dcc.Loading(
-                        type='circle',
-                        children=[dcc.Graph(id='grafico-top-marcas', style={'height': '260px'},
-                                            config={'displayModeBar': False})]
-                    )
-                ], style={'width': '50%', 'display': 'inline-block', 'verticalAlign': 'top'}),
-            ], style={'padding': '0 10px 5px 10px'}),
-        ], style={
-            'backgroundColor': DARK['card'],
-            'borderBottom': f'2px solid {DARK["border"]}',
-        }),
-
         # =====================================================================
         # SECCION MAPAS (visible cuando tab-mapas esta activo)
         # =====================================================================
@@ -442,6 +401,42 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                             type='circle',
                             children=[dcc.Graph(id='mapa-ventas', style={'height': '87vh'})]
                         ),
+                        # Overlay de búsqueda de cliente
+                        html.Div([
+                            dcc.Dropdown(
+                                id='busqueda-cliente-mapa',
+                                options=[],
+                                value=None,
+                                search_value='',
+                                clearable=True,
+                                placeholder='Buscar cliente...',
+                                style={'width': '280px', 'fontSize': '13px'},
+                            ),
+                        ], style={
+                            'position': 'absolute',
+                            'top': '10px',
+                            'right': '10px',
+                            'zIndex': 1001,
+                        }),
+                        # CSS oscuro para el dcc.Dropdown de búsqueda
+                        html.Style("""
+                            #busqueda-cliente-mapa .Select-control,
+                            #busqueda-cliente-mapa {
+                                background-color: #1e1e2f !important;
+                                color: #e0e0e0 !important;
+                            }
+                            #busqueda-cliente-mapa .Select-menu-outer {
+                                background-color: #1e1e2f !important;
+                                border-color: #3a3a5c !important;
+                            }
+                            #busqueda-cliente-mapa .VirtualizedSelectOption {
+                                background-color: #1e1e2f !important;
+                                color: #e0e0e0 !important;
+                            }
+                            #busqueda-cliente-mapa .VirtualizedSelectFocusedOption {
+                                background-color: #2a2a4a !important;
+                            }
+                        """),
                         # Overlay de badges de rutas
                         html.Div(
                             id='route-badges-overlay',
