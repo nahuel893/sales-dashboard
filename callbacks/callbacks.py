@@ -282,7 +282,12 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 fig.update_layout(
                     margin={'r': 0, 't': 30, 'l': 0, 'b': 0},
                     coloraxis_colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f'),
-                    hoverlabel=dict(font=dict(family='monospace'))
+                    hoverlabel=dict(
+                        bgcolor=DARK['card'],
+                        bordercolor=DARK['accent_blue'],
+                        font=dict(family='monospace', size=12, color=DARK['text']),
+                        align='left'
+                    )
                 )
                 fig.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 800
                 fig.layout.updatemenus[0].buttons[0].args[1]['transition']['duration'] = 300
@@ -464,7 +469,12 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 margin={'r': 0, 't': 0, 'l': 0, 'b': 0},
                 showlegend=True,
                 legend=dict(yanchor='top', y=0.99, xanchor='left', x=0.01, bgcolor='rgba(255,255,255,0.8)'),
-                hoverlabel=dict(font=dict(family='monospace'))
+                hoverlabel=dict(
+                    bgcolor=DARK['card'],
+                    bordercolor=DARK['accent_blue'],
+                    font=dict(family='monospace', size=12, color=DARK['text']),
+                    align='left'
+                )
             )
     else:
         fig = px.scatter_map(lat=[-24.8], lon=[-65.4], zoom=7, map_style='open-street-map')
