@@ -467,7 +467,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     marker=dict(
                         size=size_normalized,
                         color=df_con_ventas[metrica],
-                        colorscale=[[0, 'rgb(30, 80, 180)'], [0.35, 'rgb(0, 180, 220)'], [0.65, 'rgb(80, 200, 80)'], [1, 'rgb(240, 220, 0)']],
+                        colorscale=[[0, 'rgb(220, 40, 40)'], [0.5, 'rgb(240, 220, 0)'], [1, 'rgb(40, 180, 40)']],
                         cmin=0,
                         cmax=15,
                         showscale=True,
