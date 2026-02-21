@@ -1,0 +1,438 @@
+/* ============================================================
+   SEARCH DROPDOWN ON MAP — forced dark (high specificity by ID)
+   ============================================================ */
+
+#busqueda-cliente-mapa,
+#busqueda-cliente-mapa > div,
+#busqueda-cliente-mapa input {
+    background-color: #1a1a2e !important;
+    color: #e8e8f0 !important;
+    border-color: #3d3d5c !important;
+}
+
+#busqueda-cliente-mapa input::placeholder {
+    color: #7a7a8e !important;
+}
+
+#busqueda-cliente-mapa [class*="dropdown"],
+#busqueda-cliente-mapa [class*="menu"],
+#busqueda-cliente-mapa [class*="option"],
+#busqueda-cliente-mapa [class*="control"],
+#busqueda-cliente-mapa [class*="single"],
+#busqueda-cliente-mapa [class*="value"],
+#busqueda-cliente-mapa [class*="indicator"] {
+    background-color: #1a1a2e !important;
+    color: #e8e8f0 !important;
+}
+
+#busqueda-cliente-mapa [class*="option"]:hover {
+    background-color: #2a3a5e !important;
+    color: #ffffff !important;
+}
+
+#busqueda-cliente-mapa [class*="placeholder"] {
+    color: #7a7a8e !important;
+}
+
+#busqueda-cliente-mapa svg {
+    fill: #7a7a8e !important;
+}
+
+#busqueda-cliente-mapa svg:hover {
+    fill: #e8e8f0 !important;
+}
+
+
+/* Same for YTD dropdowns and jump-to dropdowns */
+#ytd-tipo-sucursal,
+#ytd-anio,
+#ytd-mes,
+#jump-generico,
+#jump-marca,
+#ytd-tipo-sucursal > div,
+#ytd-anio > div,
+#ytd-mes > div,
+#jump-generico > div,
+#jump-marca > div,
+#ytd-tipo-sucursal input,
+#ytd-anio input,
+#ytd-mes input,
+#jump-generico input,
+#jump-marca input {
+    background-color: #1a1a2e !important;
+    color: #e8e8f0 !important;
+    border-color: #3d3d5c !important;
+}
+
+#ytd-tipo-sucursal input::placeholder,
+#ytd-anio input::placeholder,
+#ytd-mes input::placeholder,
+#jump-generico input::placeholder,
+#jump-marca input::placeholder {
+    color: #7a7a8e !important;
+}
+
+#ytd-tipo-sucursal [class*="option"],
+#ytd-anio [class*="option"],
+#ytd-mes [class*="option"],
+#jump-generico [class*="option"],
+#jump-marca [class*="option"],
+#ytd-tipo-sucursal [class*="menu"],
+#ytd-anio [class*="menu"],
+#ytd-mes [class*="menu"],
+#jump-generico [class*="menu"],
+#jump-marca [class*="menu"],
+#ytd-tipo-sucursal [class*="single"],
+#ytd-anio [class*="single"],
+#ytd-mes [class*="single"],
+#jump-generico [class*="single"],
+#jump-marca [class*="single"] {
+    background-color: #1a1a2e !important;
+    color: #e8e8f0 !important;
+}
+
+#ytd-tipo-sucursal [class*="option"]:hover,
+#ytd-anio [class*="option"]:hover,
+#ytd-mes [class*="option"]:hover,
+#jump-generico [class*="option"]:hover,
+#jump-marca [class*="option"]:hover {
+    background-color: #2a3a5e !important;
+    color: #ffffff !important;
+}
+
+#ytd-tipo-sucursal svg,
+#ytd-anio svg,
+#ytd-mes svg,
+#jump-generico svg,
+#jump-marca svg {
+    fill: #7a7a8e !important;
+}
+
+
+/* ============================================================
+   DARK THEME — dcc.Dropdown (Dash 4.x class names)
+   ============================================================ */
+
+/* Wrapper & trigger */
+.dash-dropdown-wrapper {
+    background-color: #1a1a2e !important;
+    border: 1px solid #3d3d5c !important;
+    border-radius: 6px !important;
+    color: #e8e8f0 !important;
+}
+
+.dash-dropdown-wrapper:hover,
+.dash-dropdown-wrapper:focus-within {
+    border-color: #5a7bbf !important;
+}
+
+/* Search input */
+.dash-dropdown-search {
+    background-color: transparent !important;
+    color: #e8e8f0 !important;
+}
+
+.dash-dropdown-search::placeholder {
+    color: #6c6c7e !important;
+}
+
+/* Selected value display */
+.dash-dropdown-value {
+    color: #e8e8f0 !important;
+}
+
+.dash-dropdown-value-item {
+    background-color: #2a4a7f !important;
+    color: #e8e8f0 !important;
+    border: 1px solid #3d6abf !important;
+    border-radius: 4px !important;
+}
+
+/* Dropdown options panel */
+.dash-dropdown-content {
+    background-color: #1a1a2e !important;
+    border: 1px solid #3d3d5c !important;
+    border-radius: 6px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dash-dropdown-options {
+    background-color: #1a1a2e !important;
+}
+
+/* Individual option */
+.dash-dropdown-option {
+    color: #c8c8d8 !important;
+    background-color: #1a1a2e !important;
+    border-bottom: 1px solid #1f1f35 !important;
+}
+
+.dash-dropdown-option:hover,
+.dash-dropdown-option:focus {
+    background-color: #2a3a5e !important;
+    color: #ffffff !important;
+}
+
+/* Selected / active option */
+.dash-dropdown-option[aria-selected="true"],
+.dash-dropdown-option.selected {
+    background-color: #1e3a6e !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* Clear & arrow icons */
+.dash-dropdown-clear,
+.dash-dropdown-trigger-icon,
+.dash-dropdown-search-icon {
+    color: #7a7a8e !important;
+}
+
+.dash-dropdown-clear:hover,
+.dash-dropdown-trigger-icon:hover {
+    color: #e8e8f0 !important;
+}
+
+/* Action buttons (multi-value) */
+.dash-dropdown-actions {
+    color: #7a7a8e !important;
+}
+
+.dash-dropdown-action-button {
+    color: #7a7a8e !important;
+}
+
+.dash-dropdown-action-button:hover {
+    color: #e74c3c !important;
+}
+
+/* Value count badge */
+.dash-dropdown-value-count {
+    background-color: #2a4a7f !important;
+    color: #e8e8f0 !important;
+}
+
+
+/* ============================================================
+   DARK THEME — dcc.Tabs (Dash 4.x)
+   ============================================================ */
+
+.tab--selected {
+    color: #ffffff !important;
+}
+
+
+/* ============================================================
+   DARK THEME — dmc (Mantine) components overrides
+   ============================================================ */
+
+/* --- MultiSelect / Select dropdown options --- */
+.mantine-Combobox-dropdown {
+    background-color: #1a1a2e !important;
+    border: 1px solid #3d3d5c !important;
+}
+
+.mantine-Combobox-option {
+    color: #c8c8d8 !important;
+}
+
+.mantine-Combobox-option:hover,
+.mantine-Combobox-option[data-combobox-active] {
+    background-color: #2a3a5e !important;
+    color: #ffffff !important;
+}
+
+.mantine-Combobox-option[data-combobox-selected] {
+    background-color: #1e3a6e !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* MultiSelect search input inside combobox */
+.mantine-Combobox-search input {
+    background-color: #252540 !important;
+    color: #e8e8f0 !important;
+    border-color: #3d3d5c !important;
+}
+
+/* --- Pill (selected item tag in MultiSelect) --- */
+.mantine-Pill-root {
+    background-color: #2a4a7f !important;
+    color: #e8e8f0 !important;
+}
+
+.mantine-Pill-remove {
+    color: #8a8a9e !important;
+}
+
+.mantine-Pill-remove:hover {
+    color: #e74c3c !important;
+}
+
+/* --- PillsInput (MultiSelect input wrapper) --- */
+.mantine-PillsInput-input {
+    background-color: #252540 !important;
+    border-color: #3d3d5c !important;
+    color: #e8e8f0 !important;
+}
+
+.mantine-PillsInput-input:focus-within {
+    border-color: #5a7bbf !important;
+}
+
+/* --- Input (general dmc inputs including DatePicker) --- */
+.mantine-Input-input {
+    color: #e8e8f0 !important;
+}
+
+.mantine-Input-input::placeholder {
+    color: #6c6c7e !important;
+}
+
+/* --- Chip (dark theme) --- */
+.mantine-Chip-label {
+    background-color: #252540 !important;
+    color: #a0a0b0 !important;
+    border-color: #3d3d5c !important;
+}
+
+.mantine-Chip-label:hover {
+    background-color: #2a2a4a !important;
+}
+
+.mantine-Chip-label[data-checked] {
+    background-color: #1e3a6e !important;
+    color: #ffffff !important;
+    border-color: #3d6abf !important;
+}
+
+/* Hide the default checkmark icon on checked chips for cleaner look */
+.mantine-Chip-iconWrapper {
+    color: #5a9cf5 !important;
+}
+
+/* --- Slider --- */
+.mantine-Slider-track {
+    background-color: #3d3d5c !important;
+}
+
+.mantine-Slider-bar {
+    background-color: #3498db !important;
+}
+
+.mantine-Slider-thumb {
+    background-color: #3498db !important;
+    border-color: #5ab8f5 !important;
+}
+
+.mantine-Slider-markLabel {
+    color: #8a8a9e !important;
+    font-size: 11px !important;
+}
+
+.mantine-Slider-mark {
+    border-color: #3d3d5c !important;
+}
+
+.mantine-Slider-mark[data-filled] {
+    border-color: #3498db !important;
+}
+
+/* --- Switch --- */
+.mantine-Switch-track {
+    background-color: #3d3d5c !important;
+    border-color: #3d3d5c !important;
+}
+
+.mantine-Switch-input:checked + .mantine-Switch-track {
+    background-color: #2a4a7f !important;
+    border-color: #3d6abf !important;
+}
+
+/* --- DatePicker popover --- */
+.mantine-DatePickerInput-dropdown,
+.mantine-Popover-dropdown {
+    background-color: #1a1a2e !important;
+    border: 1px solid #3d3d5c !important;
+}
+
+.mantine-DatePickerInput-day,
+.mantine-Day-day {
+    color: #c8c8d8 !important;
+}
+
+.mantine-DatePickerInput-day:hover,
+.mantine-Day-day:hover {
+    background-color: #2a3a5e !important;
+}
+
+.mantine-DatePickerInput-day[data-selected],
+.mantine-Day-day[data-selected] {
+    background-color: #2a4a7f !important;
+    color: #ffffff !important;
+}
+
+.mantine-DatePickerInput-day[data-in-range],
+.mantine-Day-day[data-in-range] {
+    background-color: rgba(42, 74, 127, 0.35) !important;
+}
+
+.mantine-Month-monthThead th,
+.mantine-CalendarHeader-calendarHeaderControl,
+.mantine-CalendarHeader-calendarHeaderLevel {
+    color: #a0a0b0 !important;
+}
+
+.mantine-CalendarHeader-calendarHeaderControl:hover,
+.mantine-CalendarHeader-calendarHeaderLevel:hover {
+    background-color: #2a3a5e !important;
+}
+
+/* --- SegmentedControl (non-active labels need contrast) --- */
+.mantine-SegmentedControl-label {
+    color: #8a8a9e !important;
+}
+
+.mantine-SegmentedControl-label:hover {
+    color: #c8c8d8 !important;
+}
+
+.mantine-SegmentedControl-label[data-active] {
+    color: #ffffff !important;
+}
+
+/* --- ScrollArea scrollbar --- */
+.mantine-ScrollArea-scrollbar {
+    background-color: transparent !important;
+}
+
+.mantine-ScrollArea-thumb {
+    background-color: #3d3d5c !important;
+}
+
+.mantine-ScrollArea-thumb:hover {
+    background-color: #5a5a7e !important;
+}
+
+
+/* ============================================================
+   GLOBAL — Scrollbar (webkit)
+   ============================================================ */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f1117;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3d3d5c;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #5a5a7e;
+}

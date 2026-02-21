@@ -410,13 +410,17 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 search_value='',
                                 clearable=True,
                                 placeholder='Buscar cliente...',
-                                style={'width': '280px', 'fontSize': '13px'},
+                                style={'width': '300px', 'fontSize': '13px'},
                             ),
                         ], style={
                             'position': 'absolute',
                             'top': '10px',
                             'right': '10px',
                             'zIndex': 1001,
+                            'backgroundColor': DARK['card'],
+                            'borderRadius': '8px',
+                            'padding': '4px',
+                            'boxShadow': '0 4px 16px rgba(0,0,0,0.5)',
                         }),
                         # Overlay de badges de rutas
                         html.Div(
