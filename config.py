@@ -99,6 +99,12 @@ DARK = {
     'paper_bg': '#1a1a2e',
 }
 
+# Genéricos excluidos de filtros y hover
+GENERICOS_EXCLUIDOS = [
+    'ENVACES CCU', 'AGUAS Y SODAS', 'APERITIVOS', 'DISPENSER',
+    'ENVASES PALAU', 'GASEOSA', 'MARKETING BRANCA', 'MARKETING',
+]
+
 # Estilos comunes
 STYLES = {
     'filter_section': {

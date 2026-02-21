@@ -4,14 +4,17 @@ Todas las queries SQL y carga de datos del dashboard.
 """
 import pandas as pd
 from database import engine
+from config import GENERICOS_EXCLUIDOS
 
 
 def obtener_genericos():
-    """Obtiene lista de genericos disponibles."""
-    query = """
+    """Obtiene lista de genericos disponibles (excluye GENERICOS_EXCLUIDOS)."""
+    excl = ", ".join(f"'{g}'" for g in GENERICOS_EXCLUIDOS)
+    query = f"""
         SELECT DISTINCT generico
         FROM gold.dim_articulo
         WHERE generico IS NOT NULL
+          AND generico NOT IN ({excl})
         ORDER BY generico
     """
     with engine.connect() as conn:
@@ -459,7 +462,8 @@ def cargar_ventas_por_cliente_generico(genericos=None, marcas=None, rutas=None, 
         ant_mes += 12
         ant_anio -= 1
 
-    where_clauses = []
+    excl = ", ".join(f"'{g}'" for g in GENERICOS_EXCLUIDOS)
+    where_clauses = [f"COALESCE(a.generico, 'Sin categoria') NOT IN ({excl})"]
 
     join_articulo, where_articulo = _build_articulo_filters(genericos, marcas)
     where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta)
