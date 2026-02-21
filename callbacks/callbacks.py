@@ -444,13 +444,19 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     text=df_con_ventas['razon_social'],
                     hovertemplate=(
                         '<b>%{text}</b> [%{customdata[6]}]<br>'
-                        'Localidad: %{customdata[0]}<br>'
-                        'Bultos: %{customdata[2]:,.0f} | Fact: $%{customdata[3]:,.2f}<br>'
+                        '%{customdata[9]}<br>'
+                        'Ruta: %{customdata[1]} | Prev: %{customdata[7]}<br>'
+                        'Canal: %{customdata[10]} | LP: %{customdata[8]}<br>'
+                        'Localidad: %{customdata[0]} | Suc: %{customdata[11]}<br>'
+                        '─────────────<br>'
+                        'Bultos: %{customdata[2]:,.0f} | Fact: $%{customdata[3]:,.2f} | Docs: %{customdata[4]:,.0f}<br>'
                         '─────────────<br>'
                         '%{customdata[5]}'
                         '<extra></extra>'
                     ),
-                    customdata=df_con_ventas[['localidad', 'subcanal', 'cantidad_total', 'facturacion', 'cantidad_documentos', 'desglose_generico', 'id_cliente']].values
+                    customdata=df_con_ventas[['localidad', 'ruta', 'cantidad_total', 'facturacion',
+                                              'cantidad_documentos', 'desglose_generico', 'id_cliente',
+                                              'preventista', 'lista_precio', 'fantasia', 'canal', 'sucursal']].values
                 ))
 
             fig.update_layout(
