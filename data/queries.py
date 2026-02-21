@@ -459,10 +459,7 @@ def cargar_ventas_por_cliente_generico(genericos=None, marcas=None, rutas=None, 
         ant_mes += 12
         ant_anio -= 1
 
-    where_clauses = [
-        f"(f.fecha_comprobante >= '{ant_anio}-{ant_mes:02d}-01' "
-        f"AND f.fecha_comprobante < '{act_anio}-{act_mes:02d}-01'::date + interval '1 month')"
-    ]
+    where_clauses = []
 
     join_articulo, where_articulo = _build_articulo_filters(genericos, marcas)
     where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta)
