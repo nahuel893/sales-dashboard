@@ -3,35 +3,28 @@
    ============================================================ */
 
 #busqueda-cliente-mapa,
-#busqueda-cliente-mapa > div,
-#busqueda-cliente-mapa input {
-    background-color: #1a1a2e !important;
+#busqueda-cliente-mapa * {
     color: #e8e8f0 !important;
     border-color: #3d3d5c !important;
 }
 
-#busqueda-cliente-mapa input::placeholder {
-    color: #7a7a8e !important;
-}
-
-#busqueda-cliente-mapa [class*="dropdown"],
-#busqueda-cliente-mapa [class*="menu"],
-#busqueda-cliente-mapa [class*="option"],
-#busqueda-cliente-mapa [class*="control"],
-#busqueda-cliente-mapa [class*="single"],
-#busqueda-cliente-mapa [class*="value"],
-#busqueda-cliente-mapa [class*="indicator"] {
+#busqueda-cliente-mapa,
+#busqueda-cliente-mapa > div,
+#busqueda-cliente-mapa div,
+#busqueda-cliente-mapa input,
+#busqueda-cliente-mapa span {
     background-color: #1a1a2e !important;
     color: #e8e8f0 !important;
+}
+
+#busqueda-cliente-mapa input::placeholder,
+#busqueda-cliente-mapa [class*="placeholder"] {
+    color: #7a7a8e !important;
 }
 
 #busqueda-cliente-mapa [class*="option"]:hover {
     background-color: #2a3a5e !important;
     color: #ffffff !important;
-}
-
-#busqueda-cliente-mapa [class*="placeholder"] {
-    color: #7a7a8e !important;
 }
 
 #busqueda-cliente-mapa svg {
