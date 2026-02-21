@@ -283,8 +283,6 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     margin={'r': 0, 't': 30, 'l': 0, 'b': 0},
                     coloraxis_colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f'),
                     hoverlabel=dict(
-                        bgcolor=DARK['card'],
-                        bordercolor=DARK['accent_blue'],
                         font=dict(family='monospace', size=12, color=DARK['text']),
                         align='left'
                     )
@@ -487,8 +485,6 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 showlegend=True,
                 legend=dict(yanchor='top', y=0.99, xanchor='left', x=0.01, bgcolor='rgba(255,255,255,0.8)'),
                 hoverlabel=dict(
-                    bgcolor=DARK['card'],
-                    bordercolor=DARK['accent_blue'],
                     font=dict(family='monospace', size=12, color=DARK['text']),
                     align='left'
                 )
