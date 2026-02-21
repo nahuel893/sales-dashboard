@@ -491,6 +491,27 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                                               '_h_metrics', 'desglose_generico', 'id_cliente']].values
                 ))
 
+            # Highlight del cliente buscado
+            if cliente_buscado and cliente_buscado.get('lat'):
+                hl_lat = cliente_buscado['lat']
+                hl_lon = cliente_buscado['lon']
+                fig.add_trace(go.Scattermap(
+                    lat=[hl_lat], lon=[hl_lon],
+                    mode='markers',
+                    marker=dict(size=30, color='rgba(255,255,255,0.3)'),
+                    name='Buscado',
+                    showlegend=False,
+                    hoverinfo='skip',
+                ))
+                fig.add_trace(go.Scattermap(
+                    lat=[hl_lat], lon=[hl_lon],
+                    mode='markers',
+                    marker=dict(size=18, color='magenta', opacity=0.8),
+                    name='Buscado',
+                    showlegend=False,
+                    hoverinfo='skip',
+                ))
+
             fig.update_layout(
                 map=dict(style='open-street-map', center=dict(lat=center_lat, lon=center_lon), zoom=zoom_level),
                 margin={'r': 0, 't': 0, 'l': 0, 'b': 0},
