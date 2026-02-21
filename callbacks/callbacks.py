@@ -200,13 +200,11 @@ def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, co
      Input('filtro-fuerza-venta', 'value'),
      Input('opciones-zonas', 'value'),
      Input('opcion-animacion', 'checked'),
-     Input('granularidad-animacion', 'value'),
-     Input('busqueda-cliente-store', 'data')]
+     Input('granularidad-animacion', 'value')],
 )
 def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_precio,
                     sucursales, metrica, genericos, marcas, rutas, preventistas,
-                    fuerza_venta, opciones_zonas, opcion_animacion, granularidad,
-                    cliente_buscado):
+                    fuerza_venta, opciones_zonas, opcion_animacion, granularidad):
     """Actualiza el mapa y KPIs segun los filtros."""
     route_badges = []
 
@@ -252,13 +250,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             center_lat = -24.8
             center_lon = -65.4
 
-        # Override centro/zoom si se buscó un cliente
         zoom_level = 8
-        if (ctx.triggered_id == 'busqueda-cliente-store'
-                and cliente_buscado and cliente_buscado.get('lat')):
-            center_lat = cliente_buscado['lat']
-            center_lon = cliente_buscado['lon']
-            zoom_level = cliente_buscado.get('zoom', 16)
 
         # MAPA ANIMADO
         if usar_animacion and 'periodo' in df.columns:
@@ -491,27 +483,6 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                                               '_h_metrics', 'desglose_generico', 'id_cliente']].values
                 ))
 
-            # Highlight del cliente buscado
-            if cliente_buscado and cliente_buscado.get('lat'):
-                hl_lat = cliente_buscado['lat']
-                hl_lon = cliente_buscado['lon']
-                fig.add_trace(go.Scattermap(
-                    lat=[hl_lat], lon=[hl_lon],
-                    mode='markers',
-                    marker=dict(size=30, color='rgba(255,255,255,0.3)'),
-                    name='Buscado',
-                    showlegend=False,
-                    hoverinfo='skip',
-                ))
-                fig.add_trace(go.Scattermap(
-                    lat=[hl_lat], lon=[hl_lon],
-                    mode='markers',
-                    marker=dict(size=18, color='magenta', opacity=0.8),
-                    name='Buscado',
-                    showlegend=False,
-                    hoverinfo='skip',
-                ))
-
             fig.update_layout(
                 map=dict(style='open-street-map', center=dict(lat=center_lat, lon=center_lon), zoom=zoom_level),
                 margin={'r': 0, 't': 0, 'l': 0, 'b': 0},
@@ -576,6 +547,45 @@ def seleccionar_cliente_buscado(value):
             'id_cliente': int(id_cliente),
         }
     return {}
+
+
+clientside_callback(
+    """
+    function(storeData, currentFig) {
+        if (!currentFig || !currentFig.data) return window.dash_clientside.no_update;
+
+        // Clonar figura para no mutar in-place
+        var newFig = JSON.parse(JSON.stringify(currentFig));
+
+        // Quitar traces de highlight anteriores
+        newFig.data = newFig.data.filter(function(t) {
+            return !t.name || !t.name.startsWith('_highlight');
+        });
+
+        // Si hay cliente buscado, agregar highlight y mover viewport
+        if (storeData && storeData.lat) {
+            newFig.data.push({
+                type: 'scattermap', lat: [storeData.lat], lon: [storeData.lon],
+                mode: 'markers', marker: {size: 30, color: 'rgba(255,255,255,0.3)'},
+                name: '_highlight_halo', showlegend: false, hoverinfo: 'skip'
+            });
+            newFig.data.push({
+                type: 'scattermap', lat: [storeData.lat], lon: [storeData.lon],
+                mode: 'markers', marker: {size: 18, color: 'magenta', opacity: 0.8},
+                name: '_highlight_pin', showlegend: false, hoverinfo: 'skip'
+            });
+            newFig.layout.map.center = {lat: storeData.lat, lon: storeData.lon};
+            newFig.layout.map.zoom = storeData.zoom || 16;
+        }
+
+        return newFig;
+    }
+    """,
+    Output('mapa-ventas', 'figure', allow_duplicate=True),
+    Input('busqueda-cliente-store', 'data'),
+    State('mapa-ventas', 'figure'),
+    prevent_initial_call=True,
+)
 
 
 # =============================================================================
