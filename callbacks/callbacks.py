@@ -399,10 +399,6 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             if len(df_sin_ventas) > 0:
                 df_sin_ventas = df_sin_ventas.copy()
                 df_sin_ventas['desglose_generico'] = df_sin_ventas['id_cliente'].map(desglose_map).fillna('')
-                df_sin_ventas['_pad1'] = 0
-                df_sin_ventas['_pad2'] = 0
-                df_sin_ventas['_pad3'] = 0
-                df_sin_ventas['_pad4'] = ''
                 fig.add_trace(go.Scattermap(
                     lat=df_sin_ventas['latitud'], lon=df_sin_ventas['longitud'],
                     mode='markers',
@@ -411,13 +407,19 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     text=df_sin_ventas['razon_social'],
                     hovertemplate=(
                         '<b>[%{customdata[6]}] %{text}</b><br>'
-                        'Localidad: %{customdata[0]}<br>'
+                        '%{customdata[9]}<br>'
+                        'Ruta: %{customdata[1]} | Prev: %{customdata[7]}<br>'
+                        'Canal: %{customdata[10]} | LP: %{customdata[8]}<br>'
+                        'Localidad: %{customdata[0]} | Suc: %{customdata[11]}<br>'
+                        '─────────────<br>'
                         '<b>Sin ventas en periodo</b><br>'
                         '─────────────<br>'
-                        '%{customdata[7]}'
+                        '%{customdata[5]}'
                         '<extra></extra>'
                     ),
-                    customdata=df_sin_ventas[['localidad', 'subcanal', '_pad1', '_pad2', '_pad3', '_pad4', 'id_cliente', 'desglose_generico']].values
+                    customdata=df_sin_ventas[['localidad', 'ruta', 'cantidad_total', 'facturacion',
+                                              'cantidad_documentos', 'desglose_generico', 'id_cliente',
+                                              'preventista', 'lista_precio', 'fantasia', 'canal', 'sucursal']].values
                 ))
 
             # Clientes con ventas
