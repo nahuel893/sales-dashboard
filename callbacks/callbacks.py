@@ -323,8 +323,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 """Pre-formatea columnas de info alineadas para hover."""
                 W = 18  # ancho primera columna de valor
                 df['_h_line1'] = df.apply(lambda r: f"Ruta  {str(r['ruta']):<{W}}Prev  {r['preventista']}", axis=1)
-                df['_h_line2'] = df.apply(lambda r: f"Canal {str(r['canal']):<{W}}LP    {r['lista_precio']}", axis=1)
-                df['_h_line3'] = df.apply(lambda r: f"Loc   {str(r['localidad']):<{W}}Suc   {r['sucursal']}", axis=1)
+                df['_h_line2'] = df.apply(lambda r: f"LP    {str(r['lista_precio']):<{W}}Suc   {r['sucursal']}", axis=1)
                 return df
 
             fig = go.Figure()
@@ -420,18 +419,17 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     name='Sin ventas',
                     text=df_sin_ventas['razon_social'],
                     hovertemplate=(
-                        '<b>[%{customdata[6]}] %{text}</b><br>'
+                        '<b>[%{customdata[5]}] %{text}</b><br>'
                         '%{customdata[0]}<br>'
                         '%{customdata[1]}<br>'
                         '%{customdata[2]}<br>'
-                        '%{customdata[3]}<br>'
                         '──────────────────────────────────<br>'
                         '<b>Sin ventas en periodo</b><br>'
                         '──────────────────────────────────<br>'
-                        '%{customdata[5]}'
+                        '%{customdata[4]}'
                         '<extra></extra>'
                     ),
-                    customdata=df_sin_ventas[['fantasia', '_h_line1', '_h_line2', '_h_line3',
+                    customdata=df_sin_ventas[['fantasia', '_h_line1', '_h_line2',
                                               'cantidad_documentos', 'desglose_generico', 'id_cliente']].values
                 ))
 
@@ -464,18 +462,17 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     name='Con ventas',
                     text=df_con_ventas['razon_social'],
                     hovertemplate=(
-                        '<b>%{text}</b> [%{customdata[6]}]<br>'
+                        '<b>%{text}</b> [%{customdata[5]}]<br>'
                         '%{customdata[0]}<br>'
                         '%{customdata[1]}<br>'
                         '%{customdata[2]}<br>'
+                        '──────────────────────────────────<br>'
                         '%{customdata[3]}<br>'
                         '──────────────────────────────────<br>'
-                        '%{customdata[4]}<br>'
-                        '──────────────────────────────────<br>'
-                        '%{customdata[5]}'
+                        '%{customdata[4]}'
                         '<extra></extra>'
                     ),
-                    customdata=df_con_ventas[['fantasia', '_h_line1', '_h_line2', '_h_line3',
+                    customdata=df_con_ventas[['fantasia', '_h_line1', '_h_line2',
                                               '_h_metrics', 'desglose_generico', 'id_cliente']].values
                 ))
 
@@ -1197,8 +1194,8 @@ clientside_callback(
     function(clickData) {
         if (clickData && clickData.points && clickData.points.length > 0) {
             var point = clickData.points[0];
-            if (point.customdata && point.customdata.length > 6) {
-                var id_cliente = point.customdata[6];
+            if (point.customdata && point.customdata.length > 5) {
+                var id_cliente = point.customdata[5];
                 if (id_cliente) {
                     window.open('/cliente/' + id_cliente, '_blank');
                 }
