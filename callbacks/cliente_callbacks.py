@@ -34,6 +34,7 @@ def _get_excel_styles():
     return _openpyxl_styles
 
 from data.queries import cargar_info_cliente, cargar_ventas_cliente_detalle
+from config import DARK
 
 MESES_CORTOS = {
     1: 'Ene', 2: 'Feb', 3: 'Mar', 4: 'Abr', 5: 'May', 6: 'Jun',
@@ -63,14 +64,14 @@ def cargar_detalle_cliente(store_data):
         header_children = [
             html.H1([
                 info['razon_social'],
-                html.Span(f"  [{id_cliente}]", style={'fontSize': '16px', 'color': '#999', 'fontWeight': 'normal'}),
+                html.Span(f"  [{id_cliente}]", style={'fontSize': '16px', 'color': DARK['text_muted'], 'fontWeight': 'normal'}),
             ], style={
-                'color': 'white', 'margin': '0', 'fontSize': '28px'
+                'color': DARK['text'], 'margin': '0', 'fontSize': '28px'
             }),
         ]
         if info.get('fantasia'):
             header_children.append(
-                html.P(info['fantasia'], style={'color': '#ccc', 'margin': '5px 0 0 0', 'fontSize': '16px'})
+                html.P(info['fantasia'], style={'color': DARK['text_secondary'], 'margin': '5px 0 0 0', 'fontSize': '16px'})
             )
         # Badges de info
         badges = []
@@ -82,21 +83,21 @@ def cargar_detalle_cliente(store_data):
             ('Lista Precio', info['lista_precio']),
         ]:
             badges.append(html.Div([
-                html.Span(f"{label}: ", style={'color': '#999', 'fontSize': '13px'}),
-                html.Span(str(value), style={'color': 'white', 'fontSize': '13px', 'fontWeight': 'bold'}),
+                html.Span(f"{label}: ", style={'color': DARK['text_muted'], 'fontSize': '13px'}),
+                html.Span(str(value), style={'color': DARK['text'], 'fontSize': '13px', 'fontWeight': 'bold'}),
             ]))
         header_children.append(
             html.Div(badges, style={'display': 'flex', 'gap': '20px', 'marginTop': '12px', 'flexWrap': 'wrap'})
         )
         header = html.Div(header_children)
     else:
-        header = html.H1(f"Cliente {id_cliente}", style={'color': 'white', 'margin': '0'})
+        header = html.H1(f"Cliente {id_cliente}", style={'color': DARK['text'], 'margin': '0'})
 
     # === CONTENIDO ===
     if len(df_all) == 0:
         content = html.Div(
             "No hay articulos disponibles.",
-            style={'textAlign': 'center', 'color': '#666', 'padding': '60px', 'fontSize': '18px'}
+            style={'textAlign': 'center', 'color': DARK['text_muted'], 'padding': '60px', 'fontSize': '18px'}
         )
         return header, content
 
@@ -149,7 +150,7 @@ def cargar_detalle_cliente(store_data):
     ayuda_kpis = html.Div(
         f"Los primeros 3 indicadores corresponden al mes actual ({mes_label}). "
         f"\"Con Venta\" y \"Sin Venta\" reflejan el historico completo del catalogo.",
-        style={'fontSize': '12px', 'color': '#999', 'marginBottom': '10px'}
+        style={'fontSize': '12px', 'color': DARK['text_muted'], 'marginBottom': '10px'}
     )
 
     resumen = html.Div([
@@ -206,8 +207,8 @@ def cargar_detalle_cliente(store_data):
             id='btn-excel-completo',
             style={
                 'padding': '8px 20px', 'fontSize': '14px', 'cursor': 'pointer',
-                'border': '1px solid #217346', 'borderRadius': '6px',
-                'backgroundColor': '#fff', 'color': '#217346', 'fontWeight': 'bold',
+                'border': f'1px solid {DARK["accent_green"]}', 'borderRadius': '6px',
+                'backgroundColor': 'transparent', 'color': DARK['accent_green'], 'fontWeight': 'bold',
                 'whiteSpace': 'nowrap',
             }
         ),
@@ -224,14 +225,15 @@ def _resumen_card(label, value):
     """Crea una card de resumen."""
     return html.Div([
         html.Div(value, style={
-            'fontSize': '28px', 'fontWeight': 'bold', 'color': '#1a1a2e'
+            'fontSize': '28px', 'fontWeight': 'bold', 'color': DARK['text']
         }),
-        html.Div(label, style={'fontSize': '14px', 'color': '#666'}),
+        html.Div(label, style={'fontSize': '14px', 'color': DARK['text_secondary']}),
     ], style={
-        'backgroundColor': 'white',
+        'backgroundColor': DARK['card'],
         'padding': '20px 30px',
         'borderRadius': '8px',
-        'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+        'boxShadow': '0 2px 4px rgba(0,0,0,0.3)',
+        'border': f'1px solid {DARK["border"]}',
         'flex': '1',
         'minWidth': '150px',
     })
@@ -244,58 +246,61 @@ def _periodo_label(anio, mes):
 
 def _build_flat_table(df_all, periodos):
     """Construye una tabla plana con filas de header por genérico/marca y subtotales."""
-    # Estilos
+    # Estilos (tema oscuro)
     th_style = {
-        'padding': '8px 10px', 'backgroundColor': '#f0f0f0',
+        'padding': '8px 10px', 'backgroundColor': DARK['surface'],
         'textAlign': 'center', 'fontSize': '12px', 'fontWeight': 'bold',
-        'borderBottom': '2px solid #ddd', 'whiteSpace': 'nowrap',
+        'borderBottom': f'2px solid {DARK["border"]}', 'whiteSpace': 'nowrap',
         'position': 'sticky', 'top': '0', 'zIndex': '2',
+        'color': DARK['text_secondary'],
     }
     th_left = {**th_style, 'textAlign': 'left', 'minWidth': '180px'}
     th_cod = {**th_style, 'textAlign': 'center', 'minWidth': '60px'}
-    th_total = {**th_style, 'backgroundColor': '#e0e7ef', 'minWidth': '70px'}
+    th_total = {**th_style, 'backgroundColor': '#1e3050', 'minWidth': '70px'}
     th_excel = {**th_style, 'minWidth': '50px', 'width': '50px'}
 
     td_style = {
-        'padding': '6px 10px', 'borderBottom': '1px solid #eee', 'fontSize': '12px',
-        'textAlign': 'right', 'whiteSpace': 'nowrap',
+        'padding': '6px 10px', 'borderBottom': f'1px solid {DARK["border"]}', 'fontSize': '12px',
+        'textAlign': 'right', 'whiteSpace': 'nowrap', 'color': DARK['text'],
     }
     td_left = {
-        'padding': '6px 10px', 'borderBottom': '1px solid #eee', 'fontSize': '12px',
-        'textAlign': 'left',
+        'padding': '6px 10px', 'borderBottom': f'1px solid {DARK["border"]}', 'fontSize': '12px',
+        'textAlign': 'left', 'color': DARK['text'],
     }
-    td_zero = {**td_style, 'color': '#ccc'}
-    td_total = {**td_style, 'fontWeight': 'bold', 'backgroundColor': '#f5f8fc'}
-    td_total_zero = {**td_total, 'color': '#ccc'}
+    td_zero = {**td_style, 'color': DARK['text_muted']}
+    td_total = {**td_style, 'fontWeight': 'bold', 'backgroundColor': '#1a2840'}
+    td_total_zero = {**td_total, 'color': DARK['text_muted']}
 
     # Estilos de filas de grupo
     generico_row_style = {
-        'backgroundColor': '#d6e4f0',
+        'backgroundColor': '#1e3050',
     }
     generico_cell = {
         'padding': '10px 10px', 'fontSize': '14px', 'fontWeight': 'bold',
-        'borderBottom': '2px solid #b8cfe0',
+        'borderBottom': f'2px solid {DARK["accent_blue"]}', 'color': DARK['text'],
     }
     marca_row_style = {
-        'backgroundColor': '#eef3f8',
+        'backgroundColor': '#1a2540',
     }
     marca_cell = {
         'padding': '8px 10px', 'fontSize': '13px', 'fontWeight': 'bold',
-        'borderBottom': '1px solid #d0d8e0', 'color': '#333',
+        'borderBottom': f'1px solid {DARK["border"]}', 'color': DARK['text_secondary'],
     }
     subtotal_marca_style = {
-        'backgroundColor': '#f5f8fc',
+        'backgroundColor': '#1a2840',
     }
     subtotal_gen_style = {
-        'backgroundColor': '#e4ecf5',
+        'backgroundColor': '#1e3050',
     }
     subtotal_cell = {
         'padding': '6px 10px', 'fontSize': '12px', 'fontWeight': 'bold',
-        'textAlign': 'right', 'borderBottom': '1px solid #ccc', 'whiteSpace': 'nowrap',
+        'textAlign': 'right', 'borderBottom': f'1px solid {DARK["border"]}', 'whiteSpace': 'nowrap',
+        'color': DARK['text'],
     }
     subtotal_gen_cell = {
         'padding': '8px 10px', 'fontSize': '13px', 'fontWeight': 'bold',
-        'textAlign': 'right', 'borderBottom': '2px solid #b8cfe0', 'whiteSpace': 'nowrap',
+        'textAlign': 'right', 'borderBottom': f'2px solid {DARK["accent_blue"]}', 'whiteSpace': 'nowrap',
+        'color': DARK['text'],
     }
 
     n_cols = 3 + len(periodos) + 1  # cod + articulo + meses + total + excel
@@ -340,8 +345,8 @@ def _build_flat_table(df_all, periodos):
                         **{'data-generico': generico, 'data-marca': marca},
                         style={
                             'padding': '2px 8px', 'fontSize': '11px', 'cursor': 'pointer',
-                            'border': '1px solid #217346', 'borderRadius': '3px',
-                            'backgroundColor': '#fff', 'color': '#217346',
+                            'border': f'1px solid {DARK["accent_green"]}', 'borderRadius': '3px',
+                            'backgroundColor': 'transparent', 'color': DARK['accent_green'],
                         })
             marca_id = f"marca-{generico.replace(' ', '-').lower()}-{marca.replace(' ', '-').lower()}"
             rows.append(html.Tr([
@@ -368,12 +373,12 @@ def _build_flat_table(df_all, periodos):
                 is_zero = total == 0
                 cod = art_ids.get(articulo, '')
                 td_cod = {
-                    'padding': '6px 10px', 'borderBottom': '1px solid #eee', 'fontSize': '11px',
-                    'textAlign': 'center', 'color': '#ccc' if is_zero else '#999',
+                    'padding': '6px 10px', 'borderBottom': f'1px solid {DARK["border"]}', 'fontSize': '11px',
+                    'textAlign': 'center', 'color': DARK['text_muted'] if is_zero else DARK['text_secondary'],
                 }
                 cells = [
                     html.Td(str(cod), style=td_cod),
-                    html.Td(articulo, style={**td_left, 'color': '#bbb', 'paddingLeft': '20px'} if is_zero else {**td_left, 'paddingLeft': '20px'}),
+                    html.Td(articulo, style={**td_left, 'color': DARK['text_muted'], 'paddingLeft': '20px'} if is_zero else {**td_left, 'paddingLeft': '20px'}),
                 ]
                 for anio, mes in periodos:
                     val = pivot.get((articulo, anio, mes))
@@ -382,7 +387,7 @@ def _build_flat_table(df_all, periodos):
                     else:
                         cells.append(html.Td("", style=td_style))
                 cells.append(html.Td(f"{total:,.0f}", style=td_total_zero if is_zero else td_total))
-                cells.append(html.Td("", style={'borderBottom': '1px solid #eee'}))
+                cells.append(html.Td("", style={'borderBottom': f'1px solid {DARK["border"]}'}))
                 rows.append(html.Tr(cells))
 
             # Subtotal marca
@@ -398,7 +403,7 @@ def _build_flat_table(df_all, periodos):
                     # Acumular para subtotal genérico
                     if val:
                         gen_mes_totals[(anio, mes)] = gen_mes_totals.get((anio, mes), 0) + val
-                sub_cells.append(html.Td(f"{marca_bultos:,.0f}", style={**subtotal_cell, 'borderTop': '1px solid #999'}))
+                sub_cells.append(html.Td(f"{marca_bultos:,.0f}", style={**subtotal_cell, 'borderTop': f'1px solid {DARK["border"]}'}))
                 sub_cells.append(html.Td("", style=subtotal_cell))
                 rows.append(html.Tr(sub_cells, style=subtotal_marca_style))
 
@@ -410,13 +415,13 @@ def _build_flat_table(df_all, periodos):
         for anio, mes in periodos:
             val = gen_mes_totals.get((anio, mes))
             sub_gen_cells.append(html.Td(f"{val:,.0f}" if val else "", style=subtotal_gen_cell))
-        sub_gen_cells.append(html.Td(f"{gen_bultos:,.0f}", style={**subtotal_gen_cell, 'borderTop': '2px solid #666'}))
+        sub_gen_cells.append(html.Td(f"{gen_bultos:,.0f}", style={**subtotal_gen_cell, 'borderTop': f'2px solid {DARK["accent_blue"]}'}))
         sub_gen_cells.append(html.Td("", style=subtotal_gen_cell))
         rows.append(html.Tr(sub_gen_cells, style=subtotal_gen_style))
 
     table = html.Table(
         [html.Thead(header), html.Tbody(rows)],
-        style={'width': '100%', 'borderCollapse': 'collapse', 'backgroundColor': 'white'}
+        style={'width': '100%', 'borderCollapse': 'collapse', 'backgroundColor': DARK['card']}
     )
 
     return html.Div(
@@ -424,7 +429,8 @@ def _build_flat_table(df_all, periodos):
         style={
             'overflowX': 'auto', 'maxWidth': '100%',
             'maxHeight': '70vh', 'overflowY': 'auto',
-            'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+            'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.3)',
+            'border': f'1px solid {DARK["border"]}',
         }
     )
 

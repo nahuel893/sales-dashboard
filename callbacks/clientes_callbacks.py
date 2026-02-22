@@ -5,6 +5,7 @@ Busca clientes en dim_cliente y muestra resultados con links al detalle.
 from dash import callback, Output, Input, html, dcc, no_update
 
 from data.queries import buscar_clientes
+from config import DARK
 
 
 @callback(
@@ -17,7 +18,7 @@ def buscar_y_mostrar_clientes(texto):
     if not texto or len(texto.strip()) < 2:
         return html.Div(
             "Escribi al menos 2 caracteres para buscar.",
-            style={'textAlign': 'center', 'color': '#999', 'padding': '40px', 'fontSize': '15px'}
+            style={'textAlign': 'center', 'color': DARK['text_muted'], 'padding': '40px', 'fontSize': '15px'}
         )
 
     df = buscar_clientes(texto)
@@ -26,18 +27,18 @@ def buscar_y_mostrar_clientes(texto):
         display_text = texto.strip()[:100]
         return html.Div(
             f'No se encontraron clientes para "{display_text}".',
-            style={'textAlign': 'center', 'color': '#999', 'padding': '40px', 'fontSize': '15px'}
+            style={'textAlign': 'center', 'color': DARK['text_muted'], 'padding': '40px', 'fontSize': '15px'}
         )
 
     # Construir tabla de resultados
     th_style = {
-        'padding': '10px 12px', 'backgroundColor': '#f0f0f0',
+        'padding': '10px 12px', 'backgroundColor': DARK['surface'],
         'textAlign': 'left', 'fontSize': '13px', 'fontWeight': 'bold',
-        'borderBottom': '2px solid #ddd',
+        'borderBottom': f'2px solid {DARK["border"]}', 'color': DARK['text_secondary'],
     }
     td_style = {
-        'padding': '10px 12px', 'borderBottom': '1px solid #eee',
-        'fontSize': '13px', 'verticalAlign': 'middle',
+        'padding': '10px 12px', 'borderBottom': f'1px solid {DARK["border"]}',
+        'fontSize': '13px', 'verticalAlign': 'middle', 'color': DARK['text'],
     }
 
     header = html.Tr([
@@ -52,17 +53,17 @@ def buscar_y_mostrar_clientes(texto):
     rows = []
     for row in df.itertuples(index=False):
         rows.append(html.Tr([
-            html.Td(str(row.id_cliente), style={**td_style, 'textAlign': 'center', 'color': '#999'}),
+            html.Td(str(row.id_cliente), style={**td_style, 'textAlign': 'center', 'color': DARK['text_muted']}),
             html.Td(
                 dcc.Link(
                     row.razon_social,
                     href=f"/cliente/{row.id_cliente}",
                     target='_blank',
-                    style={'color': '#2980b9', 'textDecoration': 'none', 'fontWeight': 'bold'}
+                    style={'color': DARK['accent_blue'], 'textDecoration': 'none', 'fontWeight': 'bold'}
                 ),
                 style=td_style
             ),
-            html.Td(row.fantasia or '', style={**td_style, 'color': '#666'}),
+            html.Td(row.fantasia or '', style={**td_style, 'color': DARK['text_secondary']}),
             html.Td(row.localidad, style=td_style),
             html.Td(row.canal, style=td_style),
             html.Td(row.sucursal, style=td_style),
@@ -73,8 +74,9 @@ def buscar_y_mostrar_clientes(texto):
         [html.Thead(header), html.Tbody(rows)],
         style={
             'width': '100%', 'borderCollapse': 'collapse',
-            'backgroundColor': 'white', 'borderRadius': '8px',
-            'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+            'backgroundColor': DARK['card'], 'borderRadius': '8px',
+            'boxShadow': '0 2px 4px rgba(0,0,0,0.3)',
+            'border': f'1px solid {DARK["border"]}',
         }
     )
 
@@ -84,7 +86,7 @@ def buscar_y_mostrar_clientes(texto):
 
     return html.Div([
         html.Div(count_text, style={
-            'fontSize': '13px', 'color': '#999', 'marginBottom': '10px'
+            'fontSize': '13px', 'color': DARK['text_muted'], 'marginBottom': '10px'
         }),
         tabla,
     ])

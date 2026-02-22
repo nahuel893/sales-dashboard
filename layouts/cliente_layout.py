@@ -3,6 +3,7 @@ Layout de detalle de cliente.
 Muestra ventas historicas en estructura de arbol: generico -> marca -> articulo.
 """
 from dash import html, dcc
+from config import DARK
 
 
 def create_cliente_layout(id_cliente):
@@ -18,7 +19,7 @@ def create_cliente_layout(id_cliente):
             html.Div([
                 dcc.Link(
                     html.Span("← Volver a Ventas", style={
-                        'color': '#aaa',
+                        'color': DARK['text_secondary'],
                         'fontSize': '14px',
                         'textDecoration': 'none',
                         'padding': '8px 15px',
@@ -32,14 +33,15 @@ def create_cliente_layout(id_cliente):
             ], style={'marginBottom': '10px'}),
             html.Div(id='cliente-header-content'),
         ], style={
-            'backgroundColor': '#1a1a2e',
+            'backgroundColor': DARK['header'],
             'padding': '20px',
+            'borderBottom': f'1px solid {DARK["border"]}',
         }),
 
         # Contenido principal
         html.Div(id='cliente-detail-content', style={
             'padding': '20px',
-            'backgroundColor': '#f5f7fa',
+            'backgroundColor': DARK['bg'],
             'minHeight': 'calc(100vh - 150px)',
         }),
-    ], style={'fontFamily': 'Arial, sans-serif'})
+    ], style={'fontFamily': 'Arial, sans-serif', 'backgroundColor': DARK['bg']})

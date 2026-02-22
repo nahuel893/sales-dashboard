@@ -3,6 +3,7 @@ Layout de busqueda de clientes.
 Permite buscar clientes por razon social, fantasia o ID y navegar a su detalle.
 """
 from dash import html, dcc
+from config import DARK
 
 
 def create_clientes_layout():
@@ -13,7 +14,7 @@ def create_clientes_layout():
             html.Div([
                 dcc.Link(
                     html.Span("← Inicio", style={
-                        'color': '#aaa',
+                        'color': DARK['text_secondary'],
                         'fontSize': '14px',
                         'textDecoration': 'none',
                         'padding': '8px 15px',
@@ -26,13 +27,14 @@ def create_clientes_layout():
                 ),
             ], style={'marginBottom': '10px'}),
             html.H1("Buscar Clientes", style={
-                'margin': '0', 'color': 'white', 'fontSize': '28px'
+                'margin': '0', 'color': DARK['text'], 'fontSize': '28px'
             }),
             html.P("Busca por razon social, nombre de fantasia o codigo de cliente. Presiona Enter para buscar.",
-                   style={'margin': '5px 0 0 0', 'color': '#ccc', 'fontSize': '14px'}),
+                   style={'margin': '5px 0 0 0', 'color': DARK['text_secondary'], 'fontSize': '14px'}),
         ], style={
-            'backgroundColor': '#1a1a2e',
+            'backgroundColor': DARK['header'],
             'padding': '20px',
+            'borderBottom': f'1px solid {DARK["border"]}',
         }),
 
         # Buscador
@@ -45,8 +47,10 @@ def create_clientes_layout():
                     debounce=True,
                     style={
                         'width': '100%', 'padding': '12px 16px', 'fontSize': '16px',
-                        'border': '1px solid #ced4da', 'borderRadius': '8px',
+                        'border': f'1px solid {DARK["border"]}', 'borderRadius': '8px',
                         'outline': 'none',
+                        'backgroundColor': DARK['surface'],
+                        'color': DARK['text'],
                     },
                 ),
             ], style={
@@ -62,7 +66,7 @@ def create_clientes_layout():
                 'padding': '0 20px 30px 20px',
             }),
         ], style={
-            'backgroundColor': '#f5f7fa',
+            'backgroundColor': DARK['bg'],
             'minHeight': 'calc(100vh - 130px)',
         }),
-    ], style={'fontFamily': 'Arial, sans-serif'})
+    ], style={'fontFamily': 'Arial, sans-serif', 'backgroundColor': DARK['bg']})
