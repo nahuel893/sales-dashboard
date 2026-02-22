@@ -58,7 +58,7 @@ def actualizar_kpis(anio, mes, tipo_sucursal):
             yoy_color = '#27ae60' if yoy >= 0 else '#e74c3c'
         else:
             yoy_text = "N/A"
-            yoy_color = '#666'
+            yoy_color = '#8a8a9e'
 
         # Achievement
         if target > 0:
@@ -73,7 +73,7 @@ def actualizar_kpis(anio, mes, tipo_sucursal):
                 })
             ])
         else:
-            achievement_content = html.Div("N/A", style={'textAlign': 'center', 'color': '#999'})
+            achievement_content = html.Div("N/A", style={'textAlign': 'center', 'color': '#8a8a9e'})
 
         return (
             f"{ventas_actual:,.0f}",
@@ -85,7 +85,7 @@ def actualizar_kpis(anio, mes, tipo_sucursal):
         )
 
     except Exception as e:
-        return "Error", "N/A", {'color': '#999'}, "Error", html.Div("Error"), "Error"
+        return "Error", "N/A", {'color': '#8a8a9e'}, "Error", html.Div("Error"), "Error"
 
 
 @callback(
