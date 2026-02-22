@@ -154,7 +154,7 @@ def create_home_layout():
 
         # Footer
         html.Div([
-            html.P("© 2025 Medallion ETL Dashboard", style={
+            html.P("© 2026 Medallion ETL Dashboard", style={
                 'textAlign': 'center',
                 'color': DARK['text_muted'],
                 'margin': '0',
