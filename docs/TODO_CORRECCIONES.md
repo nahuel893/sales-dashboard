@@ -4,7 +4,7 @@
 
 | Tipo | Total | Hechas | Pendientes |
 |------|-------|--------|------------|
-| Correcciones | 10 | 2 | 8 |
+| Correcciones | 10 | 5 | 5 |
 | Optimizaciones | 14 | 1 | 13 |
 
 ---
@@ -60,9 +60,39 @@ where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
 
 ---
 
+### C4 — NULL safety en `obtener_ventas_ytd` (MEDIO) — HECHO
+
+**Problema:** Cuando `SUM()` no tiene filas que sumar, PostgreSQL devuelve una fila con valores NULL.
+
+**Solucion aplicada:** Se agregaron checks `len(df) > 0` y fallback a 0 antes de acceder a `.iloc[0]`. Valores None se manejan con condicionales antes de operaciones aritmeticas.
+
+**Archivo:** `data/ytd_queries.py`
+
+---
+
+### C5 — Rutas string vs int en SQL (BAJO) — HECHO
+
+**Problema:** Tras la migracion a dmc, las rutas se manejaban como strings sin tipado correcto en SQL.
+
+**Solucion aplicada:** Se implemento `_parse_rutas_compuestas()` que parsea valores compuestos `"id_sucursal|id_ruta"` a tuplas de enteros, y `_build_ruta_where()` que construye SQL con tuplas tipadas: `(c.id_sucursal, c.id_ruta_fvX) IN ((suc1, ruta1), ...)`.
+
+**Archivo:** `data/queries.py`
+
+---
+
+### C6 — `WHEREf` sin espacio en `obtener_dias_inventario` (CRITICO) — HECHO
+
+**Problema:** Faltaba un espacio entre `WHERE` y `f` en la query de ventas diarias.
+
+**Solucion aplicada:** Corregido a `WHERE f.fecha_comprobante >= ...`.
+
+**Archivo:** `data/ytd_queries.py`
+
+---
+
 ## Correcciones Pendientes
 
-### C3 — Stock query no aplica filtro de sucursal (MEDIO)
+### C3/C10 — Stock query no aplica filtro de sucursal (MEDIO)
 
 **Problema:** En `obtener_dias_inventario()`, se construye `filtro_sucursal` segun el tipo de sucursal seleccionado, pero la query de stock no lo usa:
 ```python
@@ -75,52 +105,9 @@ query_stock = "SELECT COALESCE(SUM(stock), 0) as stock_total FROM gold.fact_stoc
 
 **Impacto:** El gauge de "Dias de Inventario" siempre muestra el stock global, sin importar si el usuario filtro por sucursal o casa central. El denominador (ventas diarias) si filtra por sucursal, creando una metrica inconsistente.
 
-**Archivo:** `data/ytd_queries.py:285-288`
+**Nota:** `fact_stock` no tiene `id_sucursal` en su esquema actual. Requiere cambio en BD.
 
----
-
-### C4 — NULL safety en `obtener_ventas_ytd` (MEDIO)
-
-**Problema:** Cuando `SUM()` no tiene filas que sumar, PostgreSQL devuelve una fila con valores NULL. El codigo accede a `df['bultos'].iloc[0]` sin verificar NULL:
-```python
-ventas_anterior = df_anterior['bultos'].iloc[0]  # Puede ser None
-target_total = ventas_anterior * (1 + incremento_pct / 100)  # None * float = TypeError
-```
-
-**Impacto:** Si se consulta un anio sin datos (ej: anio futuro o anio sin ventas), el dashboard crashea con `TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'`.
-
-**Archivo:** `data/ytd_queries.py:191,194`
-
----
-
-### C5 — Rutas string vs int en SQL (BAJO)
-
-**Problema:** Tras la migracion a dmc, las rutas se manejan como strings (`"123"`), pero `_build_cliente_filters` construye el SQL sin comillas:
-```python
-ruta_list = ",".join([str(r) for r in rutas])  # "123,456"
-where_cliente.append(f"c.id_ruta_fv1 IN ({ruta_list})")
-# Genera: IN (123,456) — funciona porque PostgreSQL castea string a int
-```
-
-**Impacto:** Funciona actualmente por casteo implicito de PostgreSQL, pero es fragil. Si una ruta tuviera caracteres no numericos, la query fallaria.
-
-**Archivo:** `data/queries.py:147`
-
----
-
-### C6 — ~~`WHEREf` sin espacio en `obtener_dias_inventario`~~ (CRITICO) — HECHO
-
-**Problema:** En la query de ventas diarias de `obtener_dias_inventario()`, falta un espacio entre `WHERE` y `f`:
-```sql
--- ACTUAL (syntax error)
-WHEREf.fecha_comprobante >= CURRENT_DATE - INTERVAL '30 days'
-```
-
-**Impacto:** La query siempre falla con syntax error de PostgreSQL. El `except` silencia el error y retorna `{'dias_inventario': 0, ...}`. El gauge de dias de inventario siempre muestra 0.
-
-**Solucion:** Agregar espacio: `WHERE f.fecha_comprobante >= ...`
-
-**Archivo:** `data/ytd_queries.py:292`
+**Archivo:** `data/ytd_queries.py:280-293`
 
 ---
 
@@ -129,13 +116,12 @@ WHEREf.fecha_comprobante >= CURRENT_DATE - INTERVAL '30 days'
 **Problema:** La ruta de detalle de cliente usa solo `id_cliente`, pero segun la regla de clave compuesta, `id_cliente` no es globalmente unico — es unico por sucursal. Toda la pipeline esta afectada:
 
 1. **URL:** `/cliente/<id_cliente>` — deberia ser `/cliente/<id_sucursal>/<id_cliente>`
-2. **clientside_callback:** Solo extrae `id_cliente` de `customdata[6]` — falta `id_sucursal`
+2. **clientside_callback:** Solo extrae `id_cliente` de `customdata[5]` — falta `id_sucursal`
 3. **`dcc.Store`:** Solo almacena `{'id_cliente': id}` — falta `id_sucursal`
 4. **`cargar_info_cliente()`:** `WHERE c.id_cliente = {id}` sin `id_sucursal` — puede retornar multiples filas
 5. **`cargar_ventas_cliente_detalle()`:** `WHERE f.id_cliente = {id}` sin `id_sucursal` — mezcla datos de sucursales
-6. **`cargar_articulos_sin_venta_cliente()`:** Misma situacion
 
-**Impacto:** Si un `id_cliente` existe en mas de una sucursal, la pagina muestra datos mezclados/incorrectos. `df_info.iloc[0]` toma un cliente arbitrario.
+**Impacto:** Si un `id_cliente` existe en mas de una sucursal, la pagina muestra datos mezclados/incorrectos. En la practica actual los `id_cliente` son unicos globalmente, pero es una vulnerabilidad ante datos futuros.
 
 **Solucion:** Agregar `id_sucursal` a: customdata del mapa, URL, store, queries, y routing en `app.py`.
 
@@ -145,17 +131,17 @@ WHEREf.fecha_comprobante >= CURRENT_DATE - INTERVAL '30 days'
 
 ### C8 — ROW_NUMBER en hover siempre ordena por bultos (MEDIO)
 
-**Problema:** La funcion `cargar_ventas_por_cliente_generico()` usa `ROW_NUMBER()` con `ORDER BY SUM(f.cantidades_total) DESC` hardcodeado. Esto significa que el top 5 de genericos en el hover siempre se rankea por bultos, sin importar la metrica seleccionada (facturacion, documentos).
+**Problema:** La funcion `cargar_ventas_por_cliente_generico()` usa `ROW_NUMBER()` con `ORDER BY SUM(f.cantidades_total) DESC` hardcodeado. El top 5 de genericos en el hover siempre se rankea por bultos, sin importar la metrica seleccionada.
 
 ```sql
 ROW_NUMBER() OVER (PARTITION BY f.id_cliente ORDER BY SUM(f.cantidades_total) DESC) as rn
 ```
 
-**Impacto:** Cuando el usuario selecciona metrica "Facturacion", el hover muestra los valores correctos de facturacion pero el ranking (que genericos aparecen en el top 5) corresponde a bultos. Puede ser confuso.
+**Impacto:** Cuando el usuario selecciona metrica "Documentos", el ranking (que genericos aparecen en el top 5) sigue correspondiendo a bultos. Los genericos fijos (`GENERICOS_HOVER_FIJOS`) siempre aparecen independientemente del ranking.
 
 **Solucion:** Pasar `metrica` como parametro a la funcion y usar la columna correspondiente en el `ORDER BY` del `ROW_NUMBER()`.
 
-**Archivo:** `data/queries.py:446`
+**Archivo:** `data/queries.py`
 
 ---
 
@@ -173,27 +159,7 @@ if len(df) > 0:
 
 **Solucion:** Filtrar `df[df['latitud'].notna() & (df['latitud'] != 0)]` antes de calcular el centro.
 
-**Archivo:** `callbacks/callbacks.py:921-923`
-
----
-
-### C10 — Stock query ignora filtro `tipo_sucursal` en inventario (MEDIO)
-
-**Problema:** En `obtener_dias_inventario()`, la query de stock trae el total global sin aplicar `filtro_sucursal`, mientras que la query de ventas diarias si filtra por sucursal:
-
-```python
-# Stock: siempre global
-query_stock = "SELECT COALESCE(SUM(stock), 0) FROM gold.fact_stock"
-
-# Ventas: filtra por sucursal
-query_ventas = f"... WHERE f.fecha_comprobante >= ... {filtro_sucursal}"
-```
-
-**Impacto:** Cuando se filtra por tipo de sucursal, el calculo es: stock_global / ventas_sucursal = valor incorrecto (sobreestima dias de inventario).
-
-**Nota:** Este problema tiene relacion con C3 — `fact_stock` no tiene `id_sucursal` en su esquema actual. Requiere cambio en BD.
-
-**Archivo:** `data/ytd_queries.py:280-293`
+**Archivo:** `callbacks/callbacks.py`
 
 ---
 
@@ -250,6 +216,8 @@ df = cargar_ventas_por_cliente(...)  # Trae TODOS los datos
 if canales: df = df[df['canal'].isin(canales)]  # Filtra en memoria
 ```
 
+**Nota:** Esto es parcialmente intencional — el mapa necesita TODOS los clientes activos (para mostrar los sin venta). Pero los filtros de canal/subcanal/localidad podrian pasarse a SQL.
+
 **Solucion propuesta:** Pasar estos filtros como parametros a la query SQL para que el DB haga el filtrado.
 
 **Archivo:** `callbacks/callbacks.py`
@@ -280,7 +248,9 @@ if canales: df = df[df['canal'].isin(canales)]  # Filtra en memoria
 
 Las columnas `ruta` y `preventista` se calculan con `df.apply(lambda r: ..., axis=1)` (iteracion fila por fila). Deberia usarse `np.where()` vectorizado.
 
-**Archivo:** `data/queries.py:182-192`
+**Nota:** En v1.2.0 se agregaron mas `df.apply()` para pre-formatear hover lines (`_build_hover_lines`). Estas tambien se beneficiarian de vectorizacion.
+
+**Archivo:** `data/queries.py`, `callbacks/callbacks.py`
 
 ---
 
@@ -296,7 +266,7 @@ Las columnas `ruta` y `preventista` se calculan con `df.apply(lambda r: ..., axi
 
 Rango 1 anio + granularidad diaria = 365 periodos x 5K clientes = 1.8M filas. Puede crashear el navegador.
 
-**Archivo:** `callbacks/callbacks.py:140-141`
+**Archivo:** `callbacks/callbacks.py`
 
 ---
 
@@ -304,7 +274,7 @@ Rango 1 anio + granularidad diaria = 365 periodos x 5K clientes = 1.8M filas. Pu
 
 `actualizar_filtros()` carga todo el dataset solo para hacer `df['canal'].unique()`. Deberia ser `SELECT DISTINCT` en SQL.
 
-**Archivo:** `callbacks/callbacks.py:54-62`
+**Archivo:** `callbacks/callbacks.py`
 
 ---
 
@@ -348,33 +318,34 @@ Errores silenciosos, imposible debuggear en produccion. Agregar logging basico.
 |------|--------------|------------------------|
 | Queries por cambio de filtro (YTD) | ~12-15 | ~2-3 |
 | Queries por cambio de filtro (Ventas) | ~3-4 duplicadas | ~1 compartida |
-| Tiempo de query YTD (EXTRACT -> date range) | Full scan | Index scan (50-90% mas rapido) |
+| Tiempo de query YTD (EXTRACT -> date range) | ✅ Index scan | ✅ Resuelto |
 | Memoria (eliminar copias + filtrar en SQL) | Multiples copias completas | 50-70% menos uso |
-| Correccion de datos (clave compuesta) | Posibles duplicados/errores | Datos correctos |
+| Correccion de datos (clave compuesta) | ✅ Preventivo aplicado | ✅ Resuelto |
 
 ---
 
 ## Orden sugerido de implementacion
 
-1. ~~**C2** — Filtro `anulado`~~ **HECHO**
-2. ~~**C1** — Clave compuesta en JOINs~~ **HECHO**
+1. ~~**C2** — Filtro `anulado`~~ ✅ HECHO
+2. ~~**C1** — Clave compuesta en JOINs~~ ✅ HECHO
 3. ~~**C6** — `WHEREf` sin espacio~~ ✅ HECHO
-4. **C7** — `id_sucursal` en pipeline `/cliente/` (critico, multiples archivos)
-5. **C4** — NULL safety (fix rapido)
+4. ~~**C4** — NULL safety~~ ✅ HECHO
+5. ~~**C5** — Rutas string vs int~~ ✅ HECHO
 6. ~~**O1** — EXTRACT -> date range~~ ✅ HECHO
-7. **C8** — ROW_NUMBER por metrica seleccionada
-8. **C9** — Centro de mapa compro con coordenadas validas
-9. **C10** — Stock query con filtro sucursal (requiere cambio en BD, relacionado con C3)
-10. **O11** — Helper `filtro_sucursal` (simplifica el resto)
-11. **O2** — Consolidar queries YTD (alto impacto)
-12. **O4** — Filtros en SQL en vez de Python
-13. **O3 + O5** — Cache/Store compartido entre callbacks
-14. **O7 + O8** — Vectorizar `_process_ventas_df`
-15. **O10** — DISTINCT en SQL para filtros
-16. Resto (O6, O9, O12, O13, O14, C3, C5)
+7. **C9** — Centro de mapa compro con coordenadas validas (fix rapido)
+8. **C8** — ROW_NUMBER por metrica seleccionada
+9. **C7** — `id_sucursal` en pipeline `/cliente/` (preventivo, multiples archivos)
+10. **C3/C10** — Stock query con filtro sucursal (requiere cambio en BD)
+11. **O11** — Helper `filtro_sucursal` (simplifica el resto)
+12. **O2** — Consolidar queries YTD (alto impacto)
+13. **O4** — Filtros en SQL en vez de Python
+14. **O3 + O5** — Cache/Store compartido entre callbacks
+15. **O7 + O8** — Vectorizar `_process_ventas_df` + hover lines
+16. **O10** — DISTINCT en SQL para filtros
+17. Resto (O6, O9, O12, O13, O14)
 
 ---
 
 *Generado: 2026-02-09*
-*Ultima actualizacion: 2026-02-10*
+*Ultima actualizacion: 2026-02-22*
 *Referencia: CONTEXT_IA.md, CLAUDE.md*
