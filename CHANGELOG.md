@@ -36,6 +36,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Escala de colores del mapa: de azul-celeste-verde-amarillo a rojo-amarillo-verde (semaforo)
 - Hover bgcolor: del color del marker (default Plotly) en vez de fondo oscuro fijo
 - Separador en desglose generico: de `/` a `|` (MAct | MAnt)
+- Multiplicador IQR de zonas convex hull: de 2.5 a 4 (menos clientes excluidos como outliers)
 
 ### Removido
 - Canal y localidad del hover del mapa (simplificacion)

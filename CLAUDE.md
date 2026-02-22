@@ -286,7 +286,7 @@ Para agregar un nuevo tablero:
 ## Ejecucion
 
 ```bash
-cd ~/Desktop/sales-dashboard
+cd ~/projects/work/sales-dashboard
 # Configurar variables de entorno
 cp .env.example .env  # completar credenciales
 # Instalar dependencias

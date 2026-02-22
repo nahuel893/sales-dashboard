@@ -64,8 +64,8 @@ def _filtrar_outliers_iqr(puntos):
     q3 = np.percentile(distancias, 75)
     iqr = q3 - q1
 
-    # Definir limites (2.5 * IQR — mas permisivo que el estandar 1.5 para datos geograficos)
-    limite_superior = q3 + 2.5 * iqr
+    # Definir limites (4 * IQR — mas permisivo que el estandar 1.5 para datos geograficos)
+    limite_superior = q3 + 4 * iqr
 
     # Filtrar puntos dentro del limite
     mascara = distancias <= limite_superior
