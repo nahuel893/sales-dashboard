@@ -4,7 +4,7 @@
 
 Dashboard interactivo de ventas construido con Dash/Plotly que visualiza datos de un sistema ETL medallion (bronze -> silver -> gold). Conecta a PostgreSQL y presenta mapas geograficos, KPIs, analisis temporal, dashboard YTD y detalle por cliente.
 
-**Version actual:** 1.0.0 (ver `VERSION`, `CHANGELOG.md`, `ROADMAP.md`)
+**Version actual:** 1.2.0 (ver `VERSION`, `CHANGELOG.md`, `ROADMAP.md`)
 
 ## Estructura del Proyecto
 
@@ -45,7 +45,8 @@ sales-dashboard/
 │
 └── docs/
     ├── EVALUACION_TECNICA_DASHBOARD.md  # Evaluacion y propuestas de mejora
-    └── TODO_CORRECCIONES.md             # Lista de correcciones y optimizaciones
+    ├── TODO_CORRECCIONES.md             # Lista de correcciones y optimizaciones
+    └── INCIDENCIAS_DARK_THEME.md        # Incidencias del dark theme (v1.2.0)
 ```
 
 ## Base de Datos
@@ -128,13 +129,25 @@ Para agregar un nuevo tablero:
 
 ### Mapa de Burbujas - Caracteristicas especiales
 - **Escala fija 0-15**: Color y tamano de burbuja normalizados a rango [0, 15]
-- **Sin ventas**: Circulos rojos (`#ff0000`) con hover mostrando id_cliente
-- **Hover MAct/MAnt**: Top 5 genericos por cliente con bultos mes actual vs anterior
-- **Click**: Abre `/cliente/<id>` en nueva pestana
+- **Escala de colores**: Rojo (bajo) -> Amarillo (medio) -> Verde (alto) — semaforo
+- **Sin ventas**: Circulos rojos (`#ff0000`) con hover mostrando info del cliente
+- **Hover enriquecido**: Layout tabular monospace pre-formateado en Python
+  - Info: fantasia, ruta, preventista, LP, sucursal (2 columnas alineadas)
+  - Metricas: bultos y documentos (right-aligned)
+  - Desglose: top 5 genericos MAct | MAnt (numeros alineados, truncado a 14 chars)
+  - Genericos fijos (`GENERICOS_HOVER_FIJOS`): siempre visibles aunque tengan 0 ventas
+  - Ranking por ventas historicas totales (no solo ultimos 2 meses)
+  - Hover bgcolor: color del marker (default Plotly, no fondo fijo)
+- **Click**: Abre `/cliente/<id>` en nueva pestana (clientside callback, `customdata[5]`)
+- **Busqueda**: Highlight del cliente buscado (halo blanco + pin magenta) via clientside callback JS. No recarga el mapa. Al limpiar, desaparece.
 - **Badges de ruta**: Overlay `dmc.HoverCard` sobre el mapa con info por zona:
   - Ventas (bultos) MAct / MAnt por generico + total
   - Cantidad de compradores por generico (MAct / MAnt)
 - **Zonas**: Convex hull por ruta o preventista con colores distintos
+
+### Genericos Excluidos y Fijos (config.py)
+- **`GENERICOS_EXCLUIDOS`**: No aparecen en filtro ni hover (ENVACES CCU, AGUAS Y SODAS, APERITIVOS, DISPENSER, ENVASES PALAU, GASEOSA, MARKETING BRANCA, MARKETING)
+- **`GENERICOS_HOVER_FIJOS`**: Siempre aparecen en hover aunque tengan 0 (CERVEZAS, AGUAS DANONE, SIDRAS Y LICORES, VINOS CCU, FRATELLI B, VINOS, VINOS FINOS)
 
 ### Callbacks (callbacks/callbacks.py)
 - `toggle_drawer()`: Abrir/cerrar panel de filtros
@@ -143,20 +156,21 @@ Para agregar un nuevo tablero:
 - `actualizar_marcas_por_generico()`: Filtro cascada generico -> marca
 - `actualizar_sucursal_por_tipo()`: Auto-filtro tipo sucursal
 - `actualizar_resumen_ventas()`: Graficos evolucion + top genericos + top marcas
-- `actualizar_mapa()`: Mapa de burbujas + KPIs + badges de zona
+- `actualizar_mapa()`: Mapa de burbujas + KPIs + badges de zona (ya no recibe busqueda-cliente-store como Input)
+- Clientside callback: highlight de busqueda (agrega/quita traces `_highlight_*` sin recarga)
 - `actualizar_mapa_calor()`: Mapa de calor (difuso/grilla)
 - `actualizar_mapa_compro()`: Mapa compro vs no compro
 - `toggle_secciones_principales()`: Mostrar/ocultar mapas vs tablero
 - `actualizar_opciones_anios()`: Cargar anos disponibles
 - `actualizar_grafico_comparacion_anual()`: Grafico de lineas por ano
 - `actualizar_tabla_comparativa()`: Tabla mensual con % crecimiento
-- Click mapa -> `/cliente/<id>` (clientside callback)
+- Click mapa -> `/cliente/<id>` (clientside callback, `customdata[5]`)
 
 ### Funciones de datos (data/queries.py)
 - `cargar_ventas_por_cliente()`: Ventas agregadas por cliente (mapas y KPIs). Parte de dim_cliente.
 - `cargar_ventas_por_fecha()`: Ventas por fecha (graficos temporales). Parte de fact_ventas.
 - `cargar_ventas_animacion()`: Ventas por cliente y periodo (animaciones)
-- `cargar_ventas_por_cliente_generico()`: Top N genericos por cliente, MAct/MAnt (hover)
+- `cargar_ventas_por_cliente_generico()`: Top N genericos por cliente, MAct/MAnt (hover). Ranking por ventas historicas totales. Filtra `GENERICOS_EXCLUIDOS`.
 - `cargar_ventas_por_generico_top()`: Top genericos por metrica
 - `cargar_ventas_por_marca_top()`: Top marcas por metrica
 - `obtener_*()`: Funciones para poblar dropdowns
@@ -249,7 +263,7 @@ Para agregar un nuevo tablero:
 
 ### Visualizacion
 - Tema oscuro centralizado en `config.py` (dict `DARK` con 16+ colores)
-- Colores definidos en `config.py` (COLOR_SCALE_*, ZONE_COLORS)
+- Colores definidos en `config.py` (COLOR_SCALE_*, ZONE_COLORS, GENERICOS_EXCLUIDOS, GENERICOS_HOVER_FIJOS)
 - Metricas con labels en `METRICA_LABELS`
 - Mapas usan `map_style='open-street-map'`
 - Fuentes del YTD Dashboard aumentadas 25% sobre tamano original
