@@ -1,13 +1,15 @@
 """
-Layout principal del dashboard de ventas.
+Layout del Tablero de Ventas — comparación anual con filtros.
 """
 from dash import html, dcc
 import dash_mantine_components as dmc
 from config import DARK
 
 
-def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_default, lista_genericos, lista_marcas, lista_rutas, lista_preventistas):
-    """Crea y retorna el layout del dashboard de ventas."""
+def create_tablero_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_default,
+                          lista_genericos, lista_marcas, lista_rutas, lista_preventistas,
+                          lista_anios):
+    """Crea y retorna el layout del Tablero de Ventas (comparación anual)."""
 
     # Estilo común para labels de sección
     label_style = {'fontWeight': 'bold', 'fontSize': '14px', 'color': DARK['text_secondary']}
@@ -20,7 +22,6 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
         "option": {"color": DARK['text'], "backgroundColor": DARK['surface']},
         "pill": {"backgroundColor": DARK['accent_blue'], "color": DARK['text']},
     }
-    # Props del combobox (dropdown de opciones) con zIndex y estilos de opciones
     dark_combobox_props = {
         "zIndex": 1100,
         "styles": {
@@ -34,15 +35,12 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
         "indicator": {"backgroundColor": DARK['accent_blue']},
     }
 
+    # Opciones de años pre-populadas
+    anios_options = [{'label': str(a), 'value': str(a)} for a in lista_anios]
+
     return html.Div([
-        # Div oculto para clientside callback de click en mapa
-        html.Div(id='click-output-dummy', style={'display': 'none'}),
-
-        # Store para coordenadas del cliente buscado
-        dcc.Store(id='busqueda-cliente-store', data={}),
-
         # =================================================================
-        # DRAWER DE FILTROS (panel lateral colapsable)
+        # DRAWER DE FILTROS (mismo IDs que /ventas para reusar cascada)
         # =================================================================
         dmc.Drawer(
             id='drawer-filtros',
@@ -228,112 +226,6 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 comboboxProps=dark_combobox_props,
                                 styles=dark_input_styles,
                             ),
-                            dmc.Divider(color=DARK['border']),
-
-                            # --- Opciones de Mapa ---
-                            dmc.Text("Opciones de Mapa", fw=600, size="sm", c=DARK['text']),
-                            html.Div([
-                                html.Label("Mostrar zonas", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                dmc.ChipGroup(
-                                    id='opciones-zonas',
-                                    children=[
-                                        dmc.Chip("Zonas por Ruta", value="ruta"),
-                                        dmc.Chip("Zonas por Preventista", value="preventista"),
-                                    ],
-                                    value=[],
-                                    multiple=True,
-                                ),
-                            ]),
-                            dmc.Switch(
-                                id='opcion-escala-log',
-                                label="Escala Logaritmica",
-                                checked=True,
-                                size="sm",
-                                styles={"label": {"color": DARK['text_secondary']}},
-                            ),
-                            html.Div([
-                                html.Label("Tipo mapa calor", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                dmc.SegmentedControl(
-                                    id='tipo-mapa-calor',
-                                    data=[
-                                        {"label": "Difuso", "value": "density"},
-                                        {"label": "Grilla", "value": "grilla"},
-                                    ],
-                                    value="density",
-                                    size="sm",
-                                    fullWidth=True,
-                                    styles=dark_segmented_styles,
-                                ),
-                            ]),
-                            html.Div([
-                                html.Label("Tamano celda", style={**label_style, 'display': 'block', 'marginBottom': '8px'}),
-                                dmc.Slider(
-                                    id='slider-precision',
-                                    min=1,
-                                    max=3,
-                                    step=0.25,
-                                    value=2,
-                                    marks=[
-                                        {"value": 1, "label": "10km"},
-                                        {"value": 2, "label": "1km"},
-                                        {"value": 3, "label": "100m"},
-                                    ],
-                                    mb="lg",
-                                ),
-                            ]),
-                            html.Div([
-                                html.Label("Radio difuso", style={**label_style, 'display': 'block', 'marginBottom': '8px'}),
-                                dmc.Slider(
-                                    id='slider-radio-difuso',
-                                    min=10,
-                                    max=100,
-                                    step=10,
-                                    value=50,
-                                    marks=[
-                                        {"value": 10, "label": "10"},
-                                        {"value": 50, "label": "50"},
-                                        {"value": 100, "label": "100"},
-                                    ],
-                                    mb="lg",
-                                ),
-                            ]),
-                            html.Div([
-                                html.Label("Normalizacion", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                dmc.SegmentedControl(
-                                    id='tipo-normalizacion',
-                                    data=[
-                                        {"label": "Normal", "value": "normal"},
-                                        {"label": "Percentil", "value": "percentil"},
-                                        {"label": "Limitado", "value": "limitado"},
-                                    ],
-                                    value="normal",
-                                    size="sm",
-                                    styles=dark_segmented_styles,
-                                    fullWidth=True,
-                                ),
-                            ]),
-                            dmc.Switch(
-                                id='opcion-animacion',
-                                label="Activar animacion temporal",
-                                checked=False,
-                                size="sm",
-                                styles={"label": {"color": DARK['text_secondary']}},
-                            ),
-                            html.Div([
-                                html.Label("Granularidad", style={**label_style, 'display': 'block', 'marginBottom': '5px'}),
-                                dmc.SegmentedControl(
-                                    id='granularidad-animacion',
-                                    data=[
-                                        {"label": "Dia", "value": "dia"},
-                                        {"label": "Semana", "value": "semana"},
-                                        {"label": "Mes", "value": "mes"},
-                                    ],
-                                    value="semana",
-                                    size="sm",
-                                    styles=dark_segmented_styles,
-                                    fullWidth=True,
-                                ),
-                            ]),
                         ]),
                     ],
                 ),
@@ -357,8 +249,8 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                     style={'textDecoration': 'none'}
                 ),
             ], style={'marginBottom': '10px'}),
-            html.H1("Dashboard de Ventas", style={'margin': '0', 'color': DARK['text']}),
-            html.P("Medallion ETL - Visualizacion de datos de ventas",
+            html.H1("Tablero de Ventas", style={'margin': '0', 'color': DARK['text']}),
+            html.P("Comparación anual de ventas por mes",
                    style={'margin': '5px 0 0 0', 'color': DARK['text_secondary']})
         ], style={
             'backgroundColor': DARK['header'],
@@ -382,85 +274,41 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
             'borderBottom': f'1px solid {DARK["border"]}',
         }),
 
-        # =====================================================================
-        # MAPAS
-        # =====================================================================
+        # =================================================================
+        # CONTENIDO: Selector de años + gráfico + tabla
+        # =================================================================
+
+        # Selector de años para comparar
         html.Div([
-            dcc.Tabs(id='tabs-mapas', value='tab-burbujas', children=[
-                dcc.Tab(label='Mapa de Burbujas', value='tab-burbujas',
-                        style={'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},
-                        selected_style={'backgroundColor': DARK['card'], 'color': DARK['text'], 'borderBottom': f'2px solid {DARK["accent_blue"]}'},
-                        children=[
-                    html.Div([
-                        dcc.Loading(
-                            id='loading-mapa',
-                            type='circle',
-                            children=[dcc.Graph(id='mapa-ventas', style={'height': '87vh'})]
-                        ),
-                        # Overlay de búsqueda de cliente
-                        html.Div([
-                            dcc.Dropdown(
-                                id='busqueda-cliente-mapa',
-                                options=[],
-                                value=None,
-                                search_value='',
-                                clearable=True,
-                                placeholder='Buscar cliente...',
-                                style={'width': '300px', 'fontSize': '13px'},
-                            ),
-                        ], style={
-                            'position': 'absolute',
-                            'top': '10px',
-                            'right': '10px',
-                            'zIndex': 1001,
-                            'backgroundColor': DARK['card'],
-                            'borderRadius': '8px',
-                            'padding': '4px',
-                            'boxShadow': '0 4px 16px rgba(0,0,0,0.5)',
-                        }),
-                        # Overlay de badges de rutas
-                        html.Div(
-                            id='route-badges-overlay',
-                            style={
-                                'position': 'absolute',
-                                'top': '10px',
-                                'left': '50%',
-                                'transform': 'translateX(-50%)',
-                                'zIndex': 1000,
-                                'display': 'flex',
-                                'flexWrap': 'wrap',
-                                'gap': '6px',
-                                'maxWidth': '80%',
-                                'justifyContent': 'center',
-                            }
-                        ),
-                    ], style={'padding': '10px', 'position': 'relative'})
-                ]),
-                dcc.Tab(label='Mapa de Calor', value='tab-calor',
-                        style={'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},
-                        selected_style={'backgroundColor': DARK['card'], 'color': DARK['text'], 'borderBottom': f'2px solid {DARK["accent_blue"]}'},
-                        children=[
-                    html.Div([
-                        dcc.Loading(
-                            id='loading-mapa-calor',
-                            type='circle',
-                            children=[dcc.Graph(id='mapa-calor', style={'height': '87vh'})]
-                        )
-                    ], style={'padding': '10px'})
-                ]),
-                dcc.Tab(label='Compro', value='tab-compro',
-                        style={'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},
-                        selected_style={'backgroundColor': DARK['card'], 'color': DARK['text'], 'borderBottom': f'2px solid {DARK["accent_blue"]}'},
-                        children=[
-                    html.Div([
-                        dcc.Loading(
-                            id='loading-mapa-compro',
-                            type='circle',
-                            children=[dcc.Graph(id='mapa-compro', style={'height': '87vh'})]
-                        )
-                    ], style={'padding': '10px'})
-                ]),
-            ], style={'marginBottom': '0', 'backgroundColor': DARK['surface']}),
-        ], style={'backgroundColor': DARK['bg']}),
+            html.Div([
+                dmc.MultiSelect(
+                    id='selector-anios',
+                    label="Seleccionar años a comparar",
+                    data=anios_options,
+                    value=[],
+                    placeholder="Seleccione uno o más años",
+                    searchable=True,
+                    w=400,
+                ),
+            ], style={'display': 'inline-block', 'marginRight': '30px'}),
+        ], style={'padding': '15px 20px', 'backgroundColor': DARK['surface'], 'borderBottom': f'2px solid {DARK["border"]}'}),
+
+        # Gráfica de líneas - Comparación por Año
+        html.Div([
+            html.H5("Comparacion Anual (Enero - Diciembre)", style={'textAlign': 'center', 'marginBottom': '5px', 'color': DARK['text']}),
+            dcc.Loading(
+                id='loading-grafico-linea',
+                type='circle',
+                children=[dcc.Graph(id='grafico-linea-tiempo', style={'height': '500px'})]
+            )
+        ], style={'padding': '20px'}),
+
+        # Tabla comparativa
+        html.Div([
+            html.H5("Tabla Comparativa por Mes", style={'textAlign': 'center', 'marginBottom': '15px', 'color': DARK['text']}),
+            html.Div(id='tabla-comparativa-container', children=[
+                html.P("Seleccione años para ver la comparación", style={'textAlign': 'center', 'color': DARK['text_muted']})
+            ])
+        ], style={'padding': '20px', 'backgroundColor': DARK['card'], 'margin': '0 20px 20px 20px', 'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.3)', 'border': f'1px solid {DARK["border"]}'}),
 
     ], style={'fontFamily': 'Arial, sans-serif', 'backgroundColor': DARK['bg']})

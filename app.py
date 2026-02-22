@@ -16,10 +16,11 @@ import dash_mantine_components as dmc
 from config import SERVER_CONFIG
 from data.queries import (
     obtener_genericos, obtener_marcas, obtener_rutas, obtener_preventistas,
-    obtener_rango_fechas, cargar_ventas_por_cliente
+    obtener_rango_fechas, obtener_anios_disponibles, cargar_ventas_por_cliente
 )
 from layouts.home_layout import create_home_layout
 from layouts.main_layout import create_ventas_layout
+from layouts.tablero_layout import create_tablero_layout
 from layouts.ytd_layout import create_ytd_layout
 from layouts.cliente_layout import create_cliente_layout
 from layouts.clientes_layout import create_clientes_layout
@@ -70,6 +71,11 @@ except Exception as e:
     ytd_anio_actual = 2025
     ytd_mes_actual = 12
 
+# Años disponibles para tablero de comparación
+print("Cargando años disponibles...")
+lista_anios = obtener_anios_disponibles()
+print(f"  - Años: {lista_anios}")
+
 # Pre-crear layouts
 home_layout = create_home_layout()
 ventas_layout = create_ventas_layout(
@@ -81,6 +87,17 @@ ventas_layout = create_ventas_layout(
     lista_marcas=lista_marcas,
     lista_rutas=lista_rutas,
     lista_preventistas=lista_preventistas
+)
+tablero_layout = create_tablero_layout(
+    fecha_min=fecha_min,
+    fecha_max=fecha_max,
+    fecha_desde_default=fecha_desde_default,
+    fecha_hasta_default=fecha_hasta_default,
+    lista_genericos=lista_genericos,
+    lista_marcas=lista_marcas,
+    lista_rutas=lista_rutas,
+    lista_preventistas=lista_preventistas,
+    lista_anios=lista_anios
 )
 ytd_layout = create_ytd_layout(
     anio_actual=ytd_anio_actual,
@@ -121,58 +138,8 @@ def display_page(pathname):
         return html.Div([
             html.H2("Cliente no encontrado", style={'textAlign': 'center', 'padding': '60px', 'color': '#666'})
         ])
-    elif pathname == '/nuevo':
-        # Placeholder para nuevo tablero
-        return html.Div([
-            html.Div([
-                html.Div([
-                    dcc.Link(
-                        html.Span("← Inicio", style={
-                            'color': '#aaa',
-                            'fontSize': '14px',
-                            'textDecoration': 'none',
-                            'padding': '8px 15px',
-                            'backgroundColor': 'rgba(255,255,255,0.1)',
-                            'borderRadius': '5px',
-                            'cursor': 'pointer'
-                        }),
-                        href='/',
-                        style={'textDecoration': 'none'}
-                    ),
-                ], style={'marginBottom': '10px'}),
-                html.H1("Nuevo Tablero", style={'margin': '0', 'color': 'white'}),
-                html.P("Este tablero está en construcción",
-                       style={'margin': '5px 0 0 0', 'color': '#ccc'})
-            ], style={
-                'backgroundColor': '#1a1a2e',
-                'padding': '20px'
-            }),
-            html.Div([
-                html.Div([
-                    html.H2("🚧 En Construcción", style={'color': '#666', 'marginBottom': '20px'}),
-                    html.P("Este tablero estará disponible próximamente.", style={'color': '#999'}),
-                    dcc.Link(
-                        html.Button("Volver al Inicio", style={
-                            'padding': '15px 30px',
-                            'fontSize': '16px',
-                            'backgroundColor': '#3498db',
-                            'color': 'white',
-                            'border': 'none',
-                            'borderRadius': '8px',
-                            'cursor': 'pointer',
-                            'marginTop': '30px'
-                        }),
-                        href='/'
-                    )
-                ], style={
-                    'textAlign': 'center',
-                    'padding': '100px 20px'
-                })
-            ], style={
-                'backgroundColor': '#f5f7fa',
-                'minHeight': 'calc(100vh - 120px)'
-            })
-        ])
+    elif pathname == '/tablero':
+        return tablero_layout
     else:
         # Página de inicio por defecto
         return home_layout
@@ -181,6 +148,7 @@ def display_page(pathname):
 # Importar callbacks (se registran automaticamente)
 # Esto debe estar DESPUES de crear app y layout
 import callbacks.callbacks  # noqa: E402, F401
+import callbacks.tablero_callbacks  # noqa: E402, F401
 import callbacks.ytd_callbacks  # noqa: E402, F401
 import callbacks.cliente_callbacks  # noqa: E402, F401
 import callbacks.clientes_callbacks  # noqa: E402, F401

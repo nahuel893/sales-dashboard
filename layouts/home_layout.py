@@ -50,7 +50,7 @@ def create_home_layout():
             'id': 'ventas',
             'icon': '📊',
             'title': 'Dashboard de Ventas',
-            'description': 'Mapas de ventas, análisis geográfico, KPIs y evolución temporal de ventas por cliente.',
+            'description': 'Mapas de ventas, análisis geográfico y KPIs por cliente.',
             'color': '#3498db',
             'href': '/ventas'
         },
@@ -71,12 +71,12 @@ def create_home_layout():
             'href': '/clientes'
         },
         {
-            'id': 'nuevo',
-            'icon': '🚧',
-            'title': 'Nuevo Tablero',
-            'description': 'Próximamente: Nuevo tablero de análisis. Haz clic para crear uno nuevo.',
-            'color': '#95a5a6',
-            'href': '/nuevo'
+            'id': 'tablero',
+            'icon': '📋',
+            'title': 'Tablero de Ventas',
+            'description': 'Comparación anual de ventas por mes. Gráficos y tablas con filtros de producto y zona.',
+            'color': '#e67e22',
+            'href': '/tablero'
         },
     ]
 
