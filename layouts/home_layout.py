@@ -5,8 +5,12 @@ from dash import html, dcc
 from config import DARK
 
 
-def create_home_layout():
-    """Crea el layout de la página de inicio con cards para cada tablero."""
+def create_home_layout(user=None):
+    """Crea el layout de la página de inicio con cards para cada tablero.
+
+    Args:
+        user: objeto User si auth está activa, None si no.
+    """
 
     card_style = {
         'backgroundColor': DARK['card'],
@@ -103,7 +107,33 @@ def create_home_layout():
         )
         cards.append(card)
 
+    # User info bar (solo si auth activa)
+    user_bar = html.Div()
+    if user:
+        role_name = user.role.name.capitalize() if user.role else ''
+        user_bar = html.Div([
+            html.Div([
+                html.Span(f"{user.full_name}", style={
+                    'color': DARK['text'], 'fontWeight': '600', 'fontSize': '14px'
+                }),
+                html.Span(f"  ({role_name})", style={
+                    'color': DARK['text_muted'], 'fontSize': '12px'
+                }),
+            ], style={'display': 'flex', 'alignItems': 'center', 'gap': '8px'}),
+            dcc.Link("Cerrar sesión", href='/logout', style={
+                'color': DARK['accent_red'], 'fontSize': '13px',
+                'textDecoration': 'none', 'fontWeight': '500'
+            }),
+        ], style={
+            'display': 'flex', 'justifyContent': 'space-between',
+            'alignItems': 'center', 'padding': '10px 40px',
+            'backgroundColor': DARK['surface'],
+            'borderBottom': f'1px solid {DARK["border"]}',
+        })
+
     return html.Div([
+        user_bar,
+
         # Header
         html.Div([
             html.H1("Medallion ETL", style={

@@ -14,6 +14,7 @@ import dash_mantine_components as dmc
 
 # Imports locales
 from config import SERVER_CONFIG
+from database import settings, SQLALCHEMY_DATABASE_URL_STR
 from data.queries import (
     obtener_genericos, obtener_marcas, obtener_rutas, obtener_preventistas,
     obtener_rango_fechas, obtener_anios_disponibles, cargar_ventas_por_cliente
@@ -58,6 +59,18 @@ app = Dash(__name__, suppress_callback_exceptions=True,
 app.title = "Medallion ETL - Dashboard"
 server = app.server  # Flask server para gunicorn
 
+# Autenticación condicional: solo si SECRET_KEY está configurada
+AUTH_ENABLED = bool(settings.SECRET_KEY)
+if AUTH_ENABLED:
+    server.secret_key = settings.SECRET_KEY
+    from auth.middleware import init_auth, protect_all_routes
+    print("Configurando autenticación...")
+    init_auth(server, SQLALCHEMY_DATABASE_URL_STR)
+    protect_all_routes(server)
+    print("  - Autenticación habilitada")
+else:
+    print("  - Autenticación deshabilitada (SECRET_KEY no configurada)")
+
 # Datos para YTD Dashboard
 print("Cargando datos para YTD Dashboard...")
 try:
@@ -76,8 +89,7 @@ print("Cargando años disponibles...")
 lista_anios = obtener_anios_disponibles()
 print(f"  - Años: {lista_anios}")
 
-# Pre-crear layouts
-home_layout = create_home_layout()
+# Pre-crear layouts (home se genera dinámico si auth está activa)
 ventas_layout = create_ventas_layout(
     fecha_min=fecha_min,
     fecha_max=fecha_max,
@@ -121,6 +133,14 @@ app.layout = dmc.MantineProvider(
 )
 def display_page(pathname):
     """Muestra la página correspondiente según la URL."""
+    if AUTH_ENABLED and pathname == '/login':
+        from layouts.login_layout import create_login_layout
+        return create_login_layout()
+    if AUTH_ENABLED and pathname == '/logout':
+        from flask_login import logout_user, current_user
+        if current_user.is_authenticated:
+            logout_user()
+        return dcc.Location(href='/login', id='logout-redirect')
     if pathname == '/ventas':
         return ventas_layout
     elif pathname == '/ytd':
@@ -141,8 +161,16 @@ def display_page(pathname):
     elif pathname == '/tablero':
         return tablero_layout
     else:
-        # Página de inicio por defecto
-        return home_layout
+        # Página de inicio: generar dinámicamente con info del usuario si auth activa
+        user = None
+        if AUTH_ENABLED:
+            try:
+                from flask_login import current_user
+                if current_user.is_authenticated:
+                    user = current_user
+            except Exception:
+                pass
+        return create_home_layout(user=user)
 
 
 # Importar callbacks (se registran automaticamente)
@@ -152,6 +180,8 @@ import callbacks.tablero_callbacks  # noqa: E402, F401
 import callbacks.ytd_callbacks  # noqa: E402, F401
 import callbacks.cliente_callbacks  # noqa: E402, F401
 import callbacks.clientes_callbacks  # noqa: E402, F401
+if AUTH_ENABLED:
+    import callbacks.auth_callbacks  # noqa: E402, F401
 
 
 if __name__ == '__main__':
