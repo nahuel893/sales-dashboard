@@ -8,6 +8,7 @@ from dash import callback, Output, Input, html
 
 from data.queries import cargar_ventas_por_fecha
 from config import DARK
+from auth.utils import get_user_sucursales
 
 # Colores para las líneas de años
 COLORES_ANIOS = [
@@ -67,6 +68,7 @@ def actualizar_grafico_comparacion_anual(anios_seleccionados, canales, subcanale
 
     # Ordenar años
     anios_seleccionados = sorted(anios_seleccionados)
+    suc_perm = get_user_sucursales()
 
     # Cargar y procesar datos para cada año
     for i, anio in enumerate(anios_seleccionados):
@@ -81,7 +83,8 @@ def actualizar_grafico_comparacion_anual(anios_seleccionados, canales, subcanale
         df_fecha = cargar_ventas_por_fecha(
             fecha_inicio, fecha_fin,
             canales, subcanales, localidades, listas_precio, sucursales,
-            genericos, marcas, rutas, preventistas, fv
+            genericos, marcas, rutas, preventistas, fv,
+            sucursales_permitidas=suc_perm
         )
 
         if len(df_fecha) > 0:
@@ -165,6 +168,7 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
     # Diccionario para almacenar datos por mes y año
     datos_por_anio = {}
     fv = fuerza_venta if fuerza_venta != 'TODOS' else None
+    suc_perm = get_user_sucursales()
 
     for anio in anios_seleccionados:
         fecha_inicio = f"{anio}-01-01"
@@ -173,7 +177,8 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
         df_fecha = cargar_ventas_por_fecha(
             fecha_inicio, fecha_fin,
             canales, subcanales, localidades, listas_precio, sucursales,
-            genericos, marcas, rutas, preventistas, fv
+            genericos, marcas, rutas, preventistas, fv,
+            sucursales_permitidas=suc_perm
         )
 
         if len(df_fecha) > 0:

@@ -7,6 +7,7 @@ import plotly.express as px
 from dash import callback, Output, Input, html
 
 from config import DARK
+from auth.utils import get_user_sucursales
 from data.ytd_queries import (
     obtener_ventas_ytd,
     obtener_ventas_por_mes,
@@ -42,12 +43,14 @@ MESES_NOMBRES = {
 def actualizar_kpis(anio, mes, tipo_sucursal):
     """Actualiza los KPIs principales del dashboard."""
     try:
+        suc_perm = get_user_sucursales()
+
         # Ventas actuales
-        df_actual = obtener_ventas_ytd(anio, mes, tipo_sucursal)
+        df_actual = obtener_ventas_ytd(anio, mes, tipo_sucursal, sucursales_permitidas=suc_perm)
         ventas_actual = df_actual['bultos'].iloc[0] if len(df_actual) > 0 and df_actual['bultos'].iloc[0] else 0
 
         # Target y año anterior
-        targets = calcular_target_automatico(anio, mes, incremento_pct=10, tipo_sucursal=tipo_sucursal)
+        targets = calcular_target_automatico(anio, mes, incremento_pct=10, tipo_sucursal=tipo_sucursal, sucursales_permitidas=suc_perm)
         target = targets['target_total']
         ventas_anterior = targets['ventas_anio_anterior']
 
@@ -97,8 +100,9 @@ def actualizar_kpis(anio, mes, tipo_sucursal):
 def actualizar_grafico_generico(anio, mes, tipo_sucursal):
     """Gráfico de barras por genérico con targets."""
     try:
-        df = obtener_ventas_por_generico(anio, mes, top_n=5, tipo_sucursal=tipo_sucursal)
-        targets = calcular_targets_por_generico(anio, mes, incremento_pct=10, top_n=5, tipo_sucursal=tipo_sucursal)
+        suc_perm = get_user_sucursales()
+        df = obtener_ventas_por_generico(anio, mes, top_n=5, tipo_sucursal=tipo_sucursal, sucursales_permitidas=suc_perm)
+        targets = calcular_targets_por_generico(anio, mes, incremento_pct=10, top_n=5, tipo_sucursal=tipo_sucursal, sucursales_permitidas=suc_perm)
 
         if len(df) == 0:
             fig = go.Figure()
@@ -189,8 +193,9 @@ def actualizar_grafico_generico(anio, mes, tipo_sucursal):
 def actualizar_grafico_mensual(anio, mes, tipo_sucursal):
     """Gráfico de barras mensual con colores según cumplimiento de target."""
     try:
-        df = obtener_ventas_por_mes(anio, mes, tipo_sucursal)
-        targets = calcular_target_automatico(anio, mes, incremento_pct=10, tipo_sucursal=tipo_sucursal)
+        suc_perm = get_user_sucursales()
+        df = obtener_ventas_por_mes(anio, mes, tipo_sucursal, sucursales_permitidas=suc_perm)
+        targets = calcular_target_automatico(anio, mes, incremento_pct=10, tipo_sucursal=tipo_sucursal, sucursales_permitidas=suc_perm)
         targets_mes = targets['targets_por_mes']
 
         if len(df) == 0:
@@ -276,8 +281,9 @@ def actualizar_grafico_mensual(anio, mes, tipo_sucursal):
 def actualizar_grafico_sucursal(anio, mes, tipo_sucursal):
     """Gráfico de barras horizontales por sucursal con actual vs target."""
     try:
-        df = obtener_ventas_por_sucursal(anio, mes, tipo_sucursal)
-        targets = calcular_targets_por_sucursal(anio, mes, incremento_pct=10, tipo_sucursal=tipo_sucursal)
+        suc_perm = get_user_sucursales()
+        df = obtener_ventas_por_sucursal(anio, mes, tipo_sucursal, sucursales_permitidas=suc_perm)
+        targets = calcular_targets_por_sucursal(anio, mes, incremento_pct=10, tipo_sucursal=tipo_sucursal, sucursales_permitidas=suc_perm)
 
         if len(df) == 0:
             fig = go.Figure()
@@ -350,7 +356,8 @@ def actualizar_grafico_sucursal(anio, mes, tipo_sucursal):
 def actualizar_grafico_canal(anio, mes, tipo_sucursal):
     """Gráfico de dona por canal."""
     try:
-        df = obtener_ventas_por_canal(anio, mes, tipo_sucursal)
+        suc_perm = get_user_sucursales()
+        df = obtener_ventas_por_canal(anio, mes, tipo_sucursal, sucursales_permitidas=suc_perm)
 
         if len(df) == 0:
             fig = go.Figure()
@@ -394,7 +401,8 @@ def actualizar_grafico_canal(anio, mes, tipo_sucursal):
 def actualizar_grafico_crecimiento(anio, mes, tipo_sucursal):
     """Gráfico de barras de crecimiento mensual."""
     try:
-        df = calcular_crecimiento_mensual(anio, mes, tipo_sucursal)
+        suc_perm = get_user_sucursales()
+        df = calcular_crecimiento_mensual(anio, mes, tipo_sucursal, sucursales_permitidas=suc_perm)
 
         if len(df) == 0:
             fig = go.Figure()
@@ -448,7 +456,8 @@ def actualizar_grafico_crecimiento(anio, mes, tipo_sucursal):
 def actualizar_gauge_inventario(tipo_sucursal):
     """Gauge de días de inventario."""
     try:
-        data = obtener_dias_inventario(tipo_sucursal)
+        suc_perm = get_user_sucursales()
+        data = obtener_dias_inventario(tipo_sucursal, sucursales_permitidas=suc_perm)
         dias = data['dias_inventario']
 
         # Determinar color según días

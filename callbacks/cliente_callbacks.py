@@ -35,6 +35,7 @@ def _get_excel_styles():
 
 from data.queries import cargar_info_cliente, cargar_ventas_cliente_detalle
 from config import DARK
+from auth.utils import get_user_sucursales
 
 MESES_CORTOS = {
     1: 'Ene', 2: 'Feb', 3: 'Mar', 4: 'Abr', 5: 'May', 6: 'Jun',
@@ -53,9 +54,10 @@ def cargar_detalle_cliente(store_data):
         return html.Div(), html.Div("No se encontro el cliente")
 
     id_cliente = store_data['id_cliente']
+    suc_perm = get_user_sucursales()
 
     # Cargar datos (2 queries: info cliente + todos los articulos con/sin venta)
-    df_info = cargar_info_cliente(id_cliente)
+    df_info = cargar_info_cliente(id_cliente, sucursales_permitidas=suc_perm)
     df_all = cargar_ventas_cliente_detalle(id_cliente)
 
     # === HEADER ===
@@ -604,7 +606,8 @@ def _generar_excel_completo(id_cliente):
     from openpyxl.styles import Alignment
     s = _get_excel_styles()
 
-    df_info = cargar_info_cliente(id_cliente)
+    suc_perm = get_user_sucursales()
+    df_info = cargar_info_cliente(id_cliente, sucursales_permitidas=suc_perm)
     df_all, periodos = _preparar_datos_excel(id_cliente)
     if len(df_all) == 0:
         return None
