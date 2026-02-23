@@ -84,6 +84,17 @@ def create_home_layout(user=None):
         },
     ]
 
+    # Card de admin (solo visible para admin)
+    if user and user.is_admin:
+        tableros.append({
+            'id': 'admin',
+            'icon': '👥',
+            'title': 'Gestión de Usuarios',
+            'description': 'Crear, editar y administrar usuarios del sistema. Asignar roles y sucursales.',
+            'color': '#8e44ad',
+            'href': '/admin/usuarios'
+        })
+
     cards = []
     for tablero in tableros:
         card = dcc.Link(

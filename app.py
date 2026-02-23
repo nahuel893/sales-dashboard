@@ -141,6 +141,12 @@ def display_page(pathname):
         if current_user.is_authenticated:
             logout_user()
         return dcc.Location(href='/login', id='logout-redirect')
+    if AUTH_ENABLED and pathname == '/admin/usuarios':
+        from flask_login import current_user as cu
+        if cu.is_authenticated and cu.is_admin:
+            from layouts.admin_layout import create_admin_layout
+            return create_admin_layout()
+        return dcc.Location(href='/', id='admin-redirect')
     if pathname == '/ventas':
         return ventas_layout
     elif pathname == '/ytd':
@@ -182,6 +188,7 @@ import callbacks.cliente_callbacks  # noqa: E402, F401
 import callbacks.clientes_callbacks  # noqa: E402, F401
 if AUTH_ENABLED:
     import callbacks.auth_callbacks  # noqa: E402, F401
+    import callbacks.admin_callbacks  # noqa: E402, F401
 
 
 if __name__ == '__main__':
