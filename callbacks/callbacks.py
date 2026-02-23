@@ -70,7 +70,8 @@ def actualizar_filtros(fechas_value):
     canales = [{'label': c, 'value': c} for c in sorted(df['canal'].unique())]
     subcanales = [{'label': s, 'value': s} for s in sorted(df['subcanal'].unique())]
     localidades = [{'label': l, 'value': l} for l in sorted(df['localidad'].dropna().unique())]
-    listas_precio = [{'label': l, 'value': l} for l in sorted(df['lista_precio'].unique())]
+    lp_ids = sorted(df['id_lista_precio'].dropna().unique())
+    listas_precio = [{'label': str(int(l)), 'value': str(int(l))} for l in lp_ids]
     sucursales = [{'label': s, 'value': s} for s in sorted(df['sucursal'].unique())]
 
     return canales, subcanales, localidades, listas_precio, sucursales
@@ -227,7 +228,8 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
     if localidades and len(localidades) > 0:
         df = df[df['localidad'].isin(localidades)]
     if listas_precio and len(listas_precio) > 0:
-        df = df[df['lista_precio'].isin(listas_precio)]
+        lp_ids = [int(l) for l in listas_precio]
+        df = df[df['id_lista_precio'].isin(lp_ids)]
     if sucursales and len(sucursales) > 0:
         df = df[df['sucursal'].isin(sucursales)]
 
@@ -639,7 +641,8 @@ def actualizar_mapa_calor(fechas_value, canales, subcanales, localidades, listas
     if localidades and len(localidades) > 0:
         df = df[df['localidad'].isin(localidades)]
     if listas_precio and len(listas_precio) > 0:
-        df = df[df['lista_precio'].isin(listas_precio)]
+        lp_ids = [int(l) for l in listas_precio]
+        df = df[df['id_lista_precio'].isin(lp_ids)]
     if sucursales and len(sucursales) > 0:
         df = df[df['sucursal'].isin(sucursales)]
 
@@ -857,7 +860,8 @@ def actualizar_mapa_compro(fechas_value, canales, subcanales, localidades, lista
     if localidades and len(localidades) > 0:
         df = df[df['localidad'].isin(localidades)]
     if listas_precio and len(listas_precio) > 0:
-        df = df[df['lista_precio'].isin(listas_precio)]
+        lp_ids = [int(l) for l in listas_precio]
+        df = df[df['id_lista_precio'].isin(lp_ids)]
     if sucursales and len(sucursales) > 0:
         df = df[df['sucursal'].isin(sucursales)]
 

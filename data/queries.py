@@ -272,6 +272,7 @@ def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None
             COALESCE(c.des_segmento_mkt, 'Sin segmento') as segmento,
             COALESCE(c.des_subcanal_mkt, 'Sin subcanal') as subcanal,
             COALESCE(c.des_lista_precio, 'Sin lista') as lista_precio,
+            c.id_lista_precio,
             COALESCE(v.cantidad_total, 0) as cantidad_total,
             COALESCE(v.facturacion, 0) as facturacion,
             COALESCE(v.cantidad_documentos, 0) as cantidad_documentos,
@@ -331,6 +332,7 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
             COALESCE(c.des_segmento_mkt, 'Sin segmento') as segmento,
             COALESCE(c.des_subcanal_mkt, 'Sin subcanal') as subcanal,
             COALESCE(c.des_lista_precio, 'Sin lista') as lista_precio,
+            c.id_lista_precio,
             DATE_TRUNC('{trunc_sql}', f.fecha_comprobante)::date as periodo,
             SUM(f.cantidades_total) as cantidad_total,
             SUM(f.subtotal_final) as facturacion,
@@ -346,7 +348,7 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
         WHERE {where_sql}
         GROUP BY f.id_cliente, c.razon_social, c.fantasia, c.latitud, c.longitud,
                  c.des_localidad, c.des_provincia, c.des_ramo,
-                 c.des_canal_mkt, c.des_segmento_mkt, c.des_subcanal_mkt, c.des_lista_precio,
+                 c.des_canal_mkt, c.des_segmento_mkt, c.des_subcanal_mkt, c.des_lista_precio, c.id_lista_precio,
                  c.id_ruta_fv1, c.id_ruta_fv4, c.des_personal_fv1, c.des_personal_fv4, c.des_sucursal,
                  DATE_TRUNC('{trunc_sql}', f.fecha_comprobante)
         ORDER BY periodo
@@ -388,8 +390,8 @@ def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, su
         where_clauses.append(f"COALESCE(c.des_localidad, 'Sin localidad') IN ('" + "','".join(localidades_escaped) + "')")
 
     if listas_precio and len(listas_precio) > 0:
-        listas_escaped = [l.replace("'", "''") for l in listas_precio]
-        where_clauses.append(f"COALESCE(c.des_lista_precio, 'Sin lista') IN ('" + "','".join(listas_escaped) + "')")
+        listas_ids = ", ".join(str(int(l)) for l in listas_precio)
+        where_clauses.append(f"c.id_lista_precio IN ({listas_ids})")
 
     if sucursales and len(sucursales) > 0:
         sucursales_escaped = [s.replace("'", "''") for s in sucursales]

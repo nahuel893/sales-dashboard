@@ -260,7 +260,9 @@
     border: 1px solid #3d3d5c !important;
 }
 
-.mantine-Combobox-option {
+.mantine-Combobox-option,
+.mantine-Combobox-option *,
+.mantine-Combobox-options * {
     color: #c8c8d8 !important;
 }
 
@@ -427,6 +429,41 @@ div.mantine-Combobox-option[data-combobox-active] {
 .mantine-CalendarHeader-calendarHeaderControl:hover,
 .mantine-CalendarHeader-calendarHeaderLevel:hover {
     background-color: #2a3a5e !important;
+    color: #ffffff !important;
+}
+
+/* Month picker (vista de seleccion de mes) */
+.mantine-MonthsList-monthsListControl {
+    color: #c8c8d8 !important;
+}
+
+.mantine-MonthsList-monthsListControl:hover {
+    background-color: #2a3a5e !important;
+    color: #ffffff !important;
+}
+
+.mantine-MonthsList-monthsListControl[data-selected] {
+    background-color: #2a4a7f !important;
+    color: #ffffff !important;
+}
+
+.mantine-MonthsList-monthsListControl[data-in-range] {
+    background-color: rgba(42, 74, 127, 0.35) !important;
+}
+
+/* Year picker (vista de seleccion de año) */
+.mantine-YearsList-yearsListControl {
+    color: #c8c8d8 !important;
+}
+
+.mantine-YearsList-yearsListControl:hover {
+    background-color: #2a3a5e !important;
+    color: #ffffff !important;
+}
+
+.mantine-YearsList-yearsListControl[data-selected] {
+    background-color: #2a4a7f !important;
+    color: #ffffff !important;
 }
 
 /* --- SegmentedControl (non-active labels need contrast) --- */
