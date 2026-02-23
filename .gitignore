@@ -112,6 +112,9 @@ config.local.py
 # Claude Code
 .claude/
 
+# Git worktrees
+.worktrees/
+
 # Temporary files
 tmp/
 temp/
