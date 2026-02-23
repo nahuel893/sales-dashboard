@@ -20,3 +20,7 @@ pydantic-settings>=2.0.0
 
 # Optional: For convex hull zones (geographic zones)
 scipy>=1.11.0
+
+# Authentication
+flask-login>=0.6.3
+flask-session>=0.8.0

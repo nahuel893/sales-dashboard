@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = Field(..., description="Nombre de la base de datos")
     POSTGRES_HOST: str = Field(default="localhost", description="IP o hostname del servidor")
     POSTGRES_PORT: int = Field(default=5432, description="Puerto de PostgreSQL")
+    SECRET_KEY: str = Field(default="", description="Secret key para sesiones (vacio = auth desactivada)")
 
 
 settings = Settings()
@@ -35,6 +36,11 @@ SQLALCHEMY_DATABASE_URL = URL.create(
     host=settings.POSTGRES_HOST,
     port=settings.POSTGRES_PORT,
     database=settings.POSTGRES_DB,
+)
+
+SQLALCHEMY_DATABASE_URL_STR = (
+    f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}"
+    f"@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
 )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
