@@ -392,6 +392,13 @@ div.mantine-Combobox-option[data-combobox-active] {
     border-color: #3d6abf !important;
 }
 
+/* --- DatePicker input (valor mostrado con picker cerrado) --- */
+.mantine-DatePickerInput-input {
+    color: #ffffff !important;
+    background-color: #252540 !important;
+    border-color: #2d2d44 !important;
+}
+
 /* --- DatePicker popover --- */
 .mantine-DatePickerInput-dropdown,
 .mantine-Popover-dropdown {
@@ -401,7 +408,7 @@ div.mantine-Combobox-option[data-combobox-active] {
 
 .mantine-DatePickerInput-day,
 .mantine-Day-day {
-    color: #c8c8d8 !important;
+    color: #e8e8f0 !important;
 }
 
 .mantine-DatePickerInput-day:hover,
@@ -418,12 +425,20 @@ div.mantine-Combobox-option[data-combobox-active] {
 .mantine-DatePickerInput-day[data-in-range],
 .mantine-Day-day[data-in-range] {
     background-color: rgba(42, 74, 127, 0.35) !important;
+    color: #ffffff !important;
 }
 
-.mantine-Month-monthThead th,
-.mantine-CalendarHeader-calendarHeaderControl,
+/* Calendar header: titulo mes/anio y flechas de navegacion */
 .mantine-CalendarHeader-calendarHeaderLevel {
-    color: #a0a0b0 !important;
+    color: #e8e8f0 !important;
+}
+
+.mantine-CalendarHeader-calendarHeaderControl {
+    color: #c8c8d8 !important;
+}
+
+.mantine-Month-monthThead th {
+    color: #c8c8d8 !important;
 }
 
 .mantine-CalendarHeader-calendarHeaderControl:hover,
@@ -434,7 +449,7 @@ div.mantine-Combobox-option[data-combobox-active] {
 
 /* Month picker (vista de seleccion de mes) */
 .mantine-MonthsList-monthsListControl {
-    color: #c8c8d8 !important;
+    color: #e8e8f0 !important;
 }
 
 .mantine-MonthsList-monthsListControl:hover {
@@ -449,11 +464,12 @@ div.mantine-Combobox-option[data-combobox-active] {
 
 .mantine-MonthsList-monthsListControl[data-in-range] {
     background-color: rgba(42, 74, 127, 0.35) !important;
+    color: #ffffff !important;
 }
 
-/* Year picker (vista de seleccion de año) */
+/* Year picker (vista de seleccion de anio) */
 .mantine-YearsList-yearsListControl {
-    color: #c8c8d8 !important;
+    color: #e8e8f0 !important;
 }
 
 .mantine-YearsList-yearsListControl:hover {
@@ -463,6 +479,11 @@ div.mantine-Combobox-option[data-combobox-active] {
 
 .mantine-YearsList-yearsListControl[data-selected] {
     background-color: #2a4a7f !important;
+    color: #ffffff !important;
+}
+
+.mantine-YearsList-yearsListControl[data-in-range] {
+    background-color: rgba(42, 74, 127, 0.35) !important;
     color: #ffffff !important;
 }
 
