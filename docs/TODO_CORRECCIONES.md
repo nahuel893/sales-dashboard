@@ -4,7 +4,7 @@
 
 | Tipo | Total | Hechas | Pendientes |
 |------|-------|--------|------------|
-| Correcciones | 10 | 5 | 5 |
+| Correcciones | 11 | 6 | 5 |
 | Optimizaciones | 14 | 1 | 13 |
 
 ---
@@ -77,6 +77,47 @@ where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
 **Solucion aplicada:** Se implemento `_parse_rutas_compuestas()` que parsea valores compuestos `"id_sucursal|id_ruta"` a tuplas de enteros, y `_build_ruta_where()` que construye SQL con tuplas tipadas: `(c.id_sucursal, c.id_ruta_fvX) IN ((suc1, ruta1), ...)`.
 
 **Archivo:** `data/queries.py`
+
+---
+
+### C11 — Fechas default del filtro congeladas al arrancar el servidor (MEDIO) — HECHO
+
+**Problema:** Los layouts de `/ventas` y `/tablero` se pre-creaban una sola vez al iniciar el servidor, con las fechas del dia de arranque bakeadas en el `DatePickerInput`:
+
+```python
+# En app.py — ejecutado una sola vez al iniciar
+hoy = date.today()
+fecha_desde_default = hoy.replace(day=1)  # quedaba fijo
+fecha_hasta_default = hoy                  # quedaba fijo
+
+ventas_layout = create_ventas_layout(
+    fecha_desde_default=fecha_desde_default,  # valor estatico
+    ...
+)
+```
+
+Si el servidor llevaba dias o semanas corriendo sin reiniciar, el filtro de fechas seguia mostrando el mes en que arranco (ej: el 3 de enero mostraba diciembre 1 - diciembre 28 si el servidor habia arrancado el 28 de diciembre).
+
+**Sintoma reportado:** En los primeros dias del mes (1-5), el filtro del mapa mostraba el mes anterior cerrado en vez del mes actual.
+
+**Causa raiz:** Layout pre-creado con fechas estaticas en startup. El `value` del `DatePickerInput` no se recalculaba en cada visita.
+
+**Solucion aplicada:** En `display_page()`, los layouts de `/ventas` y `/tablero` se crean dinamicamente con `date.today()` en cada visita. Los filtros (genericos, marcas, rutas, etc.) siguen siendo module-level cached ya que no cambian entre requests.
+
+```python
+# En display_page() — ejecutado en cada visita
+if pathname == '/ventas':
+    hoy = date.today()  # siempre fresco
+    return create_ventas_layout(
+        fecha_desde_default=hoy.replace(day=1),
+        fecha_hasta_default=hoy,
+        ...
+    )
+```
+
+**Archivos modificados:** `app.py`
+
+**Commit:** `2f7d0e2`
 
 ---
 
@@ -332,7 +373,8 @@ Errores silenciosos, imposible debuggear en produccion. Agregar logging basico.
 4. ~~**C4** — NULL safety~~ ✅ HECHO
 5. ~~**C5** — Rutas string vs int~~ ✅ HECHO
 6. ~~**O1** — EXTRACT -> date range~~ ✅ HECHO
-7. **C9** — Centro de mapa compro con coordenadas validas (fix rapido)
+7. ~~**C11** — Fechas default congeladas al arrancar servidor~~ ✅ HECHO
+8. **C9** — Centro de mapa compro con coordenadas validas (fix rapido)
 8. **C8** — ROW_NUMBER por metrica seleccionada
 9. **C7** — `id_sucursal` en pipeline `/cliente/` (preventivo, multiples archivos)
 10. **C3/C10** — Stock query con filtro sucursal (requiere cambio en BD)
@@ -347,5 +389,5 @@ Errores silenciosos, imposible debuggear en produccion. Agregar logging basico.
 ---
 
 *Generado: 2026-02-09*
-*Ultima actualizacion: 2026-02-22*
+*Ultima actualizacion: 2026-03-02*
 *Referencia: CONTEXT_IA.md, CLAUDE.md*
