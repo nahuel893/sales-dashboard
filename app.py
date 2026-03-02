@@ -43,12 +43,11 @@ lista_rutas = obtener_rutas()
 lista_preventistas = obtener_preventistas()
 print(f"  - {len(lista_rutas)} rutas, {len(lista_preventistas)} preventistas")
 
-# Rango default: mes corriente (1ro del mes actual hasta hoy)
-hoy = date.today()
-fecha_desde_default = hoy.replace(day=1)
-fecha_hasta_default = hoy
-print(f"Cargando datos iniciales ({fecha_desde_default} a {fecha_hasta_default})...")
-df_ventas = cargar_ventas_por_cliente(fecha_desde_default, fecha_hasta_default)
+# Carga inicial de datos para verificar conectividad
+hoy_startup = date.today()
+fecha_desde_startup = hoy_startup.replace(day=1)
+print(f"Cargando datos iniciales ({fecha_desde_startup} a {hoy_startup})...")
+df_ventas = cargar_ventas_por_cliente(fecha_desde_startup, hoy_startup)
 clientes_con_ventas = len(df_ventas[df_ventas['cantidad_total'] > 0])
 clientes_sin_ventas = len(df_ventas[df_ventas['cantidad_total'] == 0])
 print(f"Cargados {len(df_ventas):,} clientes ({clientes_con_ventas:,} con ventas, {clientes_sin_ventas:,} sin ventas)")
@@ -89,28 +88,7 @@ print("Cargando años disponibles...")
 lista_anios = obtener_anios_disponibles()
 print(f"  - Años: {lista_anios}")
 
-# Pre-crear layouts (home se genera dinámico si auth está activa)
-ventas_layout = create_ventas_layout(
-    fecha_min=fecha_min,
-    fecha_max=fecha_max,
-    fecha_desde_default=fecha_desde_default,
-    fecha_hasta_default=fecha_hasta_default,
-    lista_genericos=lista_genericos,
-    lista_marcas=lista_marcas,
-    lista_rutas=lista_rutas,
-    lista_preventistas=lista_preventistas
-)
-tablero_layout = create_tablero_layout(
-    fecha_min=fecha_min,
-    fecha_max=fecha_max,
-    fecha_desde_default=fecha_desde_default,
-    fecha_hasta_default=fecha_hasta_default,
-    lista_genericos=lista_genericos,
-    lista_marcas=lista_marcas,
-    lista_rutas=lista_rutas,
-    lista_preventistas=lista_preventistas,
-    lista_anios=lista_anios
-)
+# ytd_layout se pre-crea (no tiene fechas que cambien, solo año/mes)
 ytd_layout = create_ytd_layout(
     anio_actual=ytd_anio_actual,
     mes_actual=ytd_mes_actual,
@@ -148,7 +126,17 @@ def display_page(pathname):
             return create_admin_layout()
         return dcc.Location(href='/', id='admin-redirect')
     if pathname == '/ventas':
-        return ventas_layout
+        hoy = date.today()
+        return create_ventas_layout(
+            fecha_min=fecha_min,
+            fecha_max=fecha_max,
+            fecha_desde_default=hoy.replace(day=1),
+            fecha_hasta_default=hoy,
+            lista_genericos=lista_genericos,
+            lista_marcas=lista_marcas,
+            lista_rutas=lista_rutas,
+            lista_preventistas=lista_preventistas
+        )
     elif pathname == '/ytd':
         return ytd_layout
     elif pathname == '/clientes':
@@ -165,7 +153,18 @@ def display_page(pathname):
             html.H2("Cliente no encontrado", style={'textAlign': 'center', 'padding': '60px', 'color': '#666'})
         ])
     elif pathname == '/tablero':
-        return tablero_layout
+        hoy = date.today()
+        return create_tablero_layout(
+            fecha_min=fecha_min,
+            fecha_max=fecha_max,
+            fecha_desde_default=hoy.replace(day=1),
+            fecha_hasta_default=hoy,
+            lista_genericos=lista_genericos,
+            lista_marcas=lista_marcas,
+            lista_rutas=lista_rutas,
+            lista_preventistas=lista_preventistas,
+            lista_anios=lista_anios
+        )
     else:
         # Página de inicio: generar dinámicamente con info del usuario si auth activa
         user = None
