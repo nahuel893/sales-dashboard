@@ -28,9 +28,11 @@ def seed():
     with engine.begin() as conn:
         # Ejecutar cada statement del schema
         for statement in schema_sql.split(';'):
-            statement = statement.strip()
-            if statement and not statement.startswith('--'):
-                conn.execute(text(statement))
+            # Quitar líneas de comentario y espacios vacíos
+            lines = [l for l in statement.splitlines() if l.strip() and not l.strip().startswith('--')]
+            sql = '\n'.join(lines).strip()
+            if sql:
+                conn.execute(text(sql))
         print("  - Schema y tablas creados")
 
         # Insertar roles (idempotente via ON CONFLICT)
