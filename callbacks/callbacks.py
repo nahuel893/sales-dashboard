@@ -620,18 +620,9 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     lat=df_heladera['latitud'],
                     lon=df_heladera['longitud'],
                     mode='markers',
-                    marker=dict(size=22, color='white', opacity=0.85),
+                    marker=dict(size=14, color='#00d4ff', opacity=0.7),
                     hoverinfo='skip',
                     showlegend=True,
-                ))
-                fig.add_trace(go.Scattermap(
-                    name='❄ Equipo frío',
-                    lat=df_heladera['latitud'],
-                    lon=df_heladera['longitud'],
-                    mode='markers',
-                    marker=dict(size=12, color='#00d4ff', opacity=1.0),
-                    hoverinfo='skip',
-                    showlegend=False,
                 ))
 
             fig.update_layout(
