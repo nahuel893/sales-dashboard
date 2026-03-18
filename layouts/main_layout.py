@@ -434,6 +434,8 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                                 'justifyContent': 'center',
                             }
                         ),
+                        # Banner "ver detalle abajo" (visible cuando >5 zonas)
+                        html.Div(id='route-badges-banner'),
                     ], style={'padding': '10px', 'position': 'relative'})
                 ]),
                 dcc.Tab(label='Mapa de Calor', value='tab-calor',
@@ -462,5 +464,6 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                 ]),
             ], style={'marginBottom': '0', 'backgroundColor': DARK['surface']}),
         ], style={'backgroundColor': DARK['bg']}),
+        html.Div(id='route-detail-section'),
 
     ], style={'fontFamily': 'Arial, sans-serif', 'backgroundColor': DARK['bg']})

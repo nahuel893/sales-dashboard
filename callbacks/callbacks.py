@@ -123,17 +123,15 @@ def actualizar_sucursal_por_tipo(tipo_sucursal, opciones_sucursales):
     return []
 
 
+ZONE_BADGE_THRESHOLD = 5
+
+
 # =============================================================================
 # HELPER: Contenido de badge de zona para HoverCard
 # =============================================================================
 
-def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, color_borde):
-    """Construye el contenido HTML del HoverCard para una zona/ruta."""
-    header_style = {
-        'padding': '8px 12px',
-        'backgroundColor': color_borde.replace('0.8', '0.25'),
-        'borderBottom': f'1px solid {DARK["border"]}',
-    }
+def _build_zona_stats_content(resumen, total_act, total_ant, n_total):
+    """Filas de ventas (bultos MAct/MAnt + total) y compradores MAct/MAnt. Sin header."""
     section_title = {
         'fontSize': '11px', 'fontWeight': '700', 'color': DARK['accent_blue'],
         'padding': '6px 12px 2px', 'textTransform': 'uppercase',
@@ -149,12 +147,6 @@ def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, co
     }
 
     content = [
-        # Header
-        html.Div([
-            html.Div(nombre, style={'fontWeight': '700', 'fontSize': '13px', 'color': DARK['text']}),
-            html.Div(f"{n_total} clientes", style={'fontSize': '11px', 'color': DARK['text_secondary']}),
-        ], style=header_style),
-        # Sección Ventas
         html.Div('Ventas (bultos) — MAct / MAnt', style=section_title),
     ]
     for gen, row in resumen.iterrows():
@@ -182,13 +174,35 @@ def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, co
     return content
 
 
+def _build_zona_badge_content(nombre, n_total, resumen, total_act, total_ant, color_borde):
+    """Construye el contenido HTML del HoverCard para una zona/ruta."""
+    header_style = {
+        'padding': '8px 12px',
+        'backgroundColor': color_borde.replace('0.8', '0.25'),
+        'borderBottom': f'1px solid {DARK["border"]}',
+    }
+
+    content = [
+        # Header
+        html.Div([
+            html.Div(nombre, style={'fontWeight': '700', 'fontSize': '13px', 'color': DARK['text']}),
+            html.Div(f"{n_total} clientes", style={'fontSize': '11px', 'color': DARK['text_secondary']}),
+        ], style=header_style),
+    ]
+    content.extend(_build_zona_stats_content(resumen, total_act, total_ant, n_total))
+
+    return content
+
+
 # =============================================================================
 # CALLBACK MAPA DE BURBUJAS
 # =============================================================================
 
 @callback(
     [Output('mapa-ventas', 'figure'),
-     Output('route-badges-overlay', 'children')],
+     Output('route-badges-overlay', 'children'),
+     Output('route-badges-banner', 'children'),
+     Output('route-detail-section', 'children')],
     [Input('filtro-fechas', 'value'),
      Input('filtro-canal', 'value'),
      Input('filtro-subcanal', 'value'),
@@ -210,6 +224,8 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     fuerza_venta, opciones_zonas, opcion_animacion, granularidad):
     """Actualiza el mapa y KPIs segun los filtros."""
     route_badges = []
+    banner = []
+    detail_section = []
 
     start_date, end_date = (fechas_value or [None, None])[:2]
     fv = fuerza_venta if fuerza_venta != 'TODOS' else None
@@ -342,14 +358,17 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             fig = go.Figure()
 
             # Zonas (usar df_mapa con coordenadas válidas)
+            zonas_all = []
             if opciones_zonas:
                 for tipo_zona in opciones_zonas:
                     zonas = calcular_zonas(df_mapa, tipo_zona)
                     for zona in zonas:
                         n_total = zona['n_clientes']
+                        resumen = None
+                        total_act = 0
+                        total_ant = 0
+                        has_data = False
 
-                        # Construir contenido para badge overlay
-                        badge_content = []
                         if len(df_generico) > 0:
                             clientes_zona = set(zona.get('clientes', []))
                             df_zona_gen = df_generico[df_generico['id_cliente'].isin(clientes_zona)]
@@ -363,52 +382,22 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                                     cli_act=('compro_act', 'sum'),
                                     cli_ant=('compro_ant', 'sum'),
                                 ).sort_values('bultos_act', ascending=False)
-
                                 total_act = resumen['bultos_act'].sum()
                                 total_ant = resumen['bultos_ant'].sum()
+                                has_data = True
 
-                                badge_content = _build_zona_badge_content(
-                                    zona['nombre'], n_total, resumen,
-                                    total_act, total_ant, zona['color_borde']
-                                )
-
-                        if not badge_content:
-                            badge_content = [html.Div(f"{zona['nombre']} — {n_total} clientes",
-                                                      style={'padding': '8px', 'color': '#fff'})]
-
-                        route_badges.append(
-                            dmc.HoverCard(
-                                position='bottom', withArrow=True, shadow='md',
-                                children=[
-                                    dmc.HoverCardTarget(
-                                        html.Div(
-                                            zona['nombre'],
-                                            style={
-                                                'padding': '4px 10px',
-                                                'borderRadius': '12px',
-                                                'fontSize': '11px',
-                                                'fontWeight': '600',
-                                                'color': '#fff',
-                                                'backgroundColor': zona['color_borde'].replace('0.8', '0.65'),
-                                                'cursor': 'pointer',
-                                                'whiteSpace': 'nowrap',
-                                                'border': f"1px solid {zona['color_borde']}",
-                                            }
-                                        )
-                                    ),
-                                    dmc.HoverCardDropdown(
-                                        badge_content,
-                                        style={
-                                            'backgroundColor': DARK['card'],
-                                            'border': f"1px solid {DARK['border']}",
-                                            'padding': '0',
-                                            'maxHeight': '400px',
-                                            'overflowY': 'auto',
-                                        }
-                                    ),
-                                ]
-                            )
-                        )
+                        zonas_all.append({
+                            'nombre': zona['nombre'],
+                            'color_borde': zona['color_borde'],
+                            'color': zona['color'],
+                            'lats': zona['lats'],
+                            'lons': zona['lons'],
+                            'n_total': n_total,
+                            'resumen': resumen,
+                            'total_act': total_act,
+                            'total_ant': total_ant,
+                            'has_data': has_data,
+                        })
 
                         fig.add_trace(go.Scattermap(
                             lat=zona['lats'], lon=zona['lons'],
@@ -419,6 +408,133 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                             hoverinfo='name',
                             showlegend=True
                         ))
+
+            # Bifurcación: <= umbral → HoverCards; > umbral → plain badges + banner + sección externa
+            if len(zonas_all) <= ZONE_BADGE_THRESHOLD:
+                for z in zonas_all:
+                    if z['has_data']:
+                        badge_content = _build_zona_badge_content(
+                            z['nombre'], z['n_total'], z['resumen'],
+                            z['total_act'], z['total_ant'], z['color_borde']
+                        )
+                    else:
+                        badge_content = [html.Div(f"{z['nombre']} — {z['n_total']} clientes",
+                                                  style={'padding': '8px', 'color': '#fff'})]
+                    route_badges.append(
+                        dmc.HoverCard(
+                            position='bottom', withArrow=True, shadow='md',
+                            children=[
+                                dmc.HoverCardTarget(
+                                    html.Div(
+                                        z['nombre'],
+                                        style={
+                                            'padding': '4px 10px',
+                                            'borderRadius': '12px',
+                                            'fontSize': '11px',
+                                            'fontWeight': '600',
+                                            'color': '#fff',
+                                            'backgroundColor': z['color_borde'].replace('0.8', '0.65'),
+                                            'cursor': 'pointer',
+                                            'whiteSpace': 'nowrap',
+                                            'border': f"1px solid {z['color_borde']}",
+                                        }
+                                    )
+                                ),
+                                dmc.HoverCardDropdown(
+                                    badge_content,
+                                    style={
+                                        'backgroundColor': DARK['card'],
+                                        'border': f"1px solid {DARK['border']}",
+                                        'padding': '0',
+                                        'maxHeight': '400px',
+                                        'overflowY': 'auto',
+                                    }
+                                ),
+                            ]
+                        )
+                    )
+            else:
+                cards = []
+                for z in zonas_all:
+                    # Badge de solo lectura (sin HoverCard)
+                    route_badges.append(
+                        html.Div(
+                            z['nombre'],
+                            style={
+                                'padding': '4px 10px',
+                                'borderRadius': '12px',
+                                'fontSize': '11px',
+                                'fontWeight': '600',
+                                'color': '#fff',
+                                'backgroundColor': z['color_borde'].replace('0.8', '0.65'),
+                                'whiteSpace': 'nowrap',
+                                'border': f"1px solid {z['color_borde']}",
+                            }
+                        )
+                    )
+                    # Card para sección externa
+                    if z['has_data']:
+                        stats_content = _build_zona_stats_content(
+                            z['resumen'], z['total_act'], z['total_ant'], z['n_total']
+                        )
+                    else:
+                        stats_content = [html.Div(f"{z['nombre']} — {z['n_total']} clientes",
+                                                  style={'padding': '8px', 'color': DARK['text_secondary']})]
+                    cards.append(
+                        html.Div([
+                            html.Div([
+                                html.Div(z['nombre'], style={'fontWeight': '700', 'fontSize': '13px', 'color': DARK['text']}),
+                                html.Div(f"{z['n_total']} clientes", style={'fontSize': '11px', 'color': DARK['text_secondary']}),
+                            ], style={
+                                'padding': '8px 12px',
+                                'backgroundColor': z['color_borde'].replace('0.8', '0.25'),
+                                'borderBottom': f"1px solid {DARK['border']}",
+                                'borderRadius': '8px 8px 0 0',
+                            }),
+                            html.Div(stats_content, style={'padding': '0'}),
+                        ], style={
+                            'backgroundColor': DARK['card'],
+                            'border': f"1px solid {DARK['border']}",
+                            'borderRadius': '8px',
+                            'overflow': 'hidden',
+                        })
+                    )
+
+                banner = html.Div(
+                    "Ver detalle de rutas debajo del mapa",
+                    style={
+                        'position': 'absolute',
+                        'top': '44px',
+                        'left': '50%',
+                        'transform': 'translateX(-50%)',
+                        'zIndex': 999,
+                        'padding': '4px 12px',
+                        'borderRadius': '8px',
+                        'fontSize': '11px',
+                        'color': DARK['text_secondary'],
+                        'backgroundColor': DARK['card'],
+                        'border': f"1px solid {DARK['border']}",
+                        'textAlign': 'center',
+                        'whiteSpace': 'nowrap',
+                    }
+                )
+                detail_section = html.Div([
+                    html.Div("Detalle por Zona", style={
+                        'fontSize': '14px', 'fontWeight': '700',
+                        'color': DARK['text'], 'marginBottom': '12px',
+                    }),
+                    html.Div(cards, style={
+                        'display': 'grid',
+                        'gridTemplateColumns': 'repeat(auto-fill, minmax(280px, 1fr))',
+                        'gap': '12px',
+                    }),
+                ], style={
+                    'padding': '16px',
+                    'backgroundColor': DARK['surface'],
+                    'marginTop': '8px',
+                    'borderRadius': '8px',
+                    'border': f"1px solid {DARK['border']}",
+                })
 
             # Clientes sin ventas (marcados con circulo rojo)
             if len(df_sin_ventas) > 0:
@@ -502,8 +618,9 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
     else:
         fig = px.scatter_map(lat=[-24.8], lon=[-65.4], zoom=7, map_style='open-street-map')
         fig.update_layout(margin={'r': 0, 't': 0, 'l': 0, 'b': 0})
+        return fig, [], [], []
 
-    return fig, route_badges
+    return fig, route_badges, banner, detail_section
 
 
 # =============================================================================
