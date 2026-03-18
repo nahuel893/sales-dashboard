@@ -620,7 +620,12 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     lat=df_heladera['latitud'],
                     lon=df_heladera['longitud'],
                     mode='markers',
-                    marker=dict(symbol='snowflake', size=14, color='#00d4ff'),
+                    marker=dict(
+                        size=20,
+                        color='rgba(0,0,0,0)',
+                        opacity=1.0,
+                        line=dict(width=2, color='#00d4ff'),
+                    ),
                     hoverinfo='skip',
                     showlegend=True,
                 ))
