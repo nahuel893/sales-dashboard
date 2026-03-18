@@ -619,8 +619,9 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     name='❄ Equipo frío',
                     lat=df_heladera['latitud'],
                     lon=df_heladera['longitud'],
-                    mode='markers',
-                    marker=dict(size=14, color='#00d4ff', opacity=0.7),
+                    mode='text',
+                    text='❄',
+                    textfont=dict(size=16, color='#00d4ff'),
                     hoverinfo='skip',
                     showlegend=True,
                 ))
