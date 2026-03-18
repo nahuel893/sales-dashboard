@@ -225,7 +225,8 @@ def _process_ventas_df(df):
         'canal': 'Sin canal', 'segmento': 'Sin segmento',
         'subcanal': 'Sin subcanal', 'ramo': 'Sin ramo',
         'lista_precio': 'Sin lista', 'sucursal': 'Sin sucursal',
-        'preventista_fv1': '', 'preventista_fv4': ''
+        'preventista_fv1': '', 'preventista_fv4': '',
+        'tiene_equipo_frio': False, 'cantidad_equipos': 0
     })
 
     df['ruta'] = df.apply(
@@ -269,6 +270,13 @@ def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None
         GROUP BY f.id_cliente
     """
 
+    equipos_subquery = """
+        SELECT id_cliente, SUM(saldo) AS cantidad_equipos
+        FROM gold.fact_comodatos
+        WHERE unidad_negocio = 'EQUIPOS DE FRIO' AND saldo > 0
+        GROUP BY id_cliente
+    """
+
     # --- Filtros de cliente (sobre dim_cliente) ---
     where_cliente = ["c.anulado = FALSE"]
     where_cliente.extend(_build_cliente_filters(rutas, preventistas, fuerza_venta, sucursales_permitidas))
@@ -297,9 +305,12 @@ def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None
             c.id_ruta_fv4,
             c.des_personal_fv1 as preventista_fv1,
             c.des_personal_fv4 as preventista_fv4,
-            COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal
+            COALESCE(c.des_sucursal, 'Sin sucursal') as sucursal,
+            (ef.id_cliente IS NOT NULL) AS tiene_equipo_frio,
+            COALESCE(ef.cantidad_equipos, 0) AS cantidad_equipos
         FROM gold.dim_cliente c
         LEFT JOIN ({ventas_subquery}) v ON c.id_cliente = v.id_cliente
+        LEFT JOIN ({equipos_subquery}) ef ON c.id_cliente = ef.id_cliente
         WHERE {where_sql}
     """
 

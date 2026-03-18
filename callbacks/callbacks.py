@@ -351,7 +351,12 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
             def _build_hover_lines(df):
                 """Pre-formatea columnas de info alineadas para hover."""
                 W = 18  # ancho primera columna de valor
-                df['_h_line1'] = df.apply(lambda r: f"Ruta  {str(r['ruta']):<{W}}Prev  {r['preventista']}", axis=1)
+                def _line1(r):
+                    base = f"Ruta  {str(r['ruta']):<{W}}Prev  {r['preventista']}"
+                    if r.get('tiene_equipo_frio'):
+                        base += f"  ❄ {int(r['cantidad_equipos'])}"
+                    return base
+                df['_h_line1'] = df.apply(_line1, axis=1)
                 df['_h_line2'] = df.apply(lambda r: f"LP    {str(r['lista_precio']):<{W}}Suc   {r['sucursal']}", axis=1)
                 return df
 
@@ -603,6 +608,21 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     ),
                     customdata=df_con_ventas[['fantasia', '_h_line1', '_h_line2',
                                               '_h_metrics', 'desglose_generico', 'id_cliente']].values
+                ))
+
+            df_heladera = df_mapa[
+                (df_mapa['tiene_equipo_frio'] == True) &
+                df_mapa['latitud'].notna() & df_mapa['longitud'].notna()
+            ].copy()
+            if len(df_heladera) > 0:
+                fig.add_trace(go.Scattermap(
+                    name='❄ Equipo frío',
+                    lat=df_heladera['latitud'],
+                    lon=df_heladera['longitud'],
+                    mode='markers',
+                    marker=dict(size=14, color='#00d4ff', opacity=0.7),
+                    hoverinfo='skip',
+                    showlegend=True,
                 ))
 
             fig.update_layout(
