@@ -620,7 +620,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     lat=df_heladera['latitud'],
                     lon=df_heladera['longitud'],
                     mode='markers',
-                    marker=dict(size=14, color='#00d4ff', opacity=0.7),
+                    marker=dict(size=5, color='#00d4ff', opacity=1.0),
                     hoverinfo='skip',
                     showlegend=True,
                 ))
