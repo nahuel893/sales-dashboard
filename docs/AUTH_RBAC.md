@@ -98,6 +98,16 @@ callbacks/
 4. Login exitoso → `login_user()` → redirect a `/`
 5. Logout → `/logout` → `logout_user()` → redirect a `/login`
 
+### Deployment con gunicorn
+
+SQLite no soporta escrituras concurrentes desde multiples procesos. Al deployar con gunicorn, usar **un unico worker con threads**:
+
+```bash
+gunicorn app:server --workers 1 --threads 4 --bind 0.0.0.0:8050
+```
+
+Multiples workers (`--workers N` con N > 1) pueden generar errores de "database is locked" bajo carga.
+
 ### Filtrado RBAC por sucursal
 
 La funcion central es `get_user_sucursales()` en `auth/utils.py`:
@@ -134,30 +144,34 @@ La card "Gestion de Usuarios" aparece en la pagina de inicio solo para admins.
 
 ## Base de datos
 
-### Schema `app`
+### Storage: SQLite local (`auth/auth.db`)
 
-```sql
--- Roles del sistema
-app.roles (id, name, description)
-  -- admin, gerente, supervisor
+Los datos de autenticacion (usuarios, roles, sesiones) se almacenan en un archivo SQLite separado de PostgreSQL.
 
--- Usuarios
-app.users (id, username, password_hash, full_name, role_id, is_active)
+- **Ubicacion**: `auth/auth.db` en la raiz del proyecto
+- **Excluido de git**: listado en `.gitignore` — debe incluirse en el backup del servidor por separado
+- **Creacion automatica**: `python auth/seed.py` crea el archivo si no existe
 
--- Sucursales asignadas (M2M, solo relevante para supervisores)
-app.user_sucursales (id, user_id, id_sucursal)
-  -- UNIQUE(user_id, id_sucursal)
-
--- Sesiones server-side (flask-session)
-app.sessions (session_id, data, expiry)
+```
+auth/auth.db
+├── roles         (id, name, description)
+├── users         (id, username, password_hash, full_name, role_id, is_active)
+├── user_sucursales (id, user_id, id_sucursal)  -- UNIQUE(user_id, id_sucursal)
+└── sessions      (sesiones server-side de flask-session)
 ```
 
 ### Seguridad
 
-- Passwords hasheados con SHA-256 + salt aleatorio de 32 chars
-- Sesiones server-side en PostgreSQL (no cookies con datos sensibles)
+- Passwords hasheados con bcrypt
+- Hashes SHA-256 legacy (`salt:hex`) son re-hasheados a bcrypt transparentemente en el proximo login
+- Sesiones server-side en SQLite (no cookies con datos sensibles)
 - Duracion de sesion: 24 horas
 - Usuarios inactivos (`is_active = false`) no pueden hacer login
+
+### Nota de migracion
+
+Los usuarios existentes en `app.*` (PostgreSQL) se pierden al migrar a SQLite.
+Ejecutar `python auth/seed.py` para crear el usuario admin inicial y distribuir nuevas credenciales.
 
 ## Retrocompatibilidad
 

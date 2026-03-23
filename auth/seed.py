@@ -12,64 +12,51 @@ from pathlib import Path
 # Agregar raíz del proyecto al path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy import text
-from database import engine
+from database import auth_engine, AuthSessionLocal
+from auth.models import Base, Role, User
 from auth.utils import hash_password
 
 
 def seed():
-    """Crea schema, tablas, roles y admin inicial."""
+    """Crea tablas, roles y admin inicial."""
     print("Inicializando schema de autenticación...")
 
-    # Leer y ejecutar schema.sql
-    schema_path = Path(__file__).parent / 'schema.sql'
-    schema_sql = schema_path.read_text()
+    # Crear tablas via ORM
+    Base.metadata.create_all(auth_engine)
+    print("  - Schema y tablas creados")
 
-    with engine.begin() as conn:
-        # Ejecutar cada statement del schema
-        for statement in schema_sql.split(';'):
-            # Quitar líneas de comentario y espacios vacíos
-            lines = [l for l in statement.splitlines() if l.strip() and not l.strip().startswith('--')]
-            sql = '\n'.join(lines).strip()
-            if sql:
-                conn.execute(text(sql))
-        print("  - Schema y tablas creados")
-
-        # Insertar roles (idempotente via ON CONFLICT)
+    db = AuthSessionLocal()
+    try:
+        # Insertar roles (idempotente)
         roles = [
             ('admin', 'Acceso total + gestión de usuarios'),
             ('gerente', 'Ve todos los datos de todas las sucursales'),
             ('supervisor', 'Ve solo datos de sus sucursales asignadas'),
         ]
         for name, description in roles:
-            conn.execute(text("""
-                INSERT INTO app.roles (name, description)
-                VALUES (:name, :description)
-                ON CONFLICT (name) DO NOTHING
-            """), {'name': name, 'description': description})
+            existing_role = db.query(Role).filter_by(name=name).first()
+            if not existing_role:
+                db.add(Role(name=name, description=description))
+        db.commit()
         print("  - Roles creados: admin, gerente, supervisor")
 
         # Crear admin inicial (idempotente)
-        existing = conn.execute(
-            text("SELECT id FROM app.users WHERE username = 'admin'")
-        ).fetchone()
-
+        existing = db.query(User).filter_by(username='admin').first()
         if not existing:
-            admin_role = conn.execute(
-                text("SELECT id FROM app.roles WHERE name = 'admin'")
-            ).fetchone()
-            conn.execute(text("""
-                INSERT INTO app.users (username, password_hash, full_name, role_id)
-                VALUES (:username, :password_hash, :full_name, :role_id)
-            """), {
-                'username': 'admin',
-                'password_hash': hash_password('admin'),
-                'full_name': 'Administrador',
-                'role_id': admin_role[0],
-            })
+            admin_role = db.query(Role).filter_by(name='admin').first()
+            db.add(User(
+                username='admin',
+                password_hash=hash_password('admin'),
+                full_name='Administrador',
+                role_id=admin_role.id,
+                is_active=True,
+            ))
+            db.commit()
             print("  - Usuario admin creado (password: admin) — CAMBIAR EN PRODUCCIÓN")
         else:
             print("  - Usuario admin ya existe, omitido")
+    finally:
+        db.close()
 
     print("Inicialización completada.")
 

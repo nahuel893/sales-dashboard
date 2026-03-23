@@ -2,21 +2,33 @@
 Middleware de autenticación: inicialización de Flask-Login, Flask-Session
 y protección de rutas con before_request.
 """
-from flask import redirect, request, session
+import time
+from collections import defaultdict
+from flask import redirect, request, session, jsonify
 from flask_login import LoginManager, current_user
 from flask_session import Session
-from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+
+from pathlib import Path
+from database import auth_engine
+
+SESSION_DIR = Path(__file__).parent.parent / 'session_data'
 
 # Paths públicos que no requieren autenticación
 PUBLIC_PATHS = {
     '/login',
-    '/_dash-layout',
-    '/_dash-dependencies',
     '/assets/',
     '/_favicon.ico',
-    '/_reload-hash',
+    '/_dash-component-suites/',
+    '/_dash-gc/',
+    '/_dash-layout',
+    '/_dash-dependencies',
 }
+
+# Dash internal endpoints: layout and dependencies must be public (Dash JS
+# needs them to bootstrap ANY page, including /login). Only /_reload-hash
+# is blocked — it exposes package versions without providing functionality.
+DASH_BLOCKED_PATHS = {'/_reload-hash'}
 
 
 def _is_public_path(path):
@@ -29,19 +41,16 @@ def _is_public_path(path):
     return False
 
 
-def init_auth(flask_app, db_url):
+def init_auth(flask_app):
     """Configura Flask-Login y Flask-Session en el servidor Flask de Dash.
 
     Args:
         flask_app: instancia de Flask (app.server)
-        db_url: string de conexión a PostgreSQL
     """
-    # Configurar sesiones server-side en PostgreSQL
-    flask_app.config['SESSION_TYPE'] = 'sqlalchemy'
-    engine = create_engine(db_url)
-    flask_app.config['SESSION_SQLALCHEMY'] = engine
-    flask_app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'
-    flask_app.config['SESSION_SQLALCHEMY_SCHEMA'] = 'app'
+    # Configurar sesiones server-side en filesystem
+    SESSION_DIR.mkdir(exist_ok=True)
+    flask_app.config['SESSION_TYPE'] = 'filesystem'
+    flask_app.config['SESSION_FILE_DIR'] = str(SESSION_DIR)
     flask_app.config['SESSION_PERMANENT'] = True
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24h
 
@@ -53,29 +62,80 @@ def init_auth(flask_app, db_url):
     login_manager.login_view = '/login'
 
     # Session factory para cargar usuarios
-    _SessionLocal = sessionmaker(bind=engine)
+    _SessionLocal = sessionmaker(bind=auth_engine)
 
     @login_manager.user_loader
     def load_user(user_id):
         from auth.models import User
+        from sqlalchemy.orm import joinedload
         db = _SessionLocal()
         try:
-            return db.query(User).get(int(user_id))
+            user = (
+                db.query(User)
+                .options(joinedload(User.role), joinedload(User.sucursales))
+                .filter(User.id == int(user_id))
+                .first()
+            )
+            db.expunge_all()
+            return user
         finally:
             db.close()
 
 
-def protect_all_routes(flask_app):
-    """Protege TODAS las rutas (incluyendo callbacks Dash) con before_request."""
+def protect_all_routes(flask_app, allowed_origins=None):
+    """Protege TODAS las rutas (incluyendo callbacks Dash) con before_request.
+
+    Args:
+        flask_app: instancia de Flask (app.server)
+        allowed_origins: set of allowed Origin values for POST requests.
+            If None or empty, Origin validation is skipped (permissive).
+    """
+
+    # C-02: Rate limiting for unauthenticated users on /_dash-update-component
+    # Manual tracking: {ip: [timestamp, ...]} — simpler than flask-limiter + Dash integration
+    RATE_LIMIT_MAX = 5          # max requests per window
+    RATE_LIMIT_WINDOW = 60      # window in seconds
+    _rate_limit_store = defaultdict(list)
+
+    def _is_rate_limited(ip):
+        """Check if IP exceeds rate limit. Returns True if limited."""
+        now = time.time()
+        cutoff = now - RATE_LIMIT_WINDOW
+        # Prune old entries
+        timestamps = [t for t in _rate_limit_store[ip] if t > cutoff]
+        if not timestamps:
+            del _rate_limit_store[ip]
+            timestamps = []
+        else:
+            _rate_limit_store[ip] = timestamps
+        if len(timestamps) >= RATE_LIMIT_MAX:
+            return True
+        _rate_limit_store[ip].append(now)
+        return False
 
     @flask_app.before_request
     def require_login():
+        # A-03: Origin validation on POST requests
+        if request.method == 'POST' and allowed_origins:
+            origin = request.headers.get('Origin')
+            if origin and origin not in allowed_origins:
+                return jsonify({"error": "origin rejected"}), 403
+
+        # C-01: Block /_reload-hash for unauthenticated users (exposes versions)
+        if request.path in DASH_BLOCKED_PATHS and not current_user.is_authenticated:
+            return jsonify({"error": "forbidden"}), 403
+
         if _is_public_path(request.path):
             return None
+        # Los callbacks Dash (_dash-update-component) se dejan pasar —
+        # el routing callback en app.py maneja la redirección a /login
+        if request.path.startswith('/_dash-update-component'):
+            # C-02: Rate limit unauthenticated users (5/min per IP)
+            if not current_user.is_authenticated:
+                ip = request.remote_addr or '0.0.0.0'
+                if _is_rate_limited(ip):
+                    return jsonify({"error": "rate limit exceeded"}), 429
+            return None
         if not current_user.is_authenticated:
-            # Para requests de callbacks Dash, retornar 401
-            if request.path.startswith('/_dash-update-component'):
-                from flask import abort
-                abort(401)
             return redirect('/login')
         return None

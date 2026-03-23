@@ -6,13 +6,13 @@ from flask import request as flask_request
 from flask_login import login_user, logout_user, current_user
 
 from auth.models import User
-from auth.utils import check_password
-from database import SessionLocal
+from auth.utils import check_password, hash_password
+from database import AuthSessionLocal
 
 
 @callback(
     [Output('login-error', 'children'),
-     Output('login-url', 'href')],
+     Output('login-redirect', 'children')],
     Input('login-button', 'n_clicks'),
     [State('login-username', 'value'),
      State('login-password', 'value')],
@@ -20,18 +20,22 @@ from database import SessionLocal
 )
 def handle_login(n_clicks, username, password):
     """Valida credenciales y hace login."""
+    from dash import dcc
     if not n_clicks:
         return no_update, no_update
 
     if not username or not password:
         return "Ingrese usuario y contraseña", no_update
 
-    db = SessionLocal()
+    db = AuthSessionLocal()
     try:
         user = db.query(User).filter_by(username=username).first()
         if user and user.is_active and check_password(password, user.password_hash):
+            if not user.password_hash.startswith('$2b$'):
+                user.password_hash = hash_password(password)
+                db.commit()
             login_user(user, remember=True)
-            return "", "/"
+            return "", dcc.Location(href='/', id='login-nav', refresh=True)
         return "Usuario o contraseña incorrectos", no_update
     finally:
         db.close()

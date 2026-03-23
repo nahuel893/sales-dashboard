@@ -11,7 +11,6 @@ Base = declarative_base()
 
 class Role(Base):
     __tablename__ = 'roles'
-    __table_args__ = {'schema': 'app'}
 
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False)
@@ -22,13 +21,12 @@ class Role(Base):
 
 class User(UserMixin, Base):
     __tablename__ = 'users'
-    __table_args__ = {'schema': 'app'}
 
     id = Column(Integer, primary_key=True)
     username = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(200), nullable=False)
-    role_id = Column(Integer, ForeignKey('app.roles.id'), nullable=False)
+    role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
     role = relationship('Role', back_populates='users')
@@ -52,11 +50,10 @@ class UserSucursal(Base):
     __tablename__ = 'user_sucursales'
     __table_args__ = (
         UniqueConstraint('user_id', 'id_sucursal', name='uq_user_sucursal'),
-        {'schema': 'app'},
     )
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('app.users.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     id_sucursal = Column(Integer, nullable=False)
 
     user = relationship('User', back_populates='sucursales')

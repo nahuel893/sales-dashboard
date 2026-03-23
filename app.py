@@ -14,7 +14,7 @@ import dash_mantine_components as dmc
 
 # Imports locales
 from config import SERVER_CONFIG
-from database import settings, SQLALCHEMY_DATABASE_URL_STR
+from database import settings
 from data.queries import (
     obtener_genericos, obtener_marcas, obtener_rutas, obtener_preventistas,
     obtener_rango_fechas, obtener_anios_disponibles, cargar_ventas_por_cliente
@@ -64,8 +64,27 @@ if AUTH_ENABLED:
     server.secret_key = settings.SECRET_KEY
     from auth.middleware import init_auth, protect_all_routes
     print("Configurando autenticación...")
-    init_auth(server, SQLALCHEMY_DATABASE_URL_STR)
-    protect_all_routes(server)
+    init_auth(server)
+    allowed_origins = None
+    if settings.ALLOWED_ORIGINS:
+        allowed_origins = set(o.strip() for o in settings.ALLOWED_ORIGINS.split(',') if o.strip())
+    protect_all_routes(server, allowed_origins=allowed_origins)
+
+    # Security headers (A-01, A-02)
+    SECURITY_HEADERS = {
+        'X-Frame-Options': 'DENY',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    }
+
+    @server.after_request
+    def apply_security_headers(response):
+        for header, value in SECURITY_HEADERS.items():
+            response.headers[header] = value
+        response.headers.pop('Server', None)
+        return response
+
     print("  - Autenticación habilitada")
 else:
     print("  - Autenticación deshabilitada (SECRET_KEY no configurada)")
@@ -114,6 +133,12 @@ def display_page(pathname):
     if AUTH_ENABLED and pathname == '/login':
         from layouts.login_layout import create_login_layout
         return create_login_layout()
+
+    # Proteger todas las rutas: redirigir a /login si no está autenticado
+    if AUTH_ENABLED:
+        from flask_login import current_user
+        if not current_user.is_authenticated:
+            return dcc.Location(href='/login', id='auth-redirect')
     if AUTH_ENABLED and pathname == '/logout':
         from flask_login import logout_user, current_user
         if current_user.is_authenticated:

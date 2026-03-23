@@ -105,6 +105,7 @@ config.local.py
 *.db
 *.sqlite
 *.sqlite3
+auth/auth.db
 
 # Dash specific
 .dash_jwt_secret
@@ -130,3 +131,4 @@ exports/
 # Cache
 .cache/
 cache/
+session_data/

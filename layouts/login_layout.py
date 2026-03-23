@@ -14,7 +14,7 @@ def create_login_layout():
     }
 
     return html.Div([
-        dcc.Location(id='login-url', refresh=True),
+        html.Div(id='login-redirect'),
         html.Div([
             html.Div([
                 html.H1("Medallion ETL", style={

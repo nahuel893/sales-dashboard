@@ -1,3 +1,4 @@
+-- OBSOLETO: el schema se crea automáticamente via Base.metadata.create_all(auth_engine) en seed.py
 -- Schema de autenticación y autorización para el dashboard.
 -- Ejecutar con: psql -f auth/schema.sql o via auth/seed.py
 

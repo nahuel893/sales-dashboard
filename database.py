@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = Field(default="localhost", description="IP o hostname del servidor")
     POSTGRES_PORT: int = Field(default=5432, description="Puerto de PostgreSQL")
     SECRET_KEY: str = Field(default="", description="Secret key para sesiones (vacio = auth desactivada)")
+    ALLOWED_ORIGINS: str = Field(default="", description="Comma-separated allowed origins for POST validation (empty = skip check)")
 
 
 settings = Settings()
@@ -45,6 +46,13 @@ SQLALCHEMY_DATABASE_URL_STR = (
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Auth engine — SQLite local (usuarios y roles; sesiones via filesystem)
+SQLITE_AUTH_PATH = PROJECT_ROOT / 'auth' / 'auth.db'
+SQLITE_AUTH_URL = f"sqlite:///{SQLITE_AUTH_PATH}"
+auth_engine = create_engine(SQLITE_AUTH_URL, connect_args={"check_same_thread": False})
+AuthSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=auth_engine)
+
 
 def get_db():
     """Generador de sesion de base de datos."""

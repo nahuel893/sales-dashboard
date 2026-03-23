@@ -6,7 +6,7 @@ from dash import callback, Output, Input, State, html, no_update
 from sqlalchemy.orm import Session
 
 from config import DARK
-from database import SessionLocal
+from database import AuthSessionLocal
 from auth.models import User, Role, UserSucursal
 from auth.utils import hash_password
 
@@ -76,7 +76,7 @@ def _guardar_usuario(edit_user_id, username, fullname, password, role_name, sucu
     if not fullname or not fullname.strip():
         return _feedback("Nombre completo requerido", 'error')
 
-    db = SessionLocal()
+    db = AuthSessionLocal()
     try:
         # Obtener rol
         role = db.query(Role).filter(Role.name == role_name).first()
@@ -166,7 +166,7 @@ def editar_usuario(n_clicks_list):
 
     user_id = ctx.triggered_id['index']
 
-    db = SessionLocal()
+    db = AuthSessionLocal()
     try:
         user = db.query(User).get(user_id)
         if not user:
@@ -200,7 +200,7 @@ def toggle_usuario_activo(n_clicks_list):
 
     user_id = ctx.triggered_id['index']
 
-    db = SessionLocal()
+    db = AuthSessionLocal()
     try:
         user = db.query(User).get(user_id)
         if user:
@@ -214,7 +214,7 @@ def toggle_usuario_activo(n_clicks_list):
 
 def _generar_tabla_usuarios():
     """Genera la tabla HTML de usuarios."""
-    db = SessionLocal()
+    db = AuthSessionLocal()
     try:
         users = db.query(User).join(Role).order_by(Role.name, User.username).all()
 
