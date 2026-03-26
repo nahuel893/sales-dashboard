@@ -8,6 +8,7 @@ from dash import callback, Output, Input, html
 
 from data.queries import cargar_ventas_por_fecha
 from config import DARK
+from cache import filtrar_sucursales
 from auth.utils import get_user_sucursales, log_audit
 
 # Colores para las líneas de años
@@ -95,8 +96,8 @@ def actualizar_grafico_comparacion_anual(anios_seleccionados, canales, subcanale
             fecha_inicio, fecha_fin,
             canales, subcanales, localidades, listas_precio, sucursales,
             genericos, marcas, rutas, preventistas, fv,
-            sucursales_permitidas=suc_perm
         )
+        df_fecha = filtrar_sucursales(df_fecha, suc_perm)
 
         if len(df_fecha) > 0:
             # Convertir fecha y extraer mes
@@ -189,8 +190,8 @@ def actualizar_tabla_comparativa(anios_seleccionados, canales, subcanales, local
             fecha_inicio, fecha_fin,
             canales, subcanales, localidades, listas_precio, sucursales,
             genericos, marcas, rutas, preventistas, fv,
-            sucursales_permitidas=suc_perm
         )
+        df_fecha = filtrar_sucursales(df_fecha, suc_perm)
 
         if len(df_fecha) > 0:
             df_fecha['fecha'] = pd.to_datetime(df_fecha['fecha'])

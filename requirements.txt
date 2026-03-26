@@ -21,6 +21,10 @@ pydantic-settings>=2.0.0
 # Optional: For convex hull zones (geographic zones)
 scipy>=1.11.0
 
+# Cache
+flask-caching>=2.1.0
+redis>=5.0.0
+
 # Authentication
 flask-login>=0.6.3
 flask-session>=0.8.0

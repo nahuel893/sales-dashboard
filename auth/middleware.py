@@ -47,10 +47,17 @@ def init_auth(flask_app):
     Args:
         flask_app: instancia de Flask (app.server)
     """
-    # Configurar sesiones server-side en filesystem
-    SESSION_DIR.mkdir(exist_ok=True)
-    flask_app.config['SESSION_TYPE'] = 'filesystem'
-    flask_app.config['SESSION_FILE_DIR'] = str(SESSION_DIR)
+    # Configurar sesiones server-side
+    from database import settings
+    if settings.REDIS_URL:
+        import redis as redis_lib
+        flask_app.config['SESSION_TYPE'] = 'redis'
+        flask_app.config['SESSION_REDIS'] = redis_lib.from_url(settings.REDIS_URL)
+        flask_app.config['SESSION_KEY_PREFIX'] = 'sd_session:'
+    else:
+        SESSION_DIR.mkdir(exist_ok=True)
+        flask_app.config['SESSION_TYPE'] = 'filesystem'
+        flask_app.config['SESSION_FILE_DIR'] = str(SESSION_DIR)
     flask_app.config['SESSION_PERMANENT'] = True
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 min
 
@@ -92,26 +99,38 @@ def protect_all_routes(flask_app, allowed_origins=None):
     """
 
     # C-02: Rate limiting for unauthenticated users on /_dash-update-component
-    # Manual tracking: {ip: [timestamp, ...]} — simpler than flask-limiter + Dash integration
     RATE_LIMIT_MAX = 5          # max requests per window
     RATE_LIMIT_WINDOW = 60      # window in seconds
-    _rate_limit_store = defaultdict(list)
 
-    def _is_rate_limited(ip):
-        """Check if IP exceeds rate limit. Returns True if limited."""
-        now = time.time()
-        cutoff = now - RATE_LIMIT_WINDOW
-        # Prune old entries
-        timestamps = [t for t in _rate_limit_store[ip] if t > cutoff]
-        if not timestamps:
-            del _rate_limit_store[ip]
-            timestamps = []
-        else:
-            _rate_limit_store[ip] = timestamps
-        if len(timestamps) >= RATE_LIMIT_MAX:
-            return True
-        _rate_limit_store[ip].append(now)
-        return False
+    from database import settings as _settings
+    if _settings.REDIS_URL:
+        import redis as redis_lib
+        _redis_rl = redis_lib.from_url(_settings.REDIS_URL)
+
+        def _is_rate_limited(ip):
+            """Redis-backed rate limiter (shared across workers)."""
+            key = f"sd_rl:{ip}"
+            count = _redis_rl.incr(key)
+            if count == 1:
+                _redis_rl.expire(key, RATE_LIMIT_WINDOW)
+            return count > RATE_LIMIT_MAX
+    else:
+        _rate_limit_store = defaultdict(list)
+
+        def _is_rate_limited(ip):
+            """In-memory rate limiter (per-worker)."""
+            now = time.time()
+            cutoff = now - RATE_LIMIT_WINDOW
+            timestamps = [t for t in _rate_limit_store[ip] if t > cutoff]
+            if not timestamps:
+                del _rate_limit_store[ip]
+                timestamps = []
+            else:
+                _rate_limit_store[ip] = timestamps
+            if len(timestamps) >= RATE_LIMIT_MAX:
+                return True
+            _rate_limit_store[ip].append(now)
+            return False
 
     @flask_app.before_request
     def require_login():

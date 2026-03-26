@@ -5,8 +5,11 @@ Todas las queries SQL y carga de datos del dashboard.
 import pandas as pd
 from database import engine
 from config import GENERICOS_EXCLUIDOS
+from cache import cache, hashable_args, CACHE_TTL_DIM, CACHE_TTL_QUERY
 
 
+@hashable_args
+@cache.memoize(CACHE_TTL_DIM)
 def obtener_genericos():
     """Obtiene lista de genericos disponibles (excluye GENERICOS_EXCLUIDOS)."""
     excl = ", ".join(f"'{g}'" for g in GENERICOS_EXCLUIDOS)
@@ -22,6 +25,8 @@ def obtener_genericos():
     return df['generico'].tolist()
 
 
+@hashable_args
+@cache.memoize(CACHE_TTL_DIM)
 def obtener_marcas(genericos=None):
     """Obtiene lista de marcas disponibles, opcionalmente filtradas por genéricos."""
     if genericos and len(genericos) > 0:
@@ -42,6 +47,8 @@ def obtener_marcas(genericos=None):
     return df['marca'].tolist()
 
 
+@hashable_args
+@cache.memoize(CACHE_TTL_DIM)
 def obtener_rutas(fuerza_venta=None):
     """Obtiene lista de rutas con clave compuesta (id_sucursal, id_ruta).
     Retorna lista de dicts con label y value para dmc.MultiSelect.
@@ -82,6 +89,8 @@ def obtener_rutas(fuerza_venta=None):
     ]
 
 
+@hashable_args
+@cache.memoize(CACHE_TTL_DIM)
 def obtener_preventistas(fuerza_venta=None):
     """Obtiene lista de preventistas disponibles según la fuerza de venta seleccionada."""
     if fuerza_venta == 'FV1':
@@ -110,6 +119,8 @@ def obtener_preventistas(fuerza_venta=None):
     return df['preventista'].tolist()
 
 
+@hashable_args
+@cache.memoize(CACHE_TTL_DIM)
 def obtener_anios_disponibles():
     """Obtiene la lista de años disponibles en fact_ventas."""
     query = """
@@ -122,6 +133,8 @@ def obtener_anios_disponibles():
     return df['anio'].tolist()
 
 
+@hashable_args
+@cache.memoize(CACHE_TTL_DIM)
 def obtener_rango_fechas():
     """Obtiene el rango de fechas disponible en fact_ventas."""
     query = """
@@ -187,14 +200,9 @@ def _build_sucursales_where(sucursales_permitidas, alias='c'):
     return f"{alias}.id_sucursal IN ({ids})"
 
 
-def _build_cliente_filters(rutas, preventistas, fuerza_venta, sucursales_permitidas=None):
-    """Construye where para filtros de cliente (ruta/preventista + RBAC)."""
+def _build_cliente_filters(rutas, preventistas, fuerza_venta):
+    """Construye where para filtros de cliente (ruta/preventista)."""
     where_cliente = []
-
-    # RBAC: filtro de sucursales permitidas
-    suc_filter = _build_sucursales_where(sucursales_permitidas)
-    if suc_filter:
-        where_cliente.append(suc_filter)
 
     if rutas and len(rutas) > 0:
         ruta_where = _build_ruta_where(rutas, fuerza_venta)
@@ -244,7 +252,9 @@ def _process_ventas_df(df):
     return df
 
 
-def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None):
     """Carga TODOS los clientes activos (anulado=FALSE) de dim_cliente,
     con métricas de ventas del período via LEFT JOIN a fact_ventas."""
 
@@ -279,7 +289,7 @@ def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None
 
     # --- Filtros de cliente (sobre dim_cliente) ---
     where_cliente = ["c.anulado = FALSE"]
-    where_cliente.extend(_build_cliente_filters(rutas, preventistas, fuerza_venta, sucursales_permitidas))
+    where_cliente.extend(_build_cliente_filters(rutas, preventistas, fuerza_venta))
     where_sql = " AND ".join(where_cliente)
 
     query = f"""
@@ -320,7 +330,9 @@ def cargar_ventas_por_cliente(fecha_desde=None, fecha_hasta=None, genericos=None
     return _process_ventas_df(df)
 
 
-def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, granularidad='semana', sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, granularidad='semana'):
     """Carga ventas agregadas por cliente y período partiendo de fact_ventas para incluir TODAS las ventas."""
 
     trunc_map = {
@@ -336,7 +348,7 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
         where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
 
     join_articulo, where_articulo = _build_articulo_filters(genericos, marcas)
-    where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta, sucursales_permitidas)
+    where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta)
 
     if where_articulo:
         where_clauses.extend(where_articulo)
@@ -393,7 +405,9 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
     return df
 
 
-def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, subcanales=None, localidades=None, listas_precio=None, sucursales=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, subcanales=None, localidades=None, listas_precio=None, sucursales=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None):
     """Carga ventas agregadas por fecha para el gráfico de evolución."""
 
     where_clauses = []
@@ -403,11 +417,6 @@ def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, su
 
     # Filtros de cliente (usando gold.dim_cliente)
     join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente"
-
-    # RBAC: filtro de sucursales permitidas
-    suc_filter = _build_sucursales_where(sucursales_permitidas)
-    if suc_filter:
-        where_clauses.append(suc_filter)
 
     if canales and len(canales) > 0:
         canales_escaped = [c.replace("'", "''") for c in canales]
@@ -483,7 +492,9 @@ def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, su
     return df
 
 
-def cargar_ventas_por_cliente_generico(genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, top_n=5, sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def cargar_ventas_por_cliente_generico(genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, top_n=5):
     """Obtiene top N genéricos por cliente con bultos del mes actual y anterior."""
     from datetime import date
 
@@ -500,7 +511,7 @@ def cargar_ventas_por_cliente_generico(genericos=None, marcas=None, rutas=None, 
     where_clauses = [f"COALESCE(a.generico, 'Sin categoria') NOT IN ({excl})"]
 
     join_articulo, where_articulo = _build_articulo_filters(genericos, marcas)
-    where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta, sucursales_permitidas)
+    where_cliente = _build_cliente_filters(rutas, preventistas, fuerza_venta)
 
     if where_articulo:
         where_clauses.extend(where_articulo)
@@ -550,16 +561,10 @@ def cargar_ventas_por_cliente_generico(genericos=None, marcas=None, rutas=None, 
 
 def _build_all_filters(fecha_desde, fecha_hasta, canales, subcanales, localidades,
                        listas_precio, sucursales, genericos, marcas, rutas,
-                       preventistas, fuerza_venta, sucursales_permitidas=None):
+                       preventistas, fuerza_venta):
     """Construye join y where para todos los filtros (reutilizable)."""
     where_clauses = []
     need_cliente = False
-
-    # RBAC: filtro de sucursales permitidas
-    suc_filter = _build_sucursales_where(sucursales_permitidas)
-    if suc_filter:
-        need_cliente = True
-        where_clauses.append(suc_filter)
 
     if fecha_desde and fecha_hasta:
         where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")

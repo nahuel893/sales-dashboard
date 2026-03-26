@@ -5,29 +5,25 @@ Incluye cálculos de targets automáticos, comparación año anterior, y métric
 import pandas as pd
 from datetime import date
 from database import engine
+from cache import cache, hashable_args, CACHE_TTL_DIM, CACHE_TTL_QUERY
 
 
-def _build_filtro_sucursal_ytd(tipo_sucursal, sucursales_permitidas=None):
-    """Construye filtro de sucursal para queries YTD (tipo + RBAC)."""
+def _build_filtro_sucursal_ytd(tipo_sucursal):
+    """Construye filtro de sucursal para queries YTD."""
     filtros = []
     if tipo_sucursal == 'SUCURSALES':
         filtros.append("c.des_sucursal != 'CASA CENTRAL' AND c.des_sucursal LIKE 'SUCURSAL%'")
     elif tipo_sucursal == 'CASA_CENTRAL':
         filtros.append("c.des_sucursal = 'CASA CENTRAL'")
 
-    if sucursales_permitidas is not None:
-        if len(sucursales_permitidas) == 0:
-            filtros.append("c.id_sucursal IN (-1)")
-        else:
-            ids = ", ".join(str(int(s)) for s in sucursales_permitidas)
-            filtros.append(f"c.id_sucursal IN ({ids})")
-
     if filtros:
         return "AND " + " AND ".join(filtros)
     return ""
 
 
-def obtener_ventas_ytd(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def obtener_ventas_ytd(anio, mes_hasta, tipo_sucursal='TODAS'):
     """
     Obtiene ventas acumuladas Year-To-Date hasta el mes indicado.
 
@@ -35,12 +31,11 @@ def obtener_ventas_ytd(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_permit
         anio: Año a consultar
         mes_hasta: Mes hasta el cual acumular (1-12)
         tipo_sucursal: 'TODAS', 'SUCURSALES', 'CASA_CENTRAL'
-        sucursales_permitidas: lista de id_sucursal (RBAC) o None
 
     Returns:
         DataFrame con ventas totales YTD
     """
-    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal, sucursales_permitidas)
+    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal)
 
     query = f"""
         SELECT
@@ -61,11 +56,13 @@ def obtener_ventas_ytd(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_permit
     return df
 
 
-def obtener_ventas_por_mes(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def obtener_ventas_por_mes(anio, mes_hasta, tipo_sucursal='TODAS'):
     """
     Obtiene ventas desglosadas por mes para el año indicado.
     """
-    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal, sucursales_permitidas)
+    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal)
 
     query = f"""
         SELECT
@@ -87,11 +84,13 @@ def obtener_ventas_por_mes(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_pe
     return df
 
 
-def obtener_ventas_por_generico(anio, mes_hasta, top_n=5, tipo_sucursal='TODAS', sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def obtener_ventas_por_generico(anio, mes_hasta, top_n=5, tipo_sucursal='TODAS'):
     """
     Obtiene ventas por genérico (categoría de producto).
     """
-    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal, sucursales_permitidas)
+    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal)
 
     query = f"""
         SELECT
@@ -115,11 +114,13 @@ def obtener_ventas_por_generico(anio, mes_hasta, top_n=5, tipo_sucursal='TODAS',
     return df
 
 
-def obtener_ventas_por_sucursal(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def obtener_ventas_por_sucursal(anio, mes_hasta, tipo_sucursal='TODAS'):
     """
     Obtiene ventas por sucursal (región).
     """
-    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal, sucursales_permitidas)
+    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal)
 
     query = f"""
         SELECT
@@ -141,11 +142,13 @@ def obtener_ventas_por_sucursal(anio, mes_hasta, tipo_sucursal='TODAS', sucursal
     return df
 
 
-def obtener_ventas_por_canal(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def obtener_ventas_por_canal(anio, mes_hasta, tipo_sucursal='TODAS'):
     """
     Obtiene ventas por canal.
     """
-    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal, sucursales_permitidas)
+    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal)
 
     query = f"""
         SELECT
@@ -167,7 +170,7 @@ def obtener_ventas_por_canal(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_
     return df
 
 
-def calcular_target_automatico(anio, mes_hasta, incremento_pct=10, tipo_sucursal='TODAS', sucursales_permitidas=None):
+def calcular_target_automatico(anio, mes_hasta, incremento_pct=10, tipo_sucursal='TODAS'):
     """
     Calcula target automático basado en el año anterior + incremento porcentual.
 
@@ -176,7 +179,6 @@ def calcular_target_automatico(anio, mes_hasta, incremento_pct=10, tipo_sucursal
         mes_hasta: Mes hasta el cual calcular
         incremento_pct: Porcentaje de incremento sobre año anterior (default 10%)
         tipo_sucursal: Filtro de tipo de sucursal
-        sucursales_permitidas: lista de id_sucursal (RBAC) o None
 
     Returns:
         dict con target total y por mes
@@ -184,14 +186,14 @@ def calcular_target_automatico(anio, mes_hasta, incremento_pct=10, tipo_sucursal
     anio_anterior = anio - 1
 
     # Ventas del año anterior
-    df_anterior = obtener_ventas_ytd(anio_anterior, mes_hasta, tipo_sucursal, sucursales_permitidas)
+    df_anterior = obtener_ventas_ytd(anio_anterior, mes_hasta, tipo_sucursal)
     ventas_anterior = df_anterior['bultos'].iloc[0] if len(df_anterior) > 0 else 0
 
     # Target = año anterior * (1 + incremento)
     target_total = ventas_anterior * (1 + incremento_pct / 100) if ventas_anterior else 0
 
     # Ventas por mes del año anterior para targets mensuales
-    df_meses_anterior = obtener_ventas_por_mes(anio_anterior, mes_hasta, tipo_sucursal, sucursales_permitidas)
+    df_meses_anterior = obtener_ventas_por_mes(anio_anterior, mes_hasta, tipo_sucursal)
 
     targets_por_mes = {}
     for _, row in df_meses_anterior.iterrows():
@@ -204,12 +206,12 @@ def calcular_target_automatico(anio, mes_hasta, incremento_pct=10, tipo_sucursal
     }
 
 
-def calcular_targets_por_generico(anio, mes_hasta, incremento_pct=10, top_n=5, tipo_sucursal='TODAS', sucursales_permitidas=None):
+def calcular_targets_por_generico(anio, mes_hasta, incremento_pct=10, top_n=5, tipo_sucursal='TODAS'):
     """
     Calcula targets por genérico basado en año anterior.
     """
     anio_anterior = anio - 1
-    df_anterior = obtener_ventas_por_generico(anio_anterior, mes_hasta, top_n, tipo_sucursal, sucursales_permitidas)
+    df_anterior = obtener_ventas_por_generico(anio_anterior, mes_hasta, top_n, tipo_sucursal)
 
     targets = {}
     for _, row in df_anterior.iterrows():
@@ -218,12 +220,12 @@ def calcular_targets_por_generico(anio, mes_hasta, incremento_pct=10, top_n=5, t
     return targets
 
 
-def calcular_targets_por_sucursal(anio, mes_hasta, incremento_pct=10, tipo_sucursal='TODAS', sucursales_permitidas=None):
+def calcular_targets_por_sucursal(anio, mes_hasta, incremento_pct=10, tipo_sucursal='TODAS'):
     """
     Calcula targets por sucursal basado en año anterior.
     """
     anio_anterior = anio - 1
-    df_anterior = obtener_ventas_por_sucursal(anio_anterior, mes_hasta, tipo_sucursal, sucursales_permitidas)
+    df_anterior = obtener_ventas_por_sucursal(anio_anterior, mes_hasta, tipo_sucursal)
 
     targets = {}
     for _, row in df_anterior.iterrows():
@@ -232,14 +234,14 @@ def calcular_targets_por_sucursal(anio, mes_hasta, incremento_pct=10, tipo_sucur
     return targets
 
 
-def calcular_crecimiento_mensual(anio, mes_hasta, tipo_sucursal='TODAS', sucursales_permitidas=None):
+def calcular_crecimiento_mensual(anio, mes_hasta, tipo_sucursal='TODAS'):
     """
     Calcula el crecimiento porcentual mes a mes vs año anterior.
     """
     anio_anterior = anio - 1
 
-    df_actual = obtener_ventas_por_mes(anio, mes_hasta, tipo_sucursal, sucursales_permitidas)
-    df_anterior = obtener_ventas_por_mes(anio_anterior, mes_hasta, tipo_sucursal, sucursales_permitidas)
+    df_actual = obtener_ventas_por_mes(anio, mes_hasta, tipo_sucursal)
+    df_anterior = obtener_ventas_por_mes(anio_anterior, mes_hasta, tipo_sucursal)
 
     # Crear diccionario del año anterior
     ventas_anterior = {int(row['mes']): row['bultos'] for _, row in df_anterior.iterrows()}
@@ -266,13 +268,15 @@ def calcular_crecimiento_mensual(anio, mes_hasta, tipo_sucursal='TODAS', sucursa
     return pd.DataFrame(crecimiento)
 
 
-def obtener_dias_inventario(tipo_sucursal='TODAS', sucursales_permitidas=None):
+@hashable_args
+@cache.memoize(CACHE_TTL_QUERY)
+def obtener_dias_inventario(tipo_sucursal='TODAS'):
     """
     Calcula los días de inventario basado en stock actual y promedio de ventas diarias.
 
     Fórmula: días_inventario = stock_actual / promedio_venta_diaria
     """
-    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal, sucursales_permitidas)
+    filtro_sucursal = _build_filtro_sucursal_ytd(tipo_sucursal)
 
     # Obtener stock actual (asumiendo que fact_stock tiene el stock más reciente)
     query_stock = f"""
@@ -321,6 +325,7 @@ def obtener_dias_inventario(tipo_sucursal='TODAS', sucursales_permitidas=None):
         }
 
 
+@cache.memoize(CACHE_TTL_DIM)
 def obtener_anios_disponibles_ytd():
     """
     Obtiene los años disponibles en fact_ventas para el selector YTD.

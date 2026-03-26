@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = Field(default=5432, description="Puerto de PostgreSQL")
     SECRET_KEY: str = Field(default="", description="Secret key para sesiones (vacio = auth desactivada)")
     ALLOWED_ORIGINS: str = Field(default="", description="Comma-separated allowed origins for POST validation (empty = skip check)")
+    REDIS_URL: str = Field(default="", description="Redis URL for cache and sessions (empty = in-memory/filesystem)")
 
 
 settings = Settings()
@@ -44,7 +45,7 @@ SQLALCHEMY_DATABASE_URL_STR = (
     f"@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
 )
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Auth engine — SQLite local (usuarios y roles; sesiones via filesystem)

@@ -26,13 +26,23 @@ from layouts.ytd_layout import create_ytd_layout
 from layouts.cliente_layout import create_cliente_layout
 from layouts.clientes_layout import create_clientes_layout
 from data.ytd_queries import obtener_anios_disponibles_ytd, obtener_mes_actual, obtener_anio_actual
+from cache import init_app as init_cache, warmup_cache
 
-# Obtener rango de fechas
+# Crear app (antes de queries para que init_cache tenga el server)
+app = Dash(__name__, suppress_callback_exceptions=True,
+           external_stylesheets=dmc.styles.ALL)
+app.title = "Medallion ETL - Dashboard"
+server = app.server  # Flask server para gunicorn
+
+# Inicializar cache ANTES de cualquier query con @cache.memoize
+init_cache(server)
+
+# Warmup: pre-carga queries comunes en cache
+# (estas mismas llamadas alimentan las variables que necesitan los layouts)
 print("Obteniendo rango de fechas...")
 fecha_min, fecha_max = obtener_rango_fechas()
 print(f"Datos disponibles: {fecha_min} a {fecha_max}")
 
-# Obtener listas para filtros
 print("Cargando filtros de producto...")
 lista_genericos = obtener_genericos()
 lista_marcas = obtener_marcas()
@@ -43,7 +53,7 @@ lista_rutas = obtener_rutas()
 lista_preventistas = obtener_preventistas()
 print(f"  - {len(lista_rutas)} rutas, {len(lista_preventistas)} preventistas")
 
-# Carga inicial de datos para verificar conectividad
+# Carga inicial de datos para verificar conectividad (va al cache)
 hoy_startup = date.today()
 fecha_desde_startup = hoy_startup.replace(day=1)
 print(f"Cargando datos iniciales ({fecha_desde_startup} a {hoy_startup})...")
@@ -51,12 +61,6 @@ df_ventas = cargar_ventas_por_cliente(fecha_desde_startup, hoy_startup)
 clientes_con_ventas = len(df_ventas[df_ventas['cantidad_total'] > 0])
 clientes_sin_ventas = len(df_ventas[df_ventas['cantidad_total'] == 0])
 print(f"Cargados {len(df_ventas):,} clientes ({clientes_con_ventas:,} con ventas, {clientes_sin_ventas:,} sin ventas)")
-
-# Crear app
-app = Dash(__name__, suppress_callback_exceptions=True,
-           external_stylesheets=dmc.styles.ALL)
-app.title = "Medallion ETL - Dashboard"
-server = app.server  # Flask server para gunicorn
 
 # Autenticación condicional: solo si SECRET_KEY está configurada
 AUTH_ENABLED = bool(settings.SECRET_KEY)

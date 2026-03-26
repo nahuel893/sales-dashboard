@@ -16,6 +16,7 @@ from data.queries import (
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
 from config import METRICA_LABELS, DARK, GENERICOS_HOVER_FIJOS
+from cache import filtrar_sucursales
 from auth.utils import get_user_sucursales, log_audit
 
 
@@ -72,7 +73,8 @@ def actualizar_filtros(fechas_value):
     """Actualiza opciones de filtros cuando cambian las fechas."""
     start_date, end_date = (fechas_value or [None, None])[:2]
     suc_perm = get_user_sucursales()
-    df = cargar_ventas_por_cliente(start_date, end_date, sucursales_permitidas=suc_perm)
+    df = cargar_ventas_por_cliente(start_date, end_date)
+    df = filtrar_sucursales(df, suc_perm)
 
     canales = [{'label': c, 'value': c} for c in sorted(df['canal'].unique())]
     subcanales = [{'label': s, 'value': s} for s in sorted(df['subcanal'].unique())]
@@ -250,9 +252,11 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
 
     # Cargar datos
     if usar_animacion:
-        df = cargar_ventas_animacion(start_date, end_date, genericos, marcas, rutas, preventistas, fv, granularidad, sucursales_permitidas=suc_perm)
+        df = cargar_ventas_animacion(start_date, end_date, genericos, marcas, rutas, preventistas, fv, granularidad)
+        df = filtrar_sucursales(df, suc_perm)
     else:
-        df = cargar_ventas_por_cliente(start_date, end_date, genericos, marcas, rutas, preventistas, fv, sucursales_permitidas=suc_perm)
+        df = cargar_ventas_por_cliente(start_date, end_date, genericos, marcas, rutas, preventistas, fv)
+        df = filtrar_sucursales(df, suc_perm)
 
     # Aplicar filtros
     if canales and len(canales) > 0:
@@ -329,9 +333,9 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
 
             # Cargar desglose por genérico para hover (mes actual y anterior)
             df_generico = cargar_ventas_por_cliente_generico(
-                genericos, marcas, rutas, preventistas, fv,
-                sucursales_permitidas=suc_perm
+                genericos, marcas, rutas, preventistas, fv
             )
+            df_generico = filtrar_sucursales(df_generico, suc_perm)
             # Formatear desglose como texto por cliente (MAct | MAnt)
             if len(df_generico) > 0:
                 def _fmt_generico(grupo):
@@ -796,9 +800,11 @@ def actualizar_mapa_calor(fechas_value, canales, subcanales, localidades, listas
         log_audit('filter_change', path='/ventas/mapa-calor', filter_data=filter_data)
 
     if usar_animacion:
-        df = cargar_ventas_animacion(start_date, end_date, genericos, marcas, rutas, preventistas, fv, granularidad, sucursales_permitidas=suc_perm)
+        df = cargar_ventas_animacion(start_date, end_date, genericos, marcas, rutas, preventistas, fv, granularidad)
+        df = filtrar_sucursales(df, suc_perm)
     else:
-        df = cargar_ventas_por_cliente(start_date, end_date, genericos, marcas, rutas, preventistas, fv, sucursales_permitidas=suc_perm)
+        df = cargar_ventas_por_cliente(start_date, end_date, genericos, marcas, rutas, preventistas, fv)
+        df = filtrar_sucursales(df, suc_perm)
 
     # Aplicar filtros
     if canales and len(canales) > 0:
@@ -1028,7 +1034,8 @@ def actualizar_mapa_compro(fechas_value, canales, subcanales, localidades, lista
         log_audit('filter_change', path='/ventas/mapa-compro', filter_data=filter_data)
 
     # Cargar datos
-    df = cargar_ventas_por_cliente(start_date, end_date, genericos, marcas, rutas, preventistas, fv, sucursales_permitidas=suc_perm)
+    df = cargar_ventas_por_cliente(start_date, end_date, genericos, marcas, rutas, preventistas, fv)
+    df = filtrar_sucursales(df, suc_perm)
 
     # Aplicar filtros
     if canales and len(canales) > 0:
