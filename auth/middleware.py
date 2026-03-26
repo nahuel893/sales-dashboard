@@ -52,7 +52,7 @@ def init_auth(flask_app):
     flask_app.config['SESSION_TYPE'] = 'filesystem'
     flask_app.config['SESSION_FILE_DIR'] = str(SESSION_DIR)
     flask_app.config['SESSION_PERMANENT'] = True
-    flask_app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24h
+    flask_app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 min
 
     Session(flask_app)
 
