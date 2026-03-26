@@ -16,7 +16,12 @@ from data.queries import (
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
 from config import METRICA_LABELS, DARK, GENERICOS_HOVER_FIJOS
-from auth.utils import get_user_sucursales
+from auth.utils import get_user_sucursales, log_audit
+
+
+def _build_filter_data(**kwargs):
+    """Build compact filter dict, excluding None/empty values."""
+    return {k: v for k, v in kwargs.items() if v} or None
 
 
 # =============================================================================
@@ -232,6 +237,16 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
     usar_animacion = opcion_animacion or False
     granularidad = granularidad or 'semana'
     suc_perm = get_user_sucursales()
+
+    filter_data = _build_filter_data(
+        fechas=[str(start_date), str(end_date)] if start_date else None,
+        canales=canales, subcanales=subcanales, localidades=localidades,
+        listas_precio=listas_precio, sucursales=sucursales,
+        genericos=genericos, marcas=marcas, rutas=rutas,
+        preventistas=preventistas, fuerza_venta=fv, metrica=metrica,
+    )
+    if filter_data:
+        log_audit('filter_change', path='/ventas/mapa', filter_data=filter_data)
 
     # Cargar datos
     if usar_animacion:
@@ -770,6 +785,16 @@ def actualizar_mapa_calor(fechas_value, canales, subcanales, localidades, listas
     granularidad = granularidad or 'semana'
     suc_perm = get_user_sucursales()
 
+    filter_data = _build_filter_data(
+        fechas=[str(start_date), str(end_date)] if start_date else None,
+        canales=canales, subcanales=subcanales, localidades=localidades,
+        listas_precio=listas_precio, sucursales=sucursales,
+        genericos=genericos, marcas=marcas, rutas=rutas,
+        preventistas=preventistas, fuerza_venta=fv, metrica=metrica,
+    )
+    if filter_data:
+        log_audit('filter_change', path='/ventas/mapa-calor', filter_data=filter_data)
+
     if usar_animacion:
         df = cargar_ventas_animacion(start_date, end_date, genericos, marcas, rutas, preventistas, fv, granularidad, sucursales_permitidas=suc_perm)
     else:
@@ -991,6 +1016,16 @@ def actualizar_mapa_compro(fechas_value, canales, subcanales, localidades, lista
     start_date, end_date = (fechas_value or [None, None])[:2]
     fv = fuerza_venta if fuerza_venta != 'TODOS' else None
     suc_perm = get_user_sucursales()
+
+    filter_data = _build_filter_data(
+        fechas=[str(start_date), str(end_date)] if start_date else None,
+        canales=canales, subcanales=subcanales, localidades=localidades,
+        listas_precio=listas_precio, sucursales=sucursales,
+        genericos=genericos, marcas=marcas, rutas=rutas,
+        preventistas=preventistas, fuerza_venta=fv,
+    )
+    if filter_data:
+        log_audit('filter_change', path='/ventas/mapa-compro', filter_data=filter_data)
 
     # Cargar datos
     df = cargar_ventas_por_cliente(start_date, end_date, genericos, marcas, rutas, preventistas, fv, sucursales_permitidas=suc_perm)

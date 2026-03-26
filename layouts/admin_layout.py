@@ -19,10 +19,17 @@ def create_admin_layout():
         # Header
         html.Div([
             html.Div([
-                dcc.Link("← Inicio", href='/', style={
-                    'color': DARK['accent_blue'], 'textDecoration': 'none',
-                    'fontSize': '14px', 'fontWeight': '500'
-                }),
+                html.Div([
+                    dcc.Link("← Inicio", href='/', style={
+                        'color': DARK['accent_blue'], 'textDecoration': 'none',
+                        'fontSize': '14px', 'fontWeight': '500',
+                    }),
+                    html.Span(" | ", style={'color': DARK['text_muted'], 'margin': '0 8px'}),
+                    dcc.Link("Ver Actividad →", href='/admin/audit', style={
+                        'color': DARK['accent_blue'], 'textDecoration': 'none',
+                        'fontSize': '14px', 'fontWeight': '500',
+                    }),
+                ]),
                 html.H2("Gestión de Usuarios", style={
                     'margin': '10px 0 0 0', 'color': DARK['text'], 'fontSize': '24px'
                 }),

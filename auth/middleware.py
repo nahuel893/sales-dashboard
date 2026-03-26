@@ -139,3 +139,61 @@ def protect_all_routes(flask_app, allowed_origins=None):
         if not current_user.is_authenticated:
             return redirect('/login')
         return None
+
+    # Paths to skip in audit logging (static assets and Dash internals)
+    AUDIT_SKIP_PREFIXES = (
+        '/assets/',
+        '/_dash-component-suites/',
+        '/_dash-gc/',
+        '/_favicon.ico',
+        '/_dash-update-component',
+        '/_dash-layout',
+        '/_dash-dependencies',
+        '/_reload-hash',
+    )
+
+    # Known page routes to log
+    AUDIT_PAGE_PREFIXES = (
+        '/', '/ventas', '/ytd', '/clientes', '/cliente/',
+        '/tablero', '/admin/', '/login', '/logout',
+    )
+
+    @flask_app.after_request
+    def audit_log_request(response):
+        """Log page views and auth events for authenticated users."""
+        try:
+            path = request.path
+            method = request.method
+
+            # Skip static assets and Dash internals
+            if any(path.startswith(prefix) for prefix in AUDIT_SKIP_PREFIXES):
+                return response
+
+            # Only log GET requests to known page routes
+            if method != 'GET':
+                return response
+
+            # Check if path matches a known page route
+            is_page = path == '/' or any(
+                path == route or (route.endswith('/') and path.startswith(route))
+                for route in AUDIT_PAGE_PREFIXES if route != '/'
+            )
+            if not is_page:
+                return response
+
+            # Determine action_type
+            if path == '/logout':
+                action_type = 'logout'
+            else:
+                action_type = 'page_view'
+
+            from auth.utils import log_audit
+            log_audit(
+                action_type=action_type,
+                path=path,
+                response_status=response.status_code,
+            )
+        except Exception:
+            pass  # Never break the response
+
+        return response

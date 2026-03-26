@@ -6,7 +6,7 @@ from flask import request as flask_request
 from flask_login import login_user, logout_user, current_user
 
 from auth.models import User
-from auth.utils import check_password, hash_password
+from auth.utils import check_password, hash_password, log_audit
 from database import AuthSessionLocal
 
 
@@ -35,7 +35,9 @@ def handle_login(n_clicks, username, password):
                 user.password_hash = hash_password(password)
                 db.commit()
             login_user(user, remember=True)
+            log_audit('login', path='/login')
             return "", dcc.Location(href='/', id='login-nav', refresh=True)
+        log_audit('login_failed', path='/login')
         return "Usuario o contraseña incorrectos", no_update
     finally:
         db.close()

@@ -85,6 +85,10 @@ if AUTH_ENABLED:
         response.headers.pop('Server', None)
         return response
 
+    # Limpieza de registros de auditoría antiguos al inicio
+    from auth.utils import cleanup_old_audit_logs
+    cleanup_old_audit_logs()
+
     print("  - Autenticación habilitada")
 else:
     print("  - Autenticación deshabilitada (SECRET_KEY no configurada)")
@@ -150,6 +154,12 @@ def display_page(pathname):
             from layouts.admin_layout import create_admin_layout
             return create_admin_layout()
         return dcc.Location(href='/', id='admin-redirect')
+    if AUTH_ENABLED and pathname == '/admin/audit':
+        from flask_login import current_user as cu
+        if cu.is_authenticated and cu.is_admin:
+            from layouts.audit_layout import create_audit_layout
+            return create_audit_layout()
+        return dcc.Location(href='/', id='admin-audit-redirect')
     if pathname == '/ventas':
         hoy = date.today()
         return create_ventas_layout(
@@ -213,6 +223,7 @@ import callbacks.clientes_callbacks  # noqa: E402, F401
 if AUTH_ENABLED:
     import callbacks.auth_callbacks  # noqa: E402, F401
     import callbacks.admin_callbacks  # noqa: E402, F401
+    import callbacks.audit_callbacks  # noqa: E402, F401
 
 
 if __name__ == '__main__':

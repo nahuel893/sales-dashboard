@@ -112,6 +112,9 @@ GENERICOS_HOVER_FIJOS = [
 ]
 
 # Estilos comunes
+# Retención de registros de auditoría (días)
+AUDIT_RETENTION_DAYS = 90
+
 STYLES = {
     'filter_section': {
         'padding': '8px 20px 15px 20px',

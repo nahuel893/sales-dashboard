@@ -8,7 +8,7 @@ from dash import callback, Output, Input, html
 
 from data.queries import cargar_ventas_por_fecha
 from config import DARK
-from auth.utils import get_user_sucursales
+from auth.utils import get_user_sucursales, log_audit
 
 # Colores para las líneas de años
 COLORES_ANIOS = [
@@ -47,6 +47,17 @@ def actualizar_grafico_comparacion_anual(anios_seleccionados, canales, subcanale
     """Genera la grafica de comparacion anual con una linea por cada año seleccionado."""
 
     metrica_labels = {'cantidad_total': 'Cantidad (bultos)', 'facturacion': 'Facturacion ($)', 'cantidad_documentos': 'Documentos'}
+
+    filter_data = {k: v for k, v in {
+        'anios': anios_seleccionados, 'canales': canales, 'subcanales': subcanales,
+        'localidades': localidades, 'listas_precio': listas_precio,
+        'sucursales': sucursales, 'metrica': metrica,
+        'genericos': genericos, 'marcas': marcas, 'rutas': rutas,
+        'preventistas': preventistas,
+        'fuerza_venta': fuerza_venta if fuerza_venta != 'TODOS' else None,
+    }.items() if v}
+    if filter_data:
+        log_audit('filter_change', path='/tablero', filter_data=filter_data)
 
     fig = go.Figure()
 

@@ -2,7 +2,8 @@
 Modelos ORM para autenticación y autorización.
 Schema: app (separado del schema gold de datos).
 """
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship, declarative_base
 from flask_login import UserMixin
 
@@ -57,3 +58,19 @@ class UserSucursal(Base):
     id_sucursal = Column(Integer, nullable=False)
 
     user = relationship('User', back_populates='sucursales')
+
+
+class AuditLog(Base):
+    __tablename__ = 'audit_log'
+
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    user_id = Column(Integer, nullable=True, index=True)  # No FK — denormalized for resilience
+    username = Column(String(100), nullable=True)
+    ip_address = Column(String(45), nullable=False)  # IPv6 max length
+    user_agent = Column(String(500), nullable=True)
+    method = Column(String(10), nullable=False)
+    path = Column(String(500), nullable=False)
+    action_type = Column(String(30), nullable=False, index=True)
+    filter_data = Column(Text, nullable=True)  # JSON string
+    response_status = Column(Integer, nullable=True)

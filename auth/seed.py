@@ -12,8 +12,9 @@ from pathlib import Path
 # Agregar raíz del proyecto al path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from sqlalchemy import text
 from database import auth_engine, AuthSessionLocal
-from auth.models import Base, Role, User
+from auth.models import Base, Role, User, AuditLog  # noqa: F401 — AuditLog imported so create_all creates the table
 from auth.utils import hash_password
 
 
@@ -21,7 +22,13 @@ def seed():
     """Crea tablas, roles y admin inicial."""
     print("Inicializando schema de autenticación...")
 
-    # Crear tablas via ORM
+    # Habilitar WAL mode para lecturas concurrentes durante escrituras de auditoría
+    with auth_engine.connect() as conn:
+        conn.execute(text("PRAGMA journal_mode=WAL"))
+        conn.commit()
+    print("  - WAL mode habilitado")
+
+    # Crear tablas via ORM (incluye audit_log via AuditLog import)
     Base.metadata.create_all(auth_engine)
     print("  - Schema y tablas creados")
 

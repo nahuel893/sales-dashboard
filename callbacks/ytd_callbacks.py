@@ -7,7 +7,7 @@ import plotly.express as px
 from dash import callback, Output, Input, html
 
 from config import DARK
-from auth.utils import get_user_sucursales
+from auth.utils import get_user_sucursales, log_audit
 from data.ytd_queries import (
     obtener_ventas_ytd,
     obtener_ventas_por_mes,
@@ -44,6 +44,12 @@ def actualizar_kpis(anio, mes, tipo_sucursal):
     """Actualiza los KPIs principales del dashboard."""
     try:
         suc_perm = get_user_sucursales()
+
+        filter_data = {k: v for k, v in {
+            'anio': anio, 'mes': mes, 'tipo_sucursal': tipo_sucursal,
+        }.items() if v}
+        if filter_data:
+            log_audit('filter_change', path='/ytd', filter_data=filter_data)
 
         # Ventas actuales
         df_actual = obtener_ventas_ytd(anio, mes, tipo_sucursal, sucursales_permitidas=suc_perm)
