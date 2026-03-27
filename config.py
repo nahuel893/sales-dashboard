@@ -26,6 +26,20 @@ METRICA_LABELS = {
     'cantidad_documentos': 'Documentos'
 }
 
+# Colorbar compacto (responsive para mobile)
+COLORBAR_STYLE = dict(
+    len=0.5,
+    thickness=14,
+    tickfont=dict(size=10),
+    title_font=dict(size=11),
+    x=1.0,
+    y=0.5,
+    xpad=2,
+    ypad=2,
+    bgcolor='rgba(0,0,0,0)',
+    borderwidth=0,
+)
+
 # Escala de colores para mapas
 COLOR_SCALE_BURBUJAS = [
     [0, 'rgb(70, 130, 180)'],

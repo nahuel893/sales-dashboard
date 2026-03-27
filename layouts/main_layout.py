@@ -37,6 +37,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
     return html.Div([
         # Div oculto para clientside callback de click en mapa
         html.Div(id='click-output-dummy', style={'display': 'none'}),
+        html.Div(id='fullscreen-dummy', style={'display': 'none'}),
 
         # Store para coordenadas del cliente buscado
         dcc.Store(id='busqueda-cliente-store', data={}),
@@ -436,7 +437,26 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                         ),
                         # Banner "ver detalle abajo" (visible cuando >5 zonas)
                         html.Div(id='route-badges-banner'),
-                    ], style={'padding': '10px', 'position': 'relative'})
+                        # Botón fullscreen
+                        html.Button(
+                            '⛶',
+                            id='btn-fullscreen-mapa',
+                            style={
+                                'position': 'absolute',
+                                'bottom': '20px',
+                                'right': '10px',
+                                'zIndex': 1001,
+                                'backgroundColor': DARK['card'],
+                                'color': DARK['text'],
+                                'border': f'1px solid {DARK["border"]}',
+                                'borderRadius': '6px',
+                                'padding': '4px 8px',
+                                'fontSize': '18px',
+                                'cursor': 'pointer',
+                                'opacity': 0.8,
+                            }
+                        ),
+                    ], style={'padding': '10px', 'position': 'relative'}, id='mapa-container')
                 ]),
                 dcc.Tab(label='Mapa de Calor', value='tab-calor',
                         style={'backgroundColor': DARK['surface'], 'color': DARK['text_secondary'], 'borderColor': DARK['border']},

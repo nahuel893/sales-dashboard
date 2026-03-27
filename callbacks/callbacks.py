@@ -15,7 +15,7 @@ from data.queries import (
     cargar_ventas_por_cliente_generico, buscar_clientes,
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
-from config import METRICA_LABELS, DARK, GENERICOS_HOVER_FIJOS
+from config import METRICA_LABELS, DARK, GENERICOS_HOVER_FIJOS, COLORBAR_STYLE
 from cache import filtrar_sucursales
 from auth.utils import get_user_sucursales, log_audit
 
@@ -313,7 +313,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                 )
                 fig.update_layout(
                     margin={'r': 0, 't': 30, 'l': 0, 'b': 0},
-                    coloraxis_colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f'),
+                    coloraxis_colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f', **COLORBAR_STYLE),
                     hoverlabel=dict(
                         font=dict(family='monospace', size=12, color=DARK['text']),
                         align='left'
@@ -609,7 +609,7 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                         cmin=0,
                         cmax=15,
                         showscale=True,
-                        colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f'),
+                        colorbar=dict(title=metrica_labels[metrica], tickformat=',.0f', **COLORBAR_STYLE),
                         opacity=0.8
                     ),
                     name='Con ventas',
@@ -867,7 +867,7 @@ def actualizar_mapa_calor(fechas_value, canales, subcanales, localidades, listas
             )
             fig.update_layout(
                 margin={'r': 0, 't': 30, 'l': 0, 'b': 0},
-                coloraxis_colorbar=dict(title=metrica_labels[metrica] + escala_texto, tickformat=',.0f')
+                coloraxis_colorbar=dict(title=metrica_labels[metrica] + escala_texto, tickformat=',.0f', **COLORBAR_STYLE)
             )
             if hasattr(fig.layout, 'updatemenus') and fig.layout.updatemenus:
                 fig.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 800
@@ -910,7 +910,7 @@ def actualizar_mapa_calor(fechas_value, canales, subcanales, localidades, listas
             )
             fig.update_layout(
                 margin={'r': 0, 't': 30, 'l': 0, 'b': 0},
-                coloraxis_colorbar=dict(title=metrica_labels[metrica] + escala_texto + norm_texto, tickformat=',.0f')
+                coloraxis_colorbar=dict(title=metrica_labels[metrica] + escala_texto + norm_texto, tickformat=',.0f', **COLORBAR_STYLE)
             )
 
             # Zonas (usar df_mapa con coordenadas válidas)
@@ -959,7 +959,7 @@ def actualizar_mapa_calor(fechas_value, canales, subcanales, localidades, listas
                         [0.85, 'rgb(255, 100, 0)'], [1.0, 'rgb(200, 0, 0)']
                     ],
                     showscale=True,
-                    colorbar=dict(title=metrica_labels[metrica] + escala_texto, tickformat=',.0f')
+                    colorbar=dict(title=metrica_labels[metrica] + escala_texto, tickformat=',.0f', **COLORBAR_STYLE)
                 ),
                 showlegend=False, hoverinfo='skip'
             ))
@@ -1138,5 +1138,24 @@ clientside_callback(
     """,
     Output('click-output-dummy', 'children'),
     Input('mapa-ventas', 'clickData'),
+    prevent_initial_call=True
+)
+
+# Fullscreen toggle para el mapa de burbujas
+clientside_callback(
+    """
+    function(n_clicks) {
+        var container = document.getElementById('mapa-container');
+        if (!container) return window.dash_clientside.no_update;
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(function(err) {});
+        } else {
+            document.exitFullscreen();
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('fullscreen-dummy', 'children'),
+    Input('btn-fullscreen-mapa', 'n_clicks'),
     prevent_initial_call=True
 )

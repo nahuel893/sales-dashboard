@@ -535,3 +535,17 @@ div.mantine-Combobox-option[data-combobox-active] {
 ::-webkit-scrollbar-thumb:hover {
     background: #5a5a7e;
 }
+
+
+/* ============================================================
+   MAP FULLSCREEN
+   ============================================================ */
+
+#mapa-container:fullscreen {
+    padding: 0 !important;
+    background: #000;
+}
+
+#mapa-container:fullscreen .js-plotly-plot {
+    height: 100vh !important;
+}
