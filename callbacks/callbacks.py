@@ -479,23 +479,23 @@ def actualizar_mapa(fechas_value, canales, subcanales, localidades, listas_preci
                     )
             else:
                 cards = []
-                for z in zonas_all:
-                    # Badge de solo lectura (sin HoverCard)
-                    route_badges.append(
-                        html.Div(
-                            z['nombre'],
-                            style={
-                                'padding': '4px 10px',
-                                'borderRadius': '12px',
-                                'fontSize': '11px',
-                                'fontWeight': '600',
-                                'color': '#fff',
-                                'backgroundColor': z['color_borde'].replace('0.8', '0.65'),
-                                'whiteSpace': 'nowrap',
-                                'border': f"1px solid {z['color_borde']}",
-                            }
-                        )
+                # Solo mostrar una pill indicativa
+                route_badges.append(
+                    html.Div(
+                        f"📍 {len(zonas_all)} rutas — ver detalle abajo",
+                        style={
+                            'padding': '6px 14px',
+                            'borderRadius': '12px',
+                            'fontSize': '12px',
+                            'fontWeight': '600',
+                            'color': '#fff',
+                            'backgroundColor': 'rgba(52, 152, 219, 0.7)',
+                            'whiteSpace': 'nowrap',
+                            'border': '1px solid rgba(52, 152, 219, 0.9)',
+                        }
                     )
+                )
+                for z in zonas_all:
                     # Card para sección externa
                     if z['has_data']:
                         stats_content = _build_zona_stats_content(
