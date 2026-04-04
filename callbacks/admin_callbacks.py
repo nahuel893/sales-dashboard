@@ -3,12 +3,21 @@ Callbacks de administración de usuarios.
 CRUD de usuarios, asignación de roles y sucursales.
 """
 from dash import callback, Output, Input, State, html, no_update
+from flask_login import current_user
 from sqlalchemy.orm import Session
 
 from config import DARK
 from database import AuthSessionLocal
 from auth.models import User, Role, UserSucursal
 from auth.utils import hash_password
+
+
+def _require_admin():
+    """Return True if current user is authenticated admin, False otherwise."""
+    return (hasattr(current_user, 'is_authenticated')
+            and current_user.is_authenticated
+            and hasattr(current_user, 'is_admin')
+            and current_user.is_admin)
 
 
 def _obtener_sucursales_disponibles():
@@ -37,6 +46,8 @@ def _obtener_sucursales_disponibles():
 )
 def cargar_sucursales_disponibles(_):
     """Carga las sucursales para el MultiSelect."""
+    if not _require_admin():
+        return no_update
     return _obtener_sucursales_disponibles()
 
 
@@ -55,6 +66,8 @@ def cargar_sucursales_disponibles(_):
 def gestionar_usuarios(save_clicks, clear_clicks, edit_user_id,
                        username, fullname, password, role_name, sucursales_ids):
     """Guarda/crea usuario y refresca tabla."""
+    if not _require_admin():
+        return no_update, no_update
     from dash import ctx
 
     feedback = html.Div()
@@ -143,6 +156,8 @@ def _guardar_usuario(edit_user_id, username, fullname, password, role_name, sucu
 )
 def limpiar_form(_):
     """Limpia el formulario."""
+    if not _require_admin():
+        return no_update, no_update, no_update, no_update, no_update, no_update, no_update
     return None, '', '', '', 'supervisor', [], 'Nuevo Usuario'
 
 
@@ -159,6 +174,8 @@ def limpiar_form(_):
 )
 def editar_usuario(n_clicks_list):
     """Carga un usuario en el form para edición."""
+    if not _require_admin():
+        return no_update, no_update, no_update, no_update, no_update, no_update, no_update
     from dash import ctx
 
     if not ctx.triggered_id or not any(n for n in n_clicks_list if n):
@@ -193,6 +210,8 @@ def editar_usuario(n_clicks_list):
 )
 def toggle_usuario_activo(n_clicks_list):
     """Activa/desactiva un usuario."""
+    if not _require_admin():
+        return no_update
     from dash import ctx
 
     if not ctx.triggered_id or not any(n for n in n_clicks_list if n):
