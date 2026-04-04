@@ -9,9 +9,19 @@ import pandas as pd
 from dash import callback, Output, Input, State, html, no_update, ctx
 from sqlalchemy import func
 
+from flask_login import current_user
+
 from config import DARK
 from database import AuthSessionLocal
 from auth.models import AuditLog
+
+
+def _require_admin():
+    """Return True if current user is authenticated admin, False otherwise."""
+    return (hasattr(current_user, 'is_authenticated')
+            and current_user.is_authenticated
+            and hasattr(current_user, 'is_admin')
+            and current_user.is_admin)
 
 PAGE_SIZE = 50
 
@@ -142,6 +152,8 @@ def _generar_tabla_audit(registros):
 )
 def cargar_usuarios_audit(_):
     """Carga la lista de usuarios distintos en el filtro."""
+    if not _require_admin():
+        return no_update
     db = AuthSessionLocal()
     try:
         usernames = (
@@ -172,6 +184,8 @@ def cargar_usuarios_audit(_):
 )
 def buscar_audit_logs(_, page, date_range, username, action_type, ip_filter):
     """Busca registros de auditoría con filtros y paginación."""
+    if not _require_admin():
+        return no_update, no_update, no_update, no_update
     if page is None or page < 1:
         page = 1
 
@@ -220,6 +234,8 @@ def buscar_audit_logs(_, page, date_range, username, action_type, ip_filter):
 )
 def actualizar_pagina(prev_clicks, next_clicks, current_page, total_count):
     """Actualiza el número de página al hacer click en anterior/siguiente."""
+    if not _require_admin():
+        return no_update
     if current_page is None:
         current_page = 1
     if total_count is None:
@@ -248,6 +264,8 @@ def actualizar_pagina(prev_clicks, next_clicks, current_page, total_count):
 )
 def exportar_csv(n_clicks, date_range, username, action_type, ip_filter):
     """Exporta los registros filtrados a CSV."""
+    if not _require_admin():
+        return no_update
     if not n_clicks:
         return no_update
 
