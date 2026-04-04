@@ -21,14 +21,15 @@ PUBLIC_PATHS = {
     '/_favicon.ico',
     '/_dash-component-suites/',
     '/_dash-gc/',
-    '/_dash-layout',
-    '/_dash-dependencies',
 }
 
-# Dash internal endpoints: layout and dependencies must be public (Dash JS
-# needs them to bootstrap ANY page, including /login). Only /_reload-hash
-# is blocked — it exposes package versions without providing functionality.
+# Dash internal endpoints blocked entirely for unauthenticated users.
+# /_reload-hash exposes package versions without providing functionality.
 DASH_BLOCKED_PATHS = {'/_reload-hash'}
+
+# Dash layout/dependencies: serve stub JSON for unauthenticated users
+# (prevents leaking full component tree while allowing login page to bootstrap)
+DASH_STUB_PATHS = {'/_dash-layout', '/_dash-dependencies'}
 
 
 def _is_public_path(path):
@@ -143,6 +144,14 @@ def protect_all_routes(flask_app, allowed_origins=None):
         # C-01: Block /_reload-hash for unauthenticated users (exposes versions)
         if request.path in DASH_BLOCKED_PATHS and not current_user.is_authenticated:
             return jsonify({"error": "forbidden"}), 403
+
+        # C-01: Serve stub layout/dependencies for unauthenticated users
+        # (prevents leaking full component tree while allowing login to bootstrap)
+        if request.path in DASH_STUB_PATHS and not current_user.is_authenticated:
+            from flask import Response
+            from auth.utils import get_stub_layout_json, get_stub_dependencies_json
+            stub_fn = get_stub_layout_json if request.path == '/_dash-layout' else get_stub_dependencies_json
+            return Response(stub_fn(), content_type='application/json')
 
         if _is_public_path(request.path):
             return None

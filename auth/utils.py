@@ -1,9 +1,33 @@
 """
-Utilidades de autenticación: hashing de passwords, obtención de sucursales del usuario
-y funciones de auditoría.
+Utilidades de autenticación: hashing de passwords, obtención de sucursales del usuario,
+funciones de auditoría y stubs de layout/dependencies para usuarios no autenticados.
 """
 import bcrypt
 import json
+
+from dash.development.base_component import Component
+
+
+def _component_to_dict(obj):
+    """Recursively convert a Dash component tree to plain dicts/lists.
+
+    ``Component.to_plotly_json()`` only serializes the top-level component;
+    nested children remain as Python Component objects.  This helper walks
+    the tree so the result is fully JSON-serializable.
+    """
+    if isinstance(obj, Component):
+        d = obj.to_plotly_json()
+        if 'props' in d:
+            d['props'] = _component_to_dict(d['props'])
+        return d
+    if isinstance(obj, dict):
+        return {k: _component_to_dict(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_component_to_dict(item) for item in obj]
+    return obj
+
+# Lazy cache for stub JSON responses (deterministic, built once)
+_stub_cache = {}
 
 
 def hash_password(password: str) -> str:
@@ -114,3 +138,60 @@ def cleanup_old_audit_logs(days=None):
             db.close()
     except Exception:
         pass
+
+
+def get_stub_layout_json() -> str:
+    """Return JSON string of minimal layout for unauthenticated users.
+
+    Contains only: MantineProvider > Div > [dcc.Location(id='url'),
+    Div(id='page-content', children=login_layout)].
+    Cached after first call.
+    """
+    if 'layout' not in _stub_cache:
+        from dash import html, dcc
+        import dash_mantine_components as dmc
+        from layouts.login_layout import create_login_layout
+
+        login_layout = create_login_layout()
+        stub = dmc.MantineProvider(
+            html.Div([
+                dcc.Location(id='url', refresh=False),
+                html.Div(id='page-content', children=login_layout),
+            ])
+        )
+        _stub_cache['layout'] = json.dumps(_component_to_dict(stub))
+    return _stub_cache['layout']
+
+
+def get_stub_dependencies_json() -> str:
+    """Return JSON string with 2 callback definitions for unauthenticated users.
+
+    Callbacks: display_page (routing) and handle_login.
+    Cached after first call.
+    """
+    if 'dependencies' not in _stub_cache:
+        deps = [
+            {
+                "inputs": [
+                    {"id": "url", "property": "pathname"}
+                ],
+                "state": [],
+                "output": "page-content.children",
+                "clientside_function": None,
+                "prevent_initial_call": False,
+            },
+            {
+                "inputs": [
+                    {"id": "login-button", "property": "n_clicks"}
+                ],
+                "state": [
+                    {"id": "login-username", "property": "value"},
+                    {"id": "login-password", "property": "value"},
+                ],
+                "output": "..login-error.children...login-redirect.children..",
+                "clientside_function": None,
+                "prevent_initial_call": True,
+            },
+        ]
+        _stub_cache['dependencies'] = json.dumps(deps)
+    return _stub_cache['dependencies']
