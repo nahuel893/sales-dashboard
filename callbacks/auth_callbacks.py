@@ -34,7 +34,7 @@ def handle_login(n_clicks, username, password):
             if not user.password_hash.startswith('$2b$'):
                 user.password_hash = hash_password(password)
                 db.commit()
-            login_user(user, remember=True)
+            login_user(user, remember=False)
             log_audit('login', path='/login')
             return "", dcc.Location(href='/', id='login-nav', refresh=True)
         log_audit('login_failed', path='/login')
