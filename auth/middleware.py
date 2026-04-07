@@ -61,6 +61,7 @@ def init_auth(flask_app):
         flask_app.config['SESSION_FILE_DIR'] = str(SESSION_DIR)
     flask_app.config['SESSION_PERMANENT'] = True
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 min
+    flask_app.config['SESSION_REFRESH_EACH_REQUEST'] = False
 
     Session(flask_app)
 
@@ -163,6 +164,9 @@ def protect_all_routes(flask_app, allowed_origins=None):
                 ip = request.remote_addr or '0.0.0.0'
                 if _is_rate_limited(ip):
                     return jsonify({"error": "rate limit exceeded"}), 429
+            else:
+                # Refresh session TTL only on real user callback activity
+                session.modified = True
             return None
         if not current_user.is_authenticated:
             return redirect('/login')
