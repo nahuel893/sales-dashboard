@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="", description="Secret key para sesiones (vacio = auth desactivada)")
     ALLOWED_ORIGINS: str = Field(default="", description="Comma-separated allowed origins for POST validation (empty = skip check)")
     REDIS_URL: str = Field(default="", description="Redis URL for cache and sessions (empty = in-memory/filesystem)")
+    SESSION_TIMEOUT: int = Field(default=1800, description="Idle session timeout in seconds (default 30min)")
 
 
 settings = Settings()

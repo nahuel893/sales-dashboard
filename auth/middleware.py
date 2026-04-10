@@ -10,7 +10,7 @@ from flask_session import Session
 from sqlalchemy.orm import sessionmaker
 
 from pathlib import Path
-from database import auth_engine
+from database import auth_engine, settings
 
 SESSION_DIR = Path(__file__).parent.parent / 'session_data'
 
@@ -49,7 +49,6 @@ def init_auth(flask_app):
         flask_app: instancia de Flask (app.server)
     """
     # Configurar sesiones server-side
-    from database import settings
     if settings.REDIS_URL:
         import redis as redis_lib
         flask_app.config['SESSION_TYPE'] = 'redis'
@@ -60,7 +59,7 @@ def init_auth(flask_app):
         flask_app.config['SESSION_TYPE'] = 'filesystem'
         flask_app.config['SESSION_FILE_DIR'] = str(SESSION_DIR)
     flask_app.config['SESSION_PERMANENT'] = True
-    flask_app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 min
+    flask_app.config['PERMANENT_SESSION_LIFETIME'] = settings.SESSION_TIMEOUT
     flask_app.config['SESSION_REFRESH_EACH_REQUEST'] = False
 
     Session(flask_app)
@@ -104,10 +103,9 @@ def protect_all_routes(flask_app, allowed_origins=None):
     RATE_LIMIT_MAX = 5          # max requests per window
     RATE_LIMIT_WINDOW = 60      # window in seconds
 
-    from database import settings as _settings
-    if _settings.REDIS_URL:
+    if settings.REDIS_URL:
         import redis as redis_lib
-        _redis_rl = redis_lib.from_url(_settings.REDIS_URL)
+        _redis_rl = redis_lib.from_url(settings.REDIS_URL)
 
         def _is_rate_limited(ip):
             """Redis-backed rate limiter (shared across workers)."""
@@ -161,7 +159,7 @@ def protect_all_routes(flask_app, allowed_origins=None):
         # Check idle timeout for authenticated users on every protected request
         if current_user.is_authenticated:
             last_activity = session.get('_last_activity')
-            if last_activity and (time.time() - last_activity) > 1800:
+            if last_activity and (time.time() - last_activity) > settings.SESSION_TIMEOUT:
                 from flask_login import logout_user
                 logout_user()
                 session.clear()
