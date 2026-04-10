@@ -158,18 +158,26 @@ def protect_all_routes(flask_app, allowed_origins=None):
             return None
         # Los callbacks Dash (_dash-update-component) se dejan pasar —
         # el routing callback en app.py maneja la redirección a /login
+        # Check idle timeout for authenticated users on every protected request
+        if current_user.is_authenticated:
+            last_activity = session.get('_last_activity')
+            if last_activity and (time.time() - last_activity) > 1800:
+                from flask_login import logout_user
+                logout_user()
+                session.clear()
+                return redirect('/login')
+
         if request.path.startswith('/_dash-update-component'):
             # C-02: Rate limit unauthenticated users (5/min per IP)
             if not current_user.is_authenticated:
                 ip = request.remote_addr or '0.0.0.0'
                 if _is_rate_limited(ip):
                     return jsonify({"error": "rate limit exceeded"}), 429
-            else:
-                # Refresh session TTL only on real user callback activity
-                session.modified = True
             return None
         if not current_user.is_authenticated:
             return redirect('/login')
+        # Update last_activity on every non-callback authenticated request
+        session['_last_activity'] = time.time()
         return None
 
     # Paths to skip in audit logging (static assets and Dash internals)

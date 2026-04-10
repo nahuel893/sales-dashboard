@@ -3,6 +3,8 @@ Callbacks de autenticación: login y logout.
 """
 from dash import callback, Output, Input, State, no_update
 from flask import request as flask_request
+import time
+from flask import session as flask_session
 from flask_login import login_user, logout_user, current_user
 
 from auth.models import User
@@ -35,6 +37,7 @@ def handle_login(n_clicks, username, password):
                 user.password_hash = hash_password(password)
                 db.commit()
             login_user(user, remember=False)
+            flask_session['_last_activity'] = time.time()
             log_audit('login', path='/login')
             return "", dcc.Location(href='/', id='login-nav', refresh=True)
         log_audit('login_failed', path='/login')
