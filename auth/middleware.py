@@ -154,8 +154,9 @@ def protect_all_routes(flask_app, allowed_origins=None):
 
         if _is_public_path(request.path):
             return None
-        # Los callbacks Dash (_dash-update-component) se dejan pasar —
-        # el routing callback en app.py maneja la redirección a /login
+
+        is_callback = request.path.startswith('/_dash-update-component')
+
         # Check idle timeout for authenticated users on every protected request
         if current_user.is_authenticated:
             last_activity = session.get('_last_activity')
@@ -163,9 +164,21 @@ def protect_all_routes(flask_app, allowed_origins=None):
                 from flask_login import logout_user
                 logout_user()
                 session.clear()
+                if is_callback:
+                    # XHR request: return JSON that triggers a full page reload
+                    # Dash will reload the page which then redirects to /login
+                    from flask import Response as FlaskResponse
+                    import json as _json
+                    return FlaskResponse(
+                        _json.dumps({"redirect": "/login"}),
+                        status=401,
+                        content_type='application/json'
+                    )
                 return redirect('/login')
+            # Update last_activity on every authenticated protected request
+            session['_last_activity'] = time.time()
 
-        if request.path.startswith('/_dash-update-component'):
+        if is_callback:
             # C-02: Rate limit unauthenticated users (5/min per IP)
             if not current_user.is_authenticated:
                 ip = request.remote_addr or '0.0.0.0'
@@ -174,8 +187,6 @@ def protect_all_routes(flask_app, allowed_origins=None):
             return None
         if not current_user.is_authenticated:
             return redirect('/login')
-        # Update last_activity on every non-callback authenticated request
-        session['_last_activity'] = time.time()
         return None
 
     # Paths to skip in audit logging (static assets and Dash internals)
