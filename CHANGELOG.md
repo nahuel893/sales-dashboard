@@ -9,9 +9,23 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### Por agregar
-- Mapa de oportunidades perdidas
-- Metricas de eficiencia en zonas
+### Cambiado
+- Renombrado "Dashboard de Ventas" a "Mapa de Ventas" en toda la UI
+
+### Eliminado
+- Pagina `/ytd` (Dashboard YTD) y todos sus callbacks/queries
+- Pagina `/tablero` (Tablero de Ventas — comparacion anual y top genericos/marcas)
+- Script legacy `dashboard.py` (1451 lineas, ya roto, no era entry point)
+
+### Agregado
+- Recorrido de preventistas en el mapa: carga visitas desde Excel (`data/visitados.xlsx`), dibuja polilineas punteadas en orden cronologico con markers numerados. DatePicker + boton + limpiar en la esquina superior izquierda del mapa.
+- `SESSION_TIMEOUT` configurable via `.env` (default 1800s)
+
+### Seguridad
+- **C-01**: Stub JSON de `/_dash-layout` y `/_dash-dependencies` para usuarios anonimos (evita exponer el arbol de componentes completo)
+- **C-02**: `remember=False` en `login_user()` (eliminada cookie de 365 dias que bypaseaba el session timeout)
+- **C-03**: Guard `_require_admin()` en los 5 callbacks admin y los 4 callbacks de auditoria
+- **Session idle timeout de 30 min**: Implementado con timestamp `_last_activity` + redirect a `/login` via 401 JSON + interceptor fetch en el cliente
 
 ---
 

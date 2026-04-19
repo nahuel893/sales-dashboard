@@ -203,8 +203,7 @@ def protect_all_routes(flask_app, allowed_origins=None):
 
     # Known page routes to log
     AUDIT_PAGE_PREFIXES = (
-        '/', '/ventas', '/ytd', '/clientes', '/cliente/',
-        '/tablero', '/admin/', '/login', '/logout',
+        '/', '/ventas', '/clientes', '/cliente/', '/admin/', '/login', '/logout',
     )
 
     @flask_app.after_request

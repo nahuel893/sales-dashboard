@@ -121,20 +121,6 @@ def obtener_preventistas(fuerza_venta=None):
 
 @hashable_args
 @cache.memoize(CACHE_TTL_DIM)
-def obtener_anios_disponibles():
-    """Obtiene la lista de años disponibles en fact_ventas."""
-    query = """
-        SELECT DISTINCT EXTRACT(YEAR FROM fecha_comprobante)::INTEGER as anio
-        FROM gold.fact_ventas
-        ORDER BY anio
-    """
-    with engine.connect() as conn:
-        df = pd.read_sql(query, conn)
-    return df['anio'].tolist()
-
-
-@hashable_args
-@cache.memoize(CACHE_TTL_DIM)
 def obtener_rango_fechas():
     """Obtiene el rango de fechas disponible en fact_ventas."""
     query = """
@@ -407,93 +393,6 @@ def cargar_ventas_animacion(fecha_desde=None, fecha_hasta=None, genericos=None, 
 
 @hashable_args
 @cache.memoize(CACHE_TTL_QUERY)
-def cargar_ventas_por_fecha(fecha_desde=None, fecha_hasta=None, canales=None, subcanales=None, localidades=None, listas_precio=None, sucursales=None, genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None):
-    """Carga ventas agregadas por fecha para el gráfico de evolución."""
-
-    where_clauses = []
-
-    if fecha_desde and fecha_hasta:
-        where_clauses.append(f"f.fecha_comprobante BETWEEN '{fecha_desde}' AND '{fecha_hasta}'")
-
-    # Filtros de cliente (usando gold.dim_cliente)
-    join_cliente = "LEFT JOIN gold.dim_cliente c ON f.id_cliente = c.id_cliente"
-
-    if canales and len(canales) > 0:
-        canales_escaped = [c.replace("'", "''") for c in canales]
-        where_clauses.append(f"COALESCE(c.des_canal_mkt, 'Sin canal') IN ('" + "','".join(canales_escaped) + "')")
-
-    if subcanales and len(subcanales) > 0:
-        subcanales_escaped = [s.replace("'", "''") for s in subcanales]
-        where_clauses.append(f"COALESCE(c.des_subcanal_mkt, 'Sin subcanal') IN ('" + "','".join(subcanales_escaped) + "')")
-
-    if localidades and len(localidades) > 0:
-        localidades_escaped = [l.replace("'", "''") for l in localidades]
-        where_clauses.append(f"COALESCE(c.des_localidad, 'Sin localidad') IN ('" + "','".join(localidades_escaped) + "')")
-
-    if listas_precio and len(listas_precio) > 0:
-        listas_ids = ", ".join(str(int(l)) for l in listas_precio)
-        where_clauses.append(f"c.id_lista_precio IN ({listas_ids})")
-
-    if sucursales and len(sucursales) > 0:
-        sucursales_escaped = [s.replace("'", "''") for s in sucursales]
-        where_clauses.append(f"COALESCE(c.des_sucursal, 'Sin sucursal') IN ('" + "','".join(sucursales_escaped) + "')")
-
-    # Filtros de ruta (clave compuesta id_sucursal|id_ruta)
-    if rutas and len(rutas) > 0:
-        ruta_where = _build_ruta_where(rutas, fuerza_venta)
-        if ruta_where:
-            where_clauses.append(ruta_where)
-
-    if preventistas and len(preventistas) > 0:
-        prev_escaped = [p.replace("'", "''") for p in preventistas]
-        prev_list = "'" + "','".join(prev_escaped) + "'"
-        if fuerza_venta == 'FV1':
-            where_clauses.append(f"c.des_personal_fv1 IN ({prev_list})")
-        elif fuerza_venta == 'FV4':
-            where_clauses.append(f"c.des_personal_fv4 IN ({prev_list})")
-        else:
-            where_clauses.append(f"(c.des_personal_fv1 IN ({prev_list}) OR c.des_personal_fv4 IN ({prev_list}))")
-
-    # Filtros de articulo
-    join_articulo = ""
-    if genericos and len(genericos) > 0:
-        join_articulo = "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
-        genericos_escaped = [g.replace("'", "''") for g in genericos]
-        where_clauses.append(f"a.generico IN ('" + "','".join(genericos_escaped) + "')")
-    if marcas and len(marcas) > 0:
-        if not join_articulo:
-            join_articulo = "LEFT JOIN gold.dim_articulo a ON f.id_articulo = a.id_articulo"
-        marcas_escaped = [m.replace("'", "''") for m in marcas]
-        where_clauses.append(f"a.marca IN ('" + "','".join(marcas_escaped) + "')")
-
-    where_sql = " AND ".join(where_clauses) if where_clauses else "TRUE"
-
-    query = f"""
-        SELECT
-            f.fecha_comprobante as fecha,
-            SUM(f.cantidades_total) as cantidad_total,
-            SUM(f.subtotal_final) as facturacion,
-            COUNT(DISTINCT f.nro_doc) as cantidad_documentos,
-            COUNT(DISTINCT f.id_cliente) as clientes
-        FROM gold.fact_ventas f
-        {join_cliente}
-        {join_articulo}
-        WHERE {where_sql}
-        GROUP BY f.fecha_comprobante
-        ORDER BY f.fecha_comprobante
-    """
-
-    with engine.connect() as conn:
-        df = pd.read_sql(query, conn)
-
-    df['cantidad_total'] = df['cantidad_total'].astype(float)
-    df['facturacion'] = df['facturacion'].astype(float)
-
-    return df
-
-
-@hashable_args
-@cache.memoize(CACHE_TTL_QUERY)
 def cargar_ventas_por_cliente_generico(genericos=None, marcas=None, rutas=None, preventistas=None, fuerza_venta=None, top_n=5):
     """Obtiene top N genéricos por cliente con bultos del mes actual y anterior."""
     from datetime import date
@@ -725,4 +624,101 @@ def cargar_ventas_cliente_detalle(id_cliente):
     """
     with engine.connect() as conn:
         df = pd.read_sql(query, conn)
+    return df
+
+
+# ============================================================
+# VISITAS DE PREVENTISTAS (recorrido en mapa)
+# ============================================================
+
+from pathlib import Path as _Path
+_VISITAS_PATH = _Path(__file__).parent / 'visitados.xlsx'
+_visitas_cache = {'df': None, 'mtime': None}
+
+
+def _cargar_excel_visitas():
+    """Carga el Excel de visitas con cache (invalidado si cambia mtime)."""
+    if not _VISITAS_PATH.exists():
+        return pd.DataFrame()
+    mtime = _VISITAS_PATH.stat().st_mtime
+    if _visitas_cache['df'] is None or _visitas_cache['mtime'] != mtime:
+        df = pd.read_excel(_VISITAS_PATH)
+        # Normalizar columnas relevantes
+        df['Fecha_dt'] = pd.to_datetime(df['Fecha'], format='%d-%m-%Y', errors='coerce')
+        _visitas_cache['df'] = df
+        _visitas_cache['mtime'] = mtime
+    return _visitas_cache['df']
+
+
+def obtener_fechas_visitas():
+    """Retorna las fechas disponibles en el Excel de visitas (como date objects)."""
+    df = _cargar_excel_visitas()
+    if df.empty:
+        return []
+    fechas = df['Fecha_dt'].dropna().dt.date.unique().tolist()
+    return sorted(fechas)
+
+
+def cargar_visitas_recorrido(fecha, preventistas=None):
+    """Carga visitas del Excel filtradas por fecha y preventistas.
+
+    Args:
+        fecha: date o str (YYYY-MM-DD o DD-MM-YYYY)
+        preventistas: lista de nombres de preventistas para filtrar (opcional).
+            Match por substring case-insensitive contra la columna Ruta.
+
+    Returns:
+        DataFrame ordenado por ruta + hora con columnas:
+        [ruta, id_cliente, descripcion_cliente, hora_visita, hora_visita_dt,
+         latitud, longitud, visitado, motivo, domicilio]
+        Solo incluye visitas con coordenadas validas (lat != 0).
+    """
+    df = _cargar_excel_visitas()
+    if df.empty:
+        return pd.DataFrame()
+
+    # Normalizar fecha a date
+    if isinstance(fecha, str):
+        fecha_dt = pd.to_datetime(fecha, errors='coerce')
+        if pd.isna(fecha_dt):
+            return pd.DataFrame()
+        fecha = fecha_dt.date()
+
+    # Filtro por fecha
+    mask = df['Fecha_dt'].dt.date == fecha
+    df = df[mask].copy()
+
+    # Solo visitadas con coordenadas validas
+    df = df[(df['Visitado'] == 'SI') & (df['Latitud'] != 0) & (df['Longitud'] != 0)]
+
+    if df.empty:
+        return pd.DataFrame()
+
+    # Filtro por preventistas (substring match)
+    if preventistas and len(preventistas) > 0:
+        prev_upper = [p.upper() for p in preventistas]
+        df = df[df['Ruta'].str.upper().apply(
+            lambda r: any(p in r for p in prev_upper)
+        )]
+        if df.empty:
+            return pd.DataFrame()
+
+    # Parse hora para ordenar cronologicamente
+    df['hora_visita_dt'] = pd.to_datetime(df['Hora visita'], format='%H:%M:%S', errors='coerce')
+
+    df = df.rename(columns={
+        'Ruta': 'ruta',
+        'Id cliente': 'id_cliente',
+        'Descripción cliente': 'descripcion_cliente',
+        'Hora visita': 'hora_visita',
+        'Latitud': 'latitud',
+        'Longitud': 'longitud',
+        'Visitado': 'visitado',
+        'Motivo': 'motivo',
+        'Domicilio': 'domicilio',
+    })
+
+    cols = ['ruta', 'id_cliente', 'descripcion_cliente', 'hora_visita', 'hora_visita_dt',
+            'latitud', 'longitud', 'visitado', 'motivo', 'domicilio']
+    df = df[cols].sort_values(['ruta', 'hora_visita_dt']).reset_index(drop=True)
     return df

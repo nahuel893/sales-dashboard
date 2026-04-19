@@ -71,9 +71,8 @@ def warmup_cache():
     from datetime import date
     from data.queries import (
         obtener_genericos, obtener_marcas, obtener_rutas, obtener_preventistas,
-        obtener_rango_fechas, obtener_anios_disponibles, cargar_ventas_por_cliente
+        obtener_rango_fechas, cargar_ventas_por_cliente
     )
-    from data.ytd_queries import obtener_anios_disponibles_ytd
 
     print("Calentando cache...")
     # Dimension queries
@@ -82,8 +81,6 @@ def warmup_cache():
     obtener_rutas()
     obtener_preventistas()
     obtener_rango_fechas()
-    obtener_anios_disponibles()
-    obtener_anios_disponibles_ytd()
 
     # Current month sales (most common query)
     hoy = date.today()

@@ -11,7 +11,7 @@ import dash_mantine_components as dmc
 
 from data.queries import (
     obtener_rutas, obtener_preventistas, obtener_marcas,
-    cargar_ventas_por_cliente, cargar_ventas_animacion, cargar_ventas_por_fecha,
+    cargar_ventas_por_cliente, cargar_ventas_animacion,
     cargar_ventas_por_cliente_generico, buscar_clientes,
 )
 from utils.visualization import crear_grilla_calor_optimizada, calcular_zonas, COLORES_CALOR
@@ -1158,4 +1158,136 @@ clientside_callback(
     Output('fullscreen-dummy', 'children'),
     Input('btn-fullscreen-mapa', 'n_clicks'),
     prevent_initial_call=True
+)
+
+
+# =============================================================================
+# RECORRIDO DE PREVENTISTAS (visitas desde Excel)
+# =============================================================================
+
+@callback(
+    Output('recorrido-fecha', 'min_date_allowed'),
+    Output('recorrido-fecha', 'max_date_allowed'),
+    Output('recorrido-fecha', 'date'),
+    Input('tabs-mapas', 'value'),
+    prevent_initial_call=False,
+)
+def inicializar_fecha_recorrido(_tab):
+    """Fija el rango del DatePicker a las fechas disponibles en el Excel."""
+    from data.queries import obtener_fechas_visitas
+    fechas = obtener_fechas_visitas()
+    if not fechas:
+        return no_update, no_update, no_update
+    return fechas[0], fechas[-1], fechas[-1]
+
+
+@callback(
+    Output('recorrido-visitas-store', 'data'),
+    Input('btn-cargar-recorrido', 'n_clicks'),
+    Input('btn-limpiar-recorrido', 'n_clicks'),
+    State('recorrido-fecha', 'date'),
+    State('filtro-preventista', 'value'),
+    prevent_initial_call=True,
+)
+def cargar_recorrido_visitas(_n_cargar, _n_limpiar, fecha, preventistas):
+    """Carga las visitas del Excel y las guarda en el store como lista de rutas."""
+    from data.queries import cargar_visitas_recorrido
+    from config import ZONE_COLORS
+
+    trigger = ctx.triggered_id
+    if trigger == 'btn-limpiar-recorrido':
+        return {}
+    if not fecha:
+        return no_update
+
+    df = cargar_visitas_recorrido(fecha, preventistas)
+    if df.empty:
+        return {'rutas': [], 'empty': True}
+
+    rutas = []
+    for i, (nombre, grupo) in enumerate(df.groupby('ruta')):
+        color = ZONE_COLORS[i % len(ZONE_COLORS)]
+        puntos = []
+        for _, row in grupo.iterrows():
+            hora = row['hora_visita'] if pd.notna(row['hora_visita']) else ''
+            motivo = row['motivo'] if pd.notna(row['motivo']) else ''
+            puntos.append({
+                'lat': float(row['latitud']),
+                'lon': float(row['longitud']),
+                'hora': str(hora),
+                'cliente': str(row['descripcion_cliente']),
+                'motivo': str(motivo),
+                'domicilio': str(row['domicilio']) if pd.notna(row['domicilio']) else '',
+            })
+        rutas.append({'nombre': str(nombre), 'color': color, 'puntos': puntos})
+
+    return {'rutas': rutas, 'empty': False}
+
+
+clientside_callback(
+    """
+    function(storeData, currentFig) {
+        if (!currentFig || !currentFig.data) return window.dash_clientside.no_update;
+
+        var newFig = JSON.parse(JSON.stringify(currentFig));
+
+        // Remover traces de recorrido anteriores
+        newFig.data = newFig.data.filter(function(t) {
+            return !t.name || !t.name.startsWith('_recorrido');
+        });
+
+        if (!storeData || !storeData.rutas || storeData.rutas.length === 0) {
+            return newFig;
+        }
+
+        // Por cada ruta, agregar linea punteada + markers numerados
+        storeData.rutas.forEach(function(ruta) {
+            var lats = ruta.puntos.map(function(p) { return p.lat; });
+            var lons = ruta.puntos.map(function(p) { return p.lon; });
+            var texts = ruta.puntos.map(function(p, i) {
+                var lines = [
+                    '<b>' + (i+1) + '. ' + p.cliente + '</b>',
+                    '🕐 ' + p.hora,
+                    '📍 ' + p.domicilio,
+                    '🚚 ' + ruta.nombre,
+                ];
+                if (p.motivo) lines.push('⚠️ ' + p.motivo);
+                return lines.join('<br>');
+            });
+
+            // Linea punteada conectando los puntos en orden cronologico
+            newFig.data.push({
+                type: 'scattermap',
+                lat: lats, lon: lons,
+                mode: 'lines',
+                line: {width: 3, color: ruta.color, dash: 'dot'},
+                name: '_recorrido_line_' + ruta.nombre,
+                showlegend: false,
+                hoverinfo: 'skip',
+                opacity: 0.8,
+            });
+
+            // Markers con numeros de orden
+            newFig.data.push({
+                type: 'scattermap',
+                lat: lats, lon: lons,
+                mode: 'markers+text',
+                marker: {size: 20, color: ruta.color, opacity: 0.95},
+                text: ruta.puntos.map(function(_, i) { return (i+1).toString(); }),
+                textfont: {color: '#fff', size: 11, family: 'Arial Black'},
+                textposition: 'middle center',
+                name: '_recorrido_pts_' + ruta.nombre,
+                showlegend: false,
+                hovertext: texts,
+                hovertemplate: '%{hovertext}<extra></extra>',
+            });
+        });
+
+        return newFig;
+    }
+    """,
+    Output('mapa-ventas', 'figure', allow_duplicate=True),
+    Input('recorrido-visitas-store', 'data'),
+    State('mapa-ventas', 'figure'),
+    prevent_initial_call=True,
 )

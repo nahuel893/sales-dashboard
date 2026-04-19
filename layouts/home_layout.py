@@ -53,34 +53,18 @@ def create_home_layout(user=None):
         {
             'id': 'ventas',
             'icon': '📊',
-            'title': 'Dashboard de Ventas',
+            'title': 'Mapa de Ventas',
             'description': 'Mapas de ventas, análisis geográfico y KPIs por cliente.',
             'color': '#3498db',
             'href': '/ventas'
         },
         {
-            'id': 'ytd',
-            'icon': '📈',
-            'title': 'Dashboard YTD',
-            'description': 'Análisis acumulado anual: KPIs, comparación con objetivos, crecimiento y días de inventario.',
-            'color': '#1a5276',
-            'href': '/ytd'
-        },
-        {
             'id': 'clientes',
             'icon': '🔍',
             'title': 'Buscar Clientes',
-            'description': 'Busca clientes por nombre, fantasia o codigo. Accede al detalle con su historial de ventas.',
+            'description': 'Buscar clientes por nombre, fantasía o código para ver su detalle.',
             'color': '#27ae60',
             'href': '/clientes'
-        },
-        {
-            'id': 'tablero',
-            'icon': '📋',
-            'title': 'Tablero de Ventas',
-            'description': 'Comparación anual de ventas por mes. Gráficos y tablas con filtros de producto y zona.',
-            'color': '#e67e22',
-            'href': '/tablero'
         },
     ]
 

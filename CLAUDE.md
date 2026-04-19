@@ -100,12 +100,13 @@ sales-dashboard/
 ## Sistema de Navegacion
 
 El proyecto usa routing basado en URL:
-- `/` -> Pagina de inicio (cards de tableros)
-- `/ventas` -> Dashboard de ventas (mapas + tablero comparativo)
-- `/ytd` -> Dashboard YTD (indicadores acumulados anuales)
+- `/login` -> Pantalla de login (Flask-Login)
+- `/` -> Pagina de inicio (cards)
+- `/ventas` -> Mapa de Ventas (mapas interactivos)
 - `/clientes` -> Busqueda de clientes
 - `/cliente/<id>` -> Detalle de cliente (ventas por generico/marca/articulo)
-- `/nuevo` -> Placeholder para nuevos tableros
+- `/admin/usuarios` -> Panel admin: gestion de usuarios (solo rol admin)
+- `/admin/audit` -> Panel admin: registros de auditoria (solo rol admin)
 
 Para agregar un nuevo tablero:
 1. Crear layout en `layouts/nuevo_layout.py`
@@ -113,11 +114,12 @@ Para agregar un nuevo tablero:
 3. Agregar ruta en `app.py` dentro de `display_page()`
 4. Agregar card en `layouts/home_layout.py`
 
-## Dashboard de Ventas (`/ventas`)
+## Mapa de Ventas (`/ventas`)
 
-### Pestanas
-- **Mapas**: Mapa de Burbujas, Mapa de Calor, Mapa Compro/No Compro
-- **Tablero de Ventas**: Grafico de comparacion anual + tabla comparativa + top genericos/marcas
+### Secciones
+- **Mapa de Burbujas** (con overlay de busqueda + recorrido de preventistas)
+- **Mapa de Calor** (difuso/grilla)
+- **Mapa Compro/No Compro**
 
 ### Filtros compartidos (panel lateral dmc.Drawer con tema oscuro)
 - Rango de fechas, Canal, Subcanal, Localidad
@@ -155,64 +157,33 @@ Para agregar un nuevo tablero:
 - `actualizar_filtros()`: Actualizar opciones de dropdowns segun fechas
 - `actualizar_marcas_por_generico()`: Filtro cascada generico -> marca
 - `actualizar_sucursal_por_tipo()`: Auto-filtro tipo sucursal
-- `actualizar_resumen_ventas()`: Graficos evolucion + top genericos + top marcas
-- `actualizar_mapa()`: Mapa de burbujas + KPIs + badges de zona (ya no recibe busqueda-cliente-store como Input)
-- Clientside callback: highlight de busqueda (agrega/quita traces `_highlight_*` sin recarga)
+- `actualizar_mapa()`: Mapa de burbujas + KPIs + badges de zona
 - `actualizar_mapa_calor()`: Mapa de calor (difuso/grilla)
 - `actualizar_mapa_compro()`: Mapa compro vs no compro
-- `toggle_secciones_principales()`: Mostrar/ocultar mapas vs tablero
-- `actualizar_opciones_anios()`: Cargar anos disponibles
-- `actualizar_grafico_comparacion_anual()`: Grafico de lineas por ano
-- `actualizar_tabla_comparativa()`: Tabla mensual con % crecimiento
+- Clientside callback: highlight de busqueda (agrega/quita traces `_highlight_*` sin recarga)
+- Clientside callback: fullscreen del mapa via Browser Fullscreen API
 - Click mapa -> `/cliente/<id>` (clientside callback, `customdata[5]`)
+- `inicializar_fecha_recorrido()`, `cargar_recorrido_visitas()`: carga recorrido de preventistas del Excel
+- Clientside callback: dibuja polilineas punteadas con markers numerados sobre el mapa
 
 ### Funciones de datos (data/queries.py)
 - `cargar_ventas_por_cliente()`: Ventas agregadas por cliente (mapas y KPIs). Parte de dim_cliente.
-- `cargar_ventas_por_fecha()`: Ventas por fecha (graficos temporales). Parte de fact_ventas.
 - `cargar_ventas_animacion()`: Ventas por cliente y periodo (animaciones)
 - `cargar_ventas_por_cliente_generico()`: Top N genericos por cliente, MAct/MAnt (hover). Ranking por ventas historicas totales. Filtra `GENERICOS_EXCLUIDOS`.
-- `cargar_ventas_por_generico_top()`: Top genericos por metrica
-- `cargar_ventas_por_marca_top()`: Top marcas por metrica
+- `buscar_clientes(texto)`: Busqueda de clientes por nombre/fantasia/codigo (usado en `/clientes` y en el dropdown del mapa)
 - `obtener_*()`: Funciones para poblar dropdowns
+- `obtener_fechas_visitas()`, `cargar_visitas_recorrido(fecha, prev)`: recorrido de preventistas desde `data/visitados.xlsx`
 
-## Dashboard YTD (`/ytd`)
+## Autenticacion y RBAC
 
-### Indicadores (KPIs)
-- Ventas (Bultos), Interanual (YoY %)
-- Objetivo de Ventas (ano anterior + 10%)
-- Cumplimiento Objetivo (%)
-- Ventas Ano Anterior
-- Ganancia Bruta (placeholder)
-- Margen de Ganancia (placeholder)
-
-### Graficos
-- Ventas por Generico (barras apiladas con target)
-- Ventas Reales vs Objetivo (mensual, colores semaforo)
-- Ventas por Sucursal (barras horizontales real vs objetivo)
-- Ventas por Canal (dona)
-- Crecimiento de Ventas (barras +/-)
-- Dias de Inventario (gauge)
-
-### Filtros
-- Ano, Mes (hasta), Tipo Sucursal
-
-### Target automatico
-- `incremento_pct=10` hardcodeado en callbacks (ano anterior + 10%)
-- Se aplica a: total, por mes, por generico, por sucursal
-
-### Etiquetas
-- Todas las etiquetas del dashboard YTD estan en **espanol**
-
-### Funciones de datos (data/ytd_queries.py)
-- `obtener_ventas_ytd()`: Ventas acumuladas YTD
-- `obtener_ventas_por_mes()`: Ventas desglosadas por mes
-- `obtener_ventas_por_generico()`: Ventas por categoria
-- `obtener_ventas_por_sucursal()`: Ventas por sucursal
-- `obtener_ventas_por_canal()`: Ventas por canal
-- `calcular_target_automatico()`: Target total y por mes
-- `calcular_targets_por_generico()`: Targets por generico
-- `calcular_targets_por_sucursal()`: Targets por sucursal
-- `calcular_crecimiento_mensual()`: Crecimiento % vs ano anterior
+- **Flask-Login + Flask-Session** (Redis como backend si `REDIS_URL` esta seteada)
+- **Activacion**: si `SECRET_KEY` esta en `.env`, auth esta ON; sino corre sin login (retrocompatible)
+- **Session idle timeout**: `SESSION_TIMEOUT` (default 1800s). Se trackea `_last_activity` en cada request.
+  - XHR (callbacks) expirados -> 401 JSON -> `assets/session.js` redirige a `/login`
+  - GET expirados -> redirect nativo
+- **Roles**: `admin` (todo + gestion usuarios), `gerente` (ve todo), `supervisor` (solo sus sucursales)
+- **RBAC por sucursal**: `get_user_sucursales()` retorna `None` (sin filtro) o lista de ids
+- **Audit log**: Page views autenticados se loguean en `auth.db`
 - `obtener_dias_inventario()`: Dias de inventario (stock / venta diaria)
 
 ## Detalle de Cliente (`/cliente/<id>`)

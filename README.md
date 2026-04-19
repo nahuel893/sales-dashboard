@@ -1,30 +1,33 @@
 # Sales Dashboard - Medallion ETL
 
-Dashboard interactivo multi-tablero de ventas con mapas geolocalizados, construido con Dash/Plotly. Conecta a un sistema ETL medallion (PostgreSQL) y presenta analisis geograficos, KPIs, evolucion temporal, dashboard YTD y detalle por cliente.
+Dashboard interactivo de ventas con mapas geolocalizados, construido con Dash/Plotly. Conecta a un sistema ETL medallion (PostgreSQL) y presenta analisis geograficos y detalle por cliente.
 
 ## Caracteristicas Principales
 
-- **Sistema de navegacion multi-tablero**: Home, Ventas, YTD, Clientes, Detalle Cliente
+- **Sistema de navegacion**: Home, Ventas (mapas), Detalle Cliente, panel admin
 - **Tema oscuro completo**: Paleta dark centralizada en config.py aplicada a toda la UI
 - **Mapas interactivos**: Burbujas (escala fija 0-15), calor (difuso/grilla), compro/no compro
 - **KPIs en tiempo real**: Clientes, bultos, facturacion, documentos
 - **Filtros avanzados**: Panel lateral con cascada generico->marca, FV->ruta->preventista
 - **Hover enriquecido**: Top 5 genericos por cliente con MAct/MAnt (mes actual vs anterior)
+- **Busqueda en mapa**: Dropdown con highlight del cliente sobre el globo
 - **Badges de ruta**: Overlay sobre el mapa con desglose ventas y compradores por zona
 - **Zonas geograficas**: Convex hull por ruta o preventista con colores distintos
 - **Animaciones temporales**: Visualizacion por dia/semana/mes
-- **Comparacion anual**: Graficos de evolucion ano vs ano + tabla comparativa
+- **Recorrido de preventistas**: Visualizacion de visitas diarias (desde Excel) con lineas punteadas cronologicas
 - **Detalle de cliente**: Tabla jerarquica generico->marca->articulo, ultimos 12 meses
 - **Export Excel**: 3 hojas (por generico, por marca, detalle articulos)
-- **Dashboard YTD**: 7 KPIs + 6 graficos con target automatico (+10% interanual)
+- **Autenticacion + RBAC**: Roles admin/gerente/supervisor con filtros por sucursal
+- **Panel admin**: Gestion de usuarios y registros de auditoria
 
 ## Estructura del Proyecto
 
 ```
 sales-dashboard/
-├── app.py                     # Punto de entrada, routing entre tableros
+├── app.py                     # Punto de entrada, routing
 ├── config.py                  # Configuracion central (colores, estilos, tema DARK)
-├── database.py                # Conexion SQLAlchemy a PostgreSQL
+├── database.py                # Conexion SQLAlchemy + settings (.env)
+├── cache.py                   # Redis/SimpleCache para queries y sesiones
 ├── .env.example               # Plantilla de variables de entorno
 ├── requirements.txt           # Dependencias Python
 ├── VERSION                    # Version actual del proyecto
@@ -33,27 +36,39 @@ sales-dashboard/
 ├── CLAUDE.md                  # Guia para asistentes AI
 ├── CONTEXT_IA.md              # Esquema de BD y contexto de datos
 │
+├── auth/                      # Sistema de autenticacion (Flask-Login)
+│   ├── models.py              # Modelos User, Role, UserSucursal, AuditLog
+│   ├── middleware.py          # Proteccion de rutas, session timeout, RBAC
+│   ├── utils.py               # Hashing, stubs de layout para anonimos
+│   ├── schema.sql             # Schema SQLite inicial
+│   └── seed.py                # Seed de roles y usuario admin
+│
 ├── layouts/
-│   ├── home_layout.py         # Pagina de inicio con cards de navegacion
-│   ├── main_layout.py         # Dashboard de ventas (mapas + filtros + KPIs)
-│   ├── ytd_layout.py          # Dashboard YTD (KPIs + graficos)
+│   ├── home_layout.py         # Pagina de inicio
+│   ├── main_layout.py         # Mapa de Ventas (mapas + filtros + KPIs)
 │   ├── cliente_layout.py      # Detalle de cliente individual
-│   └── clientes_layout.py     # Busqueda de clientes
+│   ├── clientes_layout.py     # Buscador de clientes
+│   ├── login_layout.py        # Pantalla de login
+│   └── admin_layout.py        # Panel de administracion
 │
 ├── callbacks/
-│   ├── callbacks.py           # Callbacks del dashboard de ventas
-│   ├── ytd_callbacks.py       # Callbacks del dashboard YTD
+│   ├── callbacks.py           # Callbacks del mapa de ventas
 │   ├── cliente_callbacks.py   # Callbacks del detalle de cliente
-│   └── clientes_callbacks.py  # Callbacks de busqueda de clientes
+│   ├── clientes_callbacks.py  # Callbacks del buscador de clientes
+│   ├── auth_callbacks.py      # Login / logout
+│   ├── admin_callbacks.py     # Gestion de usuarios
+│   └── audit_callbacks.py     # Panel de auditoria
 │
 ├── data/
-│   ├── queries.py             # Queries SQL (ventas + clientes)
-│   └── ytd_queries.py         # Queries SQL del dashboard YTD
+│   ├── queries.py             # Queries SQL + recorrido preventistas
+│   └── visitados.xlsx         # (no versionado) visitas del dia de preventistas
 │
 ├── utils/
 │   └── visualization.py       # Grillas de calor, zonas convex hull
 │
-├── components/                # (reservado para componentes reutilizables)
+├── assets/
+│   ├── dark_theme.css         # CSS del tema oscuro
+│   └── session.js             # Redirect a /login si la sesion expira (401)
 │
 └── docs/
     ├── EVALUACION_TECNICA_DASHBOARD.md
@@ -114,12 +129,13 @@ Para acceso en red local, `config.py` tiene `host: '0.0.0.0'`.
 
 | URL | Pagina | Descripcion |
 |-----|--------|-------------|
-| `/` | Home | Cards de seleccion de tableros |
-| `/ventas` | Dashboard Ventas | Mapas interactivos, KPIs, comparacion anual |
-| `/ytd` | Dashboard YTD | Indicadores acumulados anuales, targets |
-| `/clientes` | Buscar Clientes | Busqueda por nombre o codigo |
+| `/login` | Login | Autenticacion |
+| `/` | Home | Cards de acceso |
+| `/ventas` | Mapa de Ventas | Mapas interactivos + KPIs |
+| `/clientes` | Buscar Clientes | Buscador por nombre/fantasia/codigo |
 | `/cliente/<id>` | Detalle Cliente | Ventas por generico/marca/articulo, export Excel |
-| `/nuevo` | Placeholder | Reservado para futuros tableros |
+| `/admin/usuarios` | Admin Usuarios | Gestion de usuarios (solo admin) |
+| `/admin/audit` | Admin Auditoria | Registros de actividad (solo admin) |
 
 ## Modulos
 
@@ -153,12 +169,9 @@ Funciones de acceso a datos del dashboard de ventas y clientes:
 | Funcion | Descripcion |
 |---------|-------------|
 | `cargar_ventas_por_cliente(...)` | Ventas por cliente (mapas). Parte de dim_cliente |
-| `cargar_ventas_por_fecha(...)` | Ventas por fecha (graficos). Parte de fact_ventas |
 | `cargar_ventas_animacion(...)` | Ventas por periodo (animaciones) |
 | `cargar_ventas_por_cliente_generico(...)` | Top N genericos por cliente, MAct/MAnt |
-| `cargar_ventas_por_generico_top(...)` | Top genericos por metrica |
-| `cargar_ventas_por_marca_top(...)` | Top marcas por metrica |
-| `buscar_clientes(texto)` | Busqueda por nombre/codigo |
+| `buscar_clientes(texto)` | Busqueda por nombre/codigo (dropdown en mapa) |
 | `cargar_info_cliente(id)` | Datos maestros del cliente |
 | `cargar_ventas_cliente_detalle(id)` | Historico con jerarquia generico/marca/articulo |
 | `obtener_genericos()` | Lista de genericos |
@@ -166,20 +179,8 @@ Funciones de acceso a datos del dashboard de ventas y clientes:
 | `obtener_rutas(fv)` | Rutas con clave compuesta |
 | `obtener_preventistas(fv)` | Preventistas por FV |
 | `obtener_rango_fechas()` | Min/max fechas |
-
-### data/ytd_queries.py
-Funciones del dashboard YTD:
-
-| Funcion | Descripcion |
-|---------|-------------|
-| `obtener_ventas_ytd(...)` | Acumulado YTD |
-| `obtener_ventas_por_mes(...)` | Desglose mensual |
-| `obtener_ventas_por_generico(...)` | Por categoria |
-| `obtener_ventas_por_sucursal(...)` | Por sucursal |
-| `obtener_ventas_por_canal(...)` | Por canal |
-| `calcular_target_automatico(...)` | Target (ano anterior +10%) |
-| `calcular_crecimiento_mensual(...)` | Crecimiento % YoY |
-| `obtener_dias_inventario(...)` | Stock / venta diaria |
+| `obtener_fechas_visitas()` | Fechas disponibles en visitados.xlsx |
+| `cargar_visitas_recorrido(fecha, prev)` | Recorrido diario de preventistas |
 
 ### utils/visualization.py
 Funciones de visualizacion:

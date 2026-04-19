@@ -17,15 +17,12 @@ from config import SERVER_CONFIG
 from database import settings
 from data.queries import (
     obtener_genericos, obtener_marcas, obtener_rutas, obtener_preventistas,
-    obtener_rango_fechas, obtener_anios_disponibles, cargar_ventas_por_cliente
+    obtener_rango_fechas, cargar_ventas_por_cliente
 )
 from layouts.home_layout import create_home_layout
 from layouts.main_layout import create_ventas_layout
-from layouts.tablero_layout import create_tablero_layout
-from layouts.ytd_layout import create_ytd_layout
 from layouts.cliente_layout import create_cliente_layout
 from layouts.clientes_layout import create_clientes_layout
-from data.ytd_queries import obtener_anios_disponibles_ytd, obtener_mes_actual, obtener_anio_actual
 from cache import init_app as init_cache, warmup_cache
 
 # Crear app (antes de queries para que init_cache tenga el server)
@@ -97,31 +94,6 @@ if AUTH_ENABLED:
 else:
     print("  - Autenticación deshabilitada (SECRET_KEY no configurada)")
 
-# Datos para YTD Dashboard
-print("Cargando datos para YTD Dashboard...")
-try:
-    ytd_anios = obtener_anios_disponibles_ytd()
-    ytd_anio_actual = obtener_anio_actual()
-    ytd_mes_actual = obtener_mes_actual()
-    print(f"  - Años disponibles: {ytd_anios}")
-except Exception as e:
-    print(f"  - Error cargando datos YTD: {e}")
-    ytd_anios = [2025, 2024]
-    ytd_anio_actual = 2025
-    ytd_mes_actual = 12
-
-# Años disponibles para tablero de comparación
-print("Cargando años disponibles...")
-lista_anios = obtener_anios_disponibles()
-print(f"  - Años: {lista_anios}")
-
-# ytd_layout se pre-crea (no tiene fechas que cambien, solo año/mes)
-ytd_layout = create_ytd_layout(
-    anio_actual=ytd_anio_actual,
-    mes_actual=ytd_mes_actual,
-    anios_disponibles=ytd_anios
-)
-
 # Layout principal con routing
 app.layout = dmc.MantineProvider(
     html.Div([
@@ -176,8 +148,6 @@ def display_page(pathname):
             lista_rutas=lista_rutas,
             lista_preventistas=lista_preventistas
         )
-    elif pathname == '/ytd':
-        return ytd_layout
     elif pathname == '/clientes':
         return create_clientes_layout()
     elif pathname and pathname.startswith('/cliente/'):
@@ -191,19 +161,6 @@ def display_page(pathname):
         return html.Div([
             html.H2("Cliente no encontrado", style={'textAlign': 'center', 'padding': '60px', 'color': '#666'})
         ])
-    elif pathname == '/tablero':
-        hoy = date.today()
-        return create_tablero_layout(
-            fecha_min=fecha_min,
-            fecha_max=fecha_max,
-            fecha_desde_default=hoy.replace(day=1),
-            fecha_hasta_default=hoy,
-            lista_genericos=lista_genericos,
-            lista_marcas=lista_marcas,
-            lista_rutas=lista_rutas,
-            lista_preventistas=lista_preventistas,
-            lista_anios=lista_anios
-        )
     else:
         # Página de inicio: generar dinámicamente con info del usuario si auth activa
         user = None
@@ -220,8 +177,6 @@ def display_page(pathname):
 # Importar callbacks (se registran automaticamente)
 # Esto debe estar DESPUES de crear app y layout
 import callbacks.callbacks  # noqa: E402, F401
-import callbacks.tablero_callbacks  # noqa: E402, F401
-import callbacks.ytd_callbacks  # noqa: E402, F401
 import callbacks.cliente_callbacks  # noqa: E402, F401
 import callbacks.clientes_callbacks  # noqa: E402, F401
 if AUTH_ENABLED:

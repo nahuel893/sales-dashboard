@@ -1,5 +1,7 @@
 # Correcciones y Optimizaciones del Dashboard
 
+> **Nota (2026-04):** Este documento fue escrito antes del cleanup que elimino las secciones YTD, Buscar Clientes y Tablero de Ventas. Las correcciones marcadas que aplicaban a esos modulos ya no son relevantes. El sistema ahora solo incluye: home, mapas (`/ventas`), detalle cliente (`/cliente/<id>`) y panel admin.
+
 ## Estado general
 
 | Tipo | Total | Hechas | Pendientes |

@@ -41,6 +41,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
 
         # Store para coordenadas del cliente buscado
         dcc.Store(id='busqueda-cliente-store', data={}),
+        dcc.Store(id='recorrido-visitas-store', data={}),
 
         # =================================================================
         # DRAWER DE FILTROS (panel lateral colapsable)
@@ -358,7 +359,7 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                     style={'textDecoration': 'none'}
                 ),
             ], style={'marginBottom': '10px'}),
-            html.H1("Dashboard de Ventas", style={'margin': '0', 'color': DARK['text']}),
+            html.H1("Mapa de Ventas", style={'margin': '0', 'color': DARK['text']}),
             html.P("Medallion ETL - Visualizacion de datos de ventas",
                    style={'margin': '5px 0 0 0', 'color': DARK['text_secondary']})
         ], style={
@@ -418,6 +419,56 @@ def create_ventas_layout(fecha_min, fecha_max, fecha_desde_default, fecha_hasta_
                             'borderRadius': '8px',
                             'padding': '4px',
                             'boxShadow': '0 4px 16px rgba(0,0,0,0.5)',
+                        }),
+                        # Overlay de recorrido de preventistas
+                        html.Div([
+                            dcc.DatePickerSingle(
+                                id='recorrido-fecha',
+                                display_format='DD-MM-YYYY',
+                                placeholder='Fecha',
+                                style={'backgroundColor': DARK['surface']},
+                            ),
+                            html.Button(
+                                '📍 Cargar recorrido',
+                                id='btn-cargar-recorrido',
+                                style={
+                                    'backgroundColor': DARK['accent_blue'],
+                                    'color': '#fff',
+                                    'border': 'none',
+                                    'borderRadius': '6px',
+                                    'padding': '6px 12px',
+                                    'fontSize': '13px',
+                                    'fontWeight': '600',
+                                    'cursor': 'pointer',
+                                    'marginLeft': '6px',
+                                }
+                            ),
+                            html.Button(
+                                '✕',
+                                id='btn-limpiar-recorrido',
+                                title='Limpiar recorrido',
+                                style={
+                                    'backgroundColor': DARK['surface'],
+                                    'color': DARK['text'],
+                                    'border': f'1px solid {DARK["border"]}',
+                                    'borderRadius': '6px',
+                                    'padding': '6px 10px',
+                                    'fontSize': '13px',
+                                    'cursor': 'pointer',
+                                    'marginLeft': '4px',
+                                }
+                            ),
+                        ], style={
+                            'position': 'absolute',
+                            'top': '10px',
+                            'left': '10px',
+                            'zIndex': 1001,
+                            'backgroundColor': DARK['card'],
+                            'borderRadius': '8px',
+                            'padding': '6px 8px',
+                            'boxShadow': '0 4px 16px rgba(0,0,0,0.5)',
+                            'display': 'flex',
+                            'alignItems': 'center',
                         }),
                         # Overlay de badges de rutas
                         html.Div(
